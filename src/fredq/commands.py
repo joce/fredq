@@ -285,6 +285,25 @@ _CATEGORY_ID_PARAM: Final[ParamSpec] = ParamSpec(
     metavar="ID",
 )
 
+_ORDER_BY_SOURCES: Final[tuple[str, ...]] = (
+    "source_id",
+    "name",
+    "realtime_start",
+    "realtime_end",
+)
+
+# source-releases shares the same order_by set as releases.
+_ORDER_BY_SOURCE_RELEASES: Final[tuple[str, ...]] = _ORDER_BY_RELEASES
+
+_SOURCE_ID_PARAM: Final[ParamSpec] = ParamSpec(
+    name="source_id",
+    cli_name="source-id",
+    kind=ParamKind.INTEGER,
+    help="FRED source identifier (e.g. 1 for Board of Governors, 3 for St. Louis Fed).",
+    required=True,
+    metavar="ID",
+)
+
 _RELEASE_ID_PARAM: Final[ParamSpec] = ParamSpec(
     name="release_id",
     cli_name="release-id",
@@ -1185,6 +1204,69 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "fredq tags-series --tag-names 'usa;annual' --limit 3",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    # ------------------------------------------------------------------
+    # Group 5 — Sources (3 endpoints)
+    # ------------------------------------------------------------------
+    CommandSpec(
+        name="sources",
+        path="/fred/sources",
+        summary="List all FRED data sources.",
+        description=(
+            "Return the full catalog of FRED sources. Each record includes "
+            "source ID, name, and link."
+        ),
+        params=(
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_SOURCES),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq sources --limit 10",
+            "fredq sources --order-by name --sort-order asc",
+        ),
+    ),
+    CommandSpec(
+        name="source",
+        path="/fred/source",
+        summary="Show metadata for one FRED source.",
+        description=(
+            "Return the source record for the given source ID, including name and link."
+        ),
+        params=(
+            _SOURCE_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+        ),
+        examples=(
+            "fredq source --source-id 1",
+            "fredq source --source-id 18",
+        ),
+    ),
+    CommandSpec(
+        name="source-releases",
+        path="/fred/source/releases",
+        summary="List releases published by one FRED source.",
+        description=(
+            "Return the release records published or maintained by the specified "
+            "source. Includes release ID, name, and press-release flag."
+        ),
+        params=(
+            _SOURCE_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_SOURCE_RELEASES),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq source-releases --source-id 1 --limit 5",
+            "fredq source-releases --source-id 3 --order-by name",
+        ),
     ),
 )
 
