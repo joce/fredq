@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal
 import httpx
 from typing_extensions import override
 
+from fredq import __version__
 from fredq.exceptions import (
     FredClientUsageError,
     FredRequestError,
@@ -133,7 +134,7 @@ class FredClient:
     """
 
     _FRED_BASE_URL: Final[str] = FRED_BASE_URL
-    _USER_AGENT: Final[str] = "fredq/0.0.1 (+https://github.com/joce/fredq)"
+    _USER_AGENT: Final[str] = f"fredq/{__version__} (+https://github.com/joce/fredq)"
     _REQUEST_ATTEMPTS: Final[int] = 3
     _RETRYABLE_STATUS_CODES: Final[frozenset[int]] = frozenset(
         {429, 500, 502, 503, 504}
