@@ -207,6 +207,63 @@ _ORDER_BY_SERIES_TAGS: Final[tuple[str, ...]] = (
     "group_id",
 )
 
+_ORDER_BY_RELEASES: Final[tuple[str, ...]] = (
+    "release_id",
+    "name",
+    "press_release",
+    "realtime_start",
+    "realtime_end",
+)
+
+_ORDER_BY_RELEASES_DATES: Final[tuple[str, ...]] = (
+    "release_date",
+    "release_id",
+    "release_name",
+    "release_last_updated",
+    "press_release",
+    "realtime_start",
+    "realtime_end",
+)
+
+_ORDER_BY_RELEASE_SERIES: Final[tuple[str, ...]] = (
+    "series_id",
+    "title",
+    "units",
+    "frequency",
+    "seasonal_adjustment",
+    "realtime_start",
+    "realtime_end",
+    "last_updated",
+    "observation_start",
+    "observation_end",
+    "popularity",
+    "group_popularity",
+)
+
+_ORDER_BY_RELEASE_TAGS: Final[tuple[str, ...]] = (
+    "series_count",
+    "popularity",
+    "created",
+    "name",
+    "group_id",
+)
+
+_RELEASE_ID_PARAM: Final[ParamSpec] = ParamSpec(
+    name="release_id",
+    cli_name="release-id",
+    kind=ParamKind.INTEGER,
+    help="FRED release identifier (e.g. 53 for GDP, 10 for CPI).",
+    required=True,
+    metavar="ID",
+)
+
+_INCLUDE_RELEASE_DATES_WITH_NO_DATA_PARAM: Final[ParamSpec] = ParamSpec(
+    name="include_release_dates_with_no_data",
+    cli_name="include-release-dates-with-no-data",
+    kind=ParamKind.BOOLEAN,
+    help="Include release dates that have no data (true/false).",
+)
+
 
 # v1 starts with two endpoints to prove the pattern; remaining ~29 added
 # incrementally. See AGENTS.md "Architecture" + docs/v2-geofred.md.
@@ -547,6 +604,264 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
         notes=(
             ("start_time and end_time use FRED's YYYYMMDDHhmm format, not YYYY-MM-DD."),
         ),
+    ),
+    CommandSpec(
+        name="releases",
+        path="/fred/releases",
+        summary="List all FRED economic data releases.",
+        description=(
+            "Return the full catalog of FRED releases. Each record includes "
+            "release ID, name, press-release flag, and links."
+        ),
+        params=(
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_RELEASES),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq releases --limit 10",
+            "fredq releases --order-by name --sort-order asc",
+        ),
+    ),
+    CommandSpec(
+        name="releases-dates",
+        path="/fred/releases/dates",
+        summary="List release dates across all FRED releases.",
+        description=(
+            "Return publication dates across all releases in the FRED calendar. "
+            "Optionally include release dates that have no associated data."
+        ),
+        params=(
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_RELEASES_DATES),
+            _SORT_ORDER_PARAM,
+            _INCLUDE_RELEASE_DATES_WITH_NO_DATA_PARAM,
+        ),
+        examples=(
+            "fredq releases-dates --limit 10",
+            "fredq releases-dates --include-release-dates-with-no-data",
+        ),
+    ),
+    CommandSpec(
+        name="release",
+        path="/fred/release",
+        summary="Show metadata for one FRED release.",
+        description=(
+            "Return the release record for the given release ID, including "
+            "name, press-release flag, and associated links."
+        ),
+        params=(
+            _RELEASE_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+        ),
+        examples=(
+            "fredq release --release-id 53",
+            "fredq release --release-id 10",
+        ),
+    ),
+    CommandSpec(
+        name="release-dates",
+        path="/fred/release/dates",
+        summary="List publication dates for one FRED release.",
+        description=(
+            "Return the dated publication records for the specified release, "
+            "ordered by date. Optionally include dates with no data."
+        ),
+        params=(
+            _RELEASE_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _SORT_ORDER_PARAM,
+            _INCLUDE_RELEASE_DATES_WITH_NO_DATA_PARAM,
+        ),
+        examples=(
+            "fredq release-dates --release-id 53 --limit 5",
+            "fredq release-dates --release-id 10 --sort-order desc",
+        ),
+    ),
+    CommandSpec(
+        name="release-series",
+        path="/fred/release/series",
+        summary="List series belonging to one FRED release.",
+        description=(
+            "Return the series records published under the specified release. "
+            "Supports tag filtering, attribute filtering, and sorting."
+        ),
+        params=(
+            _RELEASE_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_RELEASE_SERIES),
+            _SORT_ORDER_PARAM,
+            _FILTER_VARIABLE_SERIES_PARAM,
+            _FILTER_VALUE_PARAM,
+            _TAG_NAMES_PARAM,
+            _EXCLUDE_TAG_NAMES_PARAM,
+        ),
+        examples=(
+            "fredq release-series --release-id 53 --limit 5",
+            (
+                "fredq release-series --release-id 175 "
+                "--tag-names 'usa;annual' --limit 10"
+            ),
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="release-sources",
+        path="/fred/release/sources",
+        summary="List sources for one FRED release.",
+        description=(
+            "Return the source records that publish or maintain the data for "
+            "the specified release. Includes source ID, name, and link."
+        ),
+        params=(
+            _RELEASE_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+        ),
+        examples=(
+            "fredq release-sources --release-id 53",
+            "fredq release-sources --release-id 10",
+        ),
+    ),
+    CommandSpec(
+        name="release-tags",
+        path="/fred/release/tags",
+        summary="List tags for one FRED release.",
+        description=(
+            "Return tags associated with the series published under the "
+            "specified release. Supports group and text filtering."
+        ),
+        params=(
+            _RELEASE_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _TAG_NAMES_PARAM,
+            _TAG_GROUP_ID_PARAM,
+            ParamSpec(
+                name="search_text",
+                cli_name="search-text",
+                kind=ParamKind.STRING,
+                help="Full-text search string to filter tags.",
+                metavar="TEXT",
+            ),
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_RELEASE_TAGS),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq release-tags --release-id 53 --limit 10",
+            "fredq release-tags --release-id 175 --tag-group-id geo",
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="release-related-tags",
+        path="/fred/release/related_tags",
+        summary="List tags related to a release and existing tag filter.",
+        description=(
+            "Return tags related to series in the specified release that are "
+            "also tagged with the given tag names. Use to drill down into a "
+            "release tag hierarchy."
+        ),
+        params=(
+            _RELEASE_ID_PARAM,
+            ParamSpec(
+                name="tag_names",
+                cli_name="tag-names",
+                kind=ParamKind.CSV,
+                help=(
+                    "Semicolon-separated list of tags already applied "
+                    "(required). Order does not matter."
+                ),
+                required=True,
+                csv_separator=";",
+                metavar="TAGS",
+            ),
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _TAG_GROUP_ID_PARAM,
+            ParamSpec(
+                name="search_text",
+                cli_name="search-text",
+                kind=ParamKind.STRING,
+                help="Full-text search string to filter tags.",
+                metavar="TEXT",
+            ),
+            _EXCLUDE_TAG_NAMES_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_RELEASE_TAGS),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq release-related-tags --release-id 53 --tag-names usa",
+            (
+                "fredq release-related-tags --release-id 175 "
+                "--tag-names 'usa;annual' --limit 5"
+            ),
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="release-tables",
+        path="/fred/release/tables",
+        summary="Fetch the hierarchical data table for one FRED release.",
+        description=(
+            "Return the release's element tree — the hierarchical table of "
+            "categories, series, and observations used in FRED release reports. "
+            "The response is a nested structure keyed by element ID."
+        ),
+        params=(
+            _RELEASE_ID_PARAM,
+            ParamSpec(
+                name="element_id",
+                cli_name="element-id",
+                kind=ParamKind.INTEGER,
+                help=(
+                    "Specific element ID within the release table to retrieve. "
+                    "Omit to retrieve the full table."
+                ),
+                metavar="ID",
+            ),
+            ParamSpec(
+                name="include_observation_values",
+                cli_name="include-observation-values",
+                kind=ParamKind.BOOLEAN,
+                help=(
+                    "Include the latest observation value for each series "
+                    "element in the response (true/false)."
+                ),
+            ),
+            ParamSpec(
+                name="observation_date",
+                cli_name="observation-date",
+                kind=ParamKind.DATE,
+                help=(
+                    "Observation date (YYYY-MM-DD) to use when "
+                    "--include-observation-values is set."
+                ),
+                metavar="DATE",
+            ),
+        ),
+        examples=(
+            "fredq release-tables --release-id 53",
+            ("fredq release-tables --release-id 53 --include-observation-values"),
+        ),
+        notes=("The response is a hierarchical JSON tree, not a flat array.",),
     ),
 )
 

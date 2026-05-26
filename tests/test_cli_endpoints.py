@@ -338,3 +338,368 @@ def test_series_updates_invalid_filter_value_exits_2(
     )
     assert rc == EXIT_USAGE
     assert "unsupported value" in err or "national" in err
+
+
+# ---------------------------------------------------------------------------
+# Group 3 — Releases / calendar
+# ---------------------------------------------------------------------------
+
+
+def test_releases_happy_path(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Releases command returns raw FRED JSON body."""
+    body = '{"releases": [], "count": 0}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/fred/releases?limit=3{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        ["releases", "--limit", "3"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"releases"' in stdout
+
+
+def test_releases_invalid_order_by_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Releases command rejects an invalid --order-by value."""
+    rc, _, err = _run(
+        ["releases", "--order-by", "bad_field"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert "unsupported value" in err or "bad_field" in err
+
+
+def test_releases_dates_happy_path(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """releases-dates returns raw FRED JSON body."""
+    body = '{"release_dates": [], "count": 0}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/fred/releases/dates?limit=3{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        ["releases-dates", "--limit", "3"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"release_dates"' in stdout
+
+
+def test_releases_dates_include_no_data_flag(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """releases-dates sends include_release_dates_with_no_data=true when flag is set."""
+    body = '{"release_dates": []}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            f"{_BASE}/fred/releases/dates"
+            f"?include_release_dates_with_no_data=true{_KEY_SUFFIX}"
+        ),
+        text=body,
+    )
+    rc, _, _ = _run(
+        ["releases-dates", "--include-release-dates-with-no-data"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+
+
+def test_release_happy_path(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Release command returns raw FRED JSON body."""
+    body = '{"releases": [{"id": 53, "name": "Gross Domestic Product"}]}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/fred/release?release_id=53{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        ["release", "--release-id", "53"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"releases"' in stdout
+
+
+def test_release_dates_happy_path(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-dates returns raw FRED JSON body."""
+    body = '{"release_dates": [], "count": 0}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/fred/release/dates?release_id=53&limit=3{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        ["release-dates", "--release-id", "53", "--limit", "3"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"release_dates"' in stdout
+
+
+def test_release_dates_include_no_data_flag(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-dates sends include_release_dates_with_no_data=true when flag is set."""
+    body = '{"release_dates": []}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            f"{_BASE}/fred/release/dates"
+            f"?release_id=53&include_release_dates_with_no_data=true{_KEY_SUFFIX}"
+        ),
+        text=body,
+    )
+    rc, _, _ = _run(
+        [
+            "release-dates",
+            "--release-id",
+            "53",
+            "--include-release-dates-with-no-data",
+        ],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+
+
+def test_release_series_happy_path(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-series returns raw FRED JSON body."""
+    body = '{"seriess": [], "count": 0}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/fred/release/series?release_id=53&limit=3{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        ["release-series", "--release-id", "53", "--limit", "3"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"seriess"' in stdout
+
+
+def test_release_series_invalid_order_by_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-series rejects an invalid --order-by value."""
+    rc, _, err = _run(
+        ["release-series", "--release-id", "53", "--order-by", "bad_field"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert "unsupported value" in err or "bad_field" in err
+
+
+def test_release_sources_happy_path(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-sources returns raw FRED JSON body."""
+    body = '{"sources": [{"id": 1}]}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/fred/release/sources?release_id=53{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        ["release-sources", "--release-id", "53"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"sources"' in stdout
+
+
+def test_release_tags_happy_path(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-tags returns raw FRED JSON body."""
+    body = '{"tags": [], "count": 0}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/fred/release/tags?release_id=53&limit=3{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        ["release-tags", "--release-id", "53", "--limit", "3"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"tags"' in stdout
+
+
+def test_release_tags_invalid_tag_group_id_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-tags rejects an invalid --tag-group-id value."""
+    rc, _, err = _run(
+        ["release-tags", "--release-id", "53", "--tag-group-id", "invalid"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert "unsupported value" in err or "invalid" in err
+
+
+def test_release_related_tags_happy_path(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-related-tags returns raw FRED JSON body."""
+    body = '{"tags": [], "count": 0}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            f"{_BASE}/fred/release/related_tags"
+            f"?release_id=53&tag_names=usa&limit=3{_KEY_SUFFIX}"
+        ),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        [
+            "release-related-tags",
+            "--release-id",
+            "53",
+            "--tag-names",
+            "usa",
+            "--limit",
+            "3",
+        ],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"tags"' in stdout
+
+
+def test_release_related_tags_invalid_order_by_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-related-tags rejects an invalid --order-by value."""
+    rc, _, err = _run(
+        [
+            "release-related-tags",
+            "--release-id",
+            "53",
+            "--tag-names",
+            "usa",
+            "--order-by",
+            "bad_field",
+        ],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert "unsupported value" in err or "bad_field" in err
+
+
+def test_release_tables_happy_path(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-tables returns raw FRED JSON body."""
+    body = '{"elements": {}}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/fred/release/tables?release_id=53{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        ["release-tables", "--release-id", "53"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"elements"' in stdout
+
+
+def test_release_tables_include_observation_values_flag(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-tables sends include_observation_values=true when flag is set."""
+    body = '{"elements": {}}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            f"{_BASE}/fred/release/tables"
+            f"?release_id=53&include_observation_values=true{_KEY_SUFFIX}"
+        ),
+        text=body,
+    )
+    rc, _, _ = _run(
+        ["release-tables", "--release-id", "53", "--include-observation-values"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+
+
+def test_release_tables_element_id_integer_param(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-tables sends element_id as an integer query param."""
+    body = '{"elements": {}}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            f"{_BASE}/fred/release/tables?release_id=53&element_id=12886{_KEY_SUFFIX}"
+        ),
+        text=body,
+    )
+    rc, _, _ = _run(
+        ["release-tables", "--release-id", "53", "--element-id", "12886"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
