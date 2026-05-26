@@ -84,6 +84,33 @@ skip = ["__pycache__", ".venv", ".uv-cache", ".git", ".pytest_cache", ".tox"]
 include = ["src", "tests"]
 typeCheckingMode = "strict"
 
+[[tool.pyright.executionEnvironments]]
+root = "src/fredq/parquet_writer.py"
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownLambdaType = false
+reportUnknownParameterType = false
+reportMissingTypeStubs = false
+
+[[tool.pyright.executionEnvironments]]
+root = "tests/test_parquet_writer.py"
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownLambdaType = false
+reportUnknownParameterType = false
+reportMissingTypeStubs = false
+
+[[tool.pyright.executionEnvironments]]
+root = "tests/test_cli_parquet.py"
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportUnknownLambdaType = false
+reportUnknownParameterType = false
+reportMissingTypeStubs = false
+
 [tool.pytest.ini_options]
 pythonpath = "src"
 testpaths = ["tests"]

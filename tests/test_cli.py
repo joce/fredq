@@ -60,7 +60,10 @@ def test_main_series_command_prints_raw_body(
     """A successful series call prints the raw FRED JSON body to stdout."""
 
     monkeypatch.setenv("FRED_API_KEY", "secret")
-    monkeypatch.setenv("HOME", str(tmp_path))  # isolate key-file fallback
+    # Redirect Path.home() on every platform so the real ~/.fredq/api_key
+    # cannot leak into the test.
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
     httpx_mock.add_response(
         method="GET",
         url=(
@@ -87,6 +90,7 @@ def test_main_missing_key_errors_cleanly(
 
     monkeypatch.delenv("FRED_API_KEY", raising=False)
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
 
     rc = main(["series", "--series-id", "GNPCA"])
 

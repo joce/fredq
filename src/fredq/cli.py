@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import logging
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Final, Protocol
 
 from fredq import __version__
@@ -22,6 +24,11 @@ if TYPE_CHECKING:
 
 _HELP_WIDTH: Final[int] = 100
 _HELP_MAX_POSITION: Final[int] = 32
+
+# Commands that support Parquet output. The default JSON path stays in
+# effect everywhere else.
+_PARQUET_COMMANDS: Final[frozenset[str]] = frozenset({"series-observations"})
+_PARQUET_COMMANDS_HELP: Final[str] = ", ".join(sorted(_PARQUET_COMMANDS))
 
 
 class _FredClientProtocol(Protocol):
@@ -115,10 +122,66 @@ def _add_command_param(parser: argparse.ArgumentParser, param: ParamSpec) -> Non
     )
 
 
+def _add_parquet_output_options(parser: argparse.ArgumentParser) -> None:
+    """Register ``--format`` and ``--out`` on a Parquet-capable subparser."""
+
+    parser.add_argument(
+        "--format",
+        dest="output_format",
+        choices=("json", "parquet"),
+        default="json",
+        help=(
+            "Output format. Default writes the raw FRED JSON body to stdout. "
+            "Parquet parses the response into a typed table written to --out."
+        ),
+    )
+    parser.add_argument(
+        "--out",
+        dest="out_path",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help=(
+            "Destination file for the Parquet table. Required when "
+            "--format parquet; rejected otherwise."
+        ),
+    )
+
+
+def _add_parquet_negative_guards(parser: argparse.ArgumentParser) -> None:
+    """Register hidden ``--format`` / ``--out`` on a non-Parquet command.
+
+    Accepts the flags so argparse does not bail with the generic
+    ``unrecognized arguments`` message; the post-parse check in
+    :func:`_enforce_parquet_arg_pairing` then emits a directed error that
+    names the commands that DO support Parquet. Help output is suppressed
+    so unrelated commands' help pages stay clean.
+    """
+
+    parser.add_argument(
+        "--format",
+        dest="output_format",
+        default="json",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--out",
+        dest="out_path",
+        type=Path,
+        default=None,
+        help=argparse.SUPPRESS,
+    )
+    parser.set_defaults(_parquet_unsupported=True)
+
+
 def _set_command_parser(parser: argparse.ArgumentParser, command: CommandSpec) -> None:
     for param in command.params:
         _add_command_param(parser, param)
     parser.set_defaults(command_name=command.name)
+    if command.name in _PARQUET_COMMANDS:
+        _add_parquet_output_options(parser)
+    else:
+        _add_parquet_negative_guards(parser)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -166,6 +229,29 @@ def _collect_params(
     return collected
 
 
+def _enforce_parquet_arg_pairing(args: argparse.Namespace) -> str | None:
+    """Validate ``--format`` / ``--out`` pairing.
+
+    Returns:
+        str | None: An error message when the combination is invalid, or
+            ``None`` when it is valid.
+    """
+
+    fmt = getattr(args, "output_format", "json")
+    out_path = getattr(args, "out_path", None)
+    unsupported = getattr(args, "_parquet_unsupported", False)
+
+    if unsupported and (fmt == "parquet" or out_path is not None):
+        return (
+            f"--format parquet / --out is only supported on: {_PARQUET_COMMANDS_HELP}."
+        )
+    if fmt == "parquet" and out_path is None:
+        return "--format parquet requires --out PATH."
+    if fmt != "parquet" and out_path is not None:
+        return "--out is only valid with --format parquet."
+    return None
+
+
 async def _run_command(
     client: _FredClientProtocol,
     command: CommandSpec,
@@ -177,7 +263,43 @@ async def _run_command(
         await client.aclose()
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def _handle_parquet_output(
+    args: argparse.Namespace,
+    body: str,
+    params: dict[str, ParamValue],
+) -> None:
+    """Convert ``body`` to Parquet and write to ``args.out_path``.
+
+    Imports the parquet writer lazily so the JSON path never pays the
+    pyarrow import cost.
+    """
+
+    from fredq.parquet_writer import (  # noqa: PLC0415 - lazy import.
+        ObservationsContext,
+        write_observations_parquet,
+    )
+
+    context = ObservationsContext(
+        series_id=str(params.get("series_id", "")),
+        units=_optional_str(params.get("units")),
+        frequency=_optional_str(params.get("frequency")),
+        observation_start=_optional_str(params.get("observation_start")),
+        observation_end=_optional_str(params.get("observation_end")),
+        realtime_start=_optional_str(params.get("realtime_start")),
+        realtime_end=_optional_str(params.get("realtime_end")),
+    )
+    descriptor = write_observations_parquet(body, args.out_path, context)
+    sys.stdout.write(json.dumps(descriptor, separators=(",", ":")))
+    sys.stdout.write("\n")
+
+
+def _optional_str(value: object) -> str | None:
+    if value is None:
+        return None
+    return str(value)
+
+
+def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
     """Run the fredq CLI.
 
     Returns:
@@ -197,6 +319,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     command = COMMANDS_BY_NAME[command_name]
 
+    pairing_error = _enforce_parquet_arg_pairing(args)
+    if pairing_error is not None:
+        sys.stderr.write(f"{pairing_error}\n")
+        return 2
+
     try:
         api_key = resolve_api_key(explicit=args.api_key)
     except FredqError as exc:
@@ -215,6 +342,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     except FredqError as exc:
         sys.stderr.write(f"{exc}\n")
         return 1
+
+    if getattr(args, "output_format", "json") == "parquet":
+        try:
+            _handle_parquet_output(args, body, params)
+        except FredqError as exc:
+            sys.stderr.write(f"{exc}\n")
+            return 1
+        return 0
 
     sys.stdout.write(body)
     if not body.endswith("\n"):
