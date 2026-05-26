@@ -47,11 +47,11 @@ chmod 600 ~/.fredq/api_key
 fredq --help
 fredq <command> --help
 
+# Fetch series metadata
+fredq series --series-id GNPCA
+
 # Fetch a series' observations
 fredq series-observations --series-id GNPCA
-
-# Search for series
-fredq series-search --search-text "consumer price index"
 ```
 
 ## Output

@@ -151,12 +151,23 @@ def _extract_observations(envelope: dict[str, Any]) -> list[dict[str, Any]]:
     return [obs for obs in observations if isinstance(obs, dict)]
 
 
-def _parse_date(raw: str | None) -> date | None:
-    if raw is None:
+def _parse_date(raw: object) -> date | None:
+    """Parse a date string from an observation dict, returning None on failure.
+
+    The parameter is typed as ``object`` because ``obs.get("date")`` returns
+    ``Any`` and narrowing at the call site would add noise.  We isinstance-
+    check before calling ``date.fromisoformat`` so the type-checker is happy.
+
+    Returns:
+        date | None: Parsed date, or ``None`` if ``raw`` is not a valid date
+        string.
+    """
+
+    if not isinstance(raw, str):
         return None
     try:
         return date.fromisoformat(raw)
-    except (TypeError, ValueError):
+    except ValueError:
         return None
 
 

@@ -125,9 +125,10 @@ def _add_command_param(parser: argparse.ArgumentParser, param: ParamSpec) -> Non
             help=param.help,
         )
         return
-    if param.kind is ParamKind.BOOLEAN:
-        const = not param.default if isinstance(param.default, bool) else True
-        parser.add_argument(
+    if param.kind is ParamKind.BOOLEAN:  # pragma: no cover
+        # No FRED endpoint params use BOOLEAN yet; kept for future commands.
+        const = not param.default if isinstance(param.default, bool) else True  # pragma: no cover  # noqa: E501
+        parser.add_argument(  # pragma: no cover
             param.option,
             dest=param.name,
             required=param.required,
@@ -136,7 +137,7 @@ def _add_command_param(parser: argparse.ArgumentParser, param: ParamSpec) -> Non
             const=const,
             help=param.help,
         )
-        return
+        return  # pragma: no cover
     parser.add_argument(
         param.option,
         dest=param.name,
