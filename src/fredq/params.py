@@ -178,8 +178,7 @@ def parse_date(value: str) -> str:
         return datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
 
     message = (
-        f"expected YYYY-MM-DD date, ISO datetime, or Unix timestamp; "
-        f"got {value!r}"
+        f"expected YYYY-MM-DD date, ISO datetime, or Unix timestamp; got {value!r}"
     )
     raise ValueError(message)
 

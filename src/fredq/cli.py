@@ -127,7 +127,9 @@ def _add_command_param(parser: argparse.ArgumentParser, param: ParamSpec) -> Non
         return
     if param.kind is ParamKind.BOOLEAN:  # pragma: no cover
         # No FRED endpoint params use BOOLEAN yet; kept for future commands.
-        const = not param.default if isinstance(param.default, bool) else True  # pragma: no cover  # noqa: E501
+        const = (
+            not param.default if isinstance(param.default, bool) else True
+        )  # pragma: no cover
         parser.add_argument(  # pragma: no cover
             param.option,
             dest=param.name,
@@ -489,9 +491,7 @@ def main(
             os.environ.get("FREDQ_DISABLE_KEY_FILE", "").strip()
         )
         try:
-            api_key = resolve_api_key(
-                explicit=args.api_key, use_key_file=use_key_file
-            )
+            api_key = resolve_api_key(explicit=args.api_key, use_key_file=use_key_file)
         except FredqError as exc:
             err.write(f"{exc}\n")
             return 2
