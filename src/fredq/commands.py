@@ -552,6 +552,32 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
     CommandSpec(
+        name="series-vintagedates",
+        path="/fred/series/vintagedates",
+        summary="List vintage dates (revision dates) for one FRED series.",
+        description=(
+            "Return the dates in history when a series was revised or new data "
+            "values were released. Pair with "
+            "`series-observations --realtime-start <vintage>` for ALFRED "
+            "point-in-time analysis."
+        ),
+        params=(
+            _SERIES_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq series-vintagedates --series-id GNPCA",
+            (
+                "fredq series-vintagedates --series-id CPIAUCSL "
+                "--limit 5 --sort-order desc"
+            ),
+        ),
+    ),
+    CommandSpec(
         name="series-categories",
         path="/fred/series/categories",
         summary="List categories that contain a given series.",

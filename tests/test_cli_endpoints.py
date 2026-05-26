@@ -341,6 +341,45 @@ def test_series_updates_invalid_filter_value_exits_2(
 
 
 # ---------------------------------------------------------------------------
+# series-vintagedates
+# ---------------------------------------------------------------------------
+
+
+def test_series_vintagedates_happy_path(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """series-vintagedates returns raw FRED JSON body."""
+    body = '{"vintage_dates": ["1958-12-21", "1959-02-19"], "count": 2}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/fred/series/vintagedates?series_id=GNPCA&limit=5{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        ["series-vintagedates", "--series-id", "GNPCA", "--limit", "5"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"vintage_dates"' in stdout
+
+
+def test_series_vintagedates_missing_series_id_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """series-vintagedates exits 2 when --series-id is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(["series-vintagedates"], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE
+
+
+# ---------------------------------------------------------------------------
 # Group 3 — Releases / calendar
 # ---------------------------------------------------------------------------
 
