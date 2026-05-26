@@ -446,7 +446,9 @@ def main(
             os.environ.get("FREDQ_DISABLE_KEY_FILE", "").strip()
         )
         try:
-            api_key = resolve_api_key(explicit=args.api_key, use_key_file=use_key_file)
+            api_key = resolve_api_key(
+                explicit=args.api_key, use_key_file=use_key_file, stderr=err
+            )
         except FredqError as exc:
             err.write(f"{exc}\n")
             return 2

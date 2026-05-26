@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import os
 from typing import TYPE_CHECKING
 from unittest.mock import patch
@@ -139,7 +140,6 @@ def test_use_key_file_false_skips_file(
 def test_wide_mode_key_file_emits_warning(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """A key file with group/world read bits triggers a stderr warning."""
 
@@ -148,19 +148,19 @@ def test_wide_mode_key_file_emits_warning(
     key_file.write_text("mykey\n", encoding="utf-8")
     key_file.chmod(0o644)
 
-    key = resolve_api_key(key_path=key_file)
+    err = io.StringIO()
+    key = resolve_api_key(key_path=key_file, stderr=err)
 
     assert key == "mykey"
-    captured = capsys.readouterr()
-    assert "warning" in captured.err
-    assert "chmod 600" in captured.err
+    warning = err.getvalue()
+    assert "warning" in warning
+    assert "chmod 600" in warning
 
 
 @pytest.mark.skipif(os.name == "nt", reason="chmod not meaningful on Windows")
 def test_tight_mode_key_file_no_warning(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """A key file with mode 600 produces no warning."""
 
@@ -169,8 +169,29 @@ def test_tight_mode_key_file_no_warning(
     key_file.write_text("mykey\n", encoding="utf-8")
     key_file.chmod(0o600)
 
-    key = resolve_api_key(key_path=key_file)
+    err = io.StringIO()
+    key = resolve_api_key(key_path=key_file, stderr=err)
 
     assert key == "mykey"
-    captured = capsys.readouterr()
-    assert not captured.err
+    assert not err.getvalue()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="chmod not meaningful on Windows")
+def test_warning_captured_by_injected_stderr(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """resolve_api_key(stderr=io.StringIO()) captures the warning, not real stderr."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    key_file = tmp_path / "api_key"
+    key_file.write_text("mykey\n", encoding="utf-8")
+    key_file.chmod(0o644)
+
+    captured = io.StringIO()
+    key = resolve_api_key(key_path=key_file, stderr=captured)
+
+    assert key == "mykey"
+    # Warning must appear in the injected stream.
+    assert "warning" in captured.getvalue()
+    assert "chmod 600" in captured.getvalue()

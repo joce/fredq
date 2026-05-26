@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Final
+from typing import Final, TextIO
 
 from fredq.exceptions import FredApiKeyMissingError
 
@@ -24,14 +24,15 @@ def default_key_path() -> Path:
     return Path.home() / ".fredq" / "api_key"
 
 
-def _check_key_file_permissions(path: Path) -> None:
-    """Emit a one-line warning to stderr when ``path`` is world- or group-readable.
+def _check_key_file_permissions(path: Path, stderr: TextIO) -> None:
+    """Emit a one-line warning to ``stderr`` when ``path`` is world- or group-readable.
 
     Only runs on POSIX (``os.name != 'nt'``).  Windows ACL checks are
     too platform-specific and are skipped.
 
     Args:
         path: Path to the API key file.
+        stderr: Stream for the permission warning.
     """
 
     if os.name == "nt":
@@ -41,16 +42,16 @@ def _check_key_file_permissions(path: Path) -> None:
     except OSError:
         return
     if mode & _WIDE_MODE_MASK:
-        sys.stderr.write(
+        stderr.write(
             f"warning: {path} is readable by group or world; "
             "run `chmod 600` to restrict access.\n"
         )
 
 
-def _read_key_file(path: Path) -> str | None:
+def _read_key_file(path: Path, stderr: TextIO) -> str | None:
     if not path.exists():
         return None
-    _check_key_file_permissions(path)
+    _check_key_file_permissions(path, stderr)
     try:
         contents = path.read_text(encoding="utf-8").strip()
     except OSError:
@@ -67,6 +68,7 @@ def resolve_api_key(
     explicit: str | None = None,
     key_path: Path | None = None,
     use_key_file: bool = True,
+    stderr: TextIO | None = None,
 ) -> str:
     """Resolve the FRED API key.
 
@@ -82,6 +84,8 @@ def resolve_api_key(
             :func:`default_key_path`.
         use_key_file: When ``False``, skip the file fallback entirely.  Set
             by ``--no-key-file`` or ``FREDQ_DISABLE_KEY_FILE=1``.
+        stderr: Stream for the permission warning.  Defaults to
+            ``sys.stderr`` when ``None``.
 
     Returns:
         str: A non-empty FRED API key.
@@ -89,6 +93,8 @@ def resolve_api_key(
     Raises:
         FredApiKeyMissingError: If no key can be located by any mechanism.
     """
+
+    err = stderr if stderr is not None else sys.stderr
 
     if explicit:
         stripped = explicit.strip()
@@ -101,7 +107,7 @@ def resolve_api_key(
 
     if use_key_file:
         path = key_path or default_key_path()
-        from_file = _read_key_file(path)
+        from_file = _read_key_file(path, err)
         if from_file:
             return from_file
 
