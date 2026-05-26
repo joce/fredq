@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import TYPE_CHECKING, Any, Final, Literal
 
 import httpx
+from typing_extensions import override
 
 from fredq.exceptions import (
     FredClientUsageError,
@@ -20,6 +22,78 @@ if TYPE_CHECKING:
 # Public constant so commands.py and tests can reference the base URL without
 # importing the full class.  Moved from CommandSpec.base_url (B2).
 FRED_BASE_URL: Final[str] = "https://api.stlouisfed.org"
+
+_API_KEY_PATTERN: Final[str] = "api_key="
+_API_KEY_REDACTED: Final[str] = "api_key=[REDACTED]"
+_API_KEY_RE: Final[re.Pattern[str]] = re.compile(r"api_key=[^&\s\"']+")
+
+# Module-level guard: install the redact filter at most once so that creating
+# multiple FredClient instances does not stack duplicate filters on handlers.
+_redact_filter_installed: bool = False
+
+
+class _ApiKeyRedactFilter(logging.Filter):
+    """Logging filter that strips ``api_key=<value>`` from all log records.
+
+    Attached to *handlers* (not loggers) so that every record that reaches
+    a handler — regardless of which child logger emitted it — is scrubbed.
+    This survives httpx splitting its logging across child loggers in future
+    versions.
+    """
+
+    @override
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Redact the API key from the log record message and exception text.
+
+        Returns:
+            bool: Always ``True`` (the record is never suppressed).
+        """
+
+        message = record.getMessage()
+        if _API_KEY_PATTERN in message:
+            record.msg = _API_KEY_RE.sub(_API_KEY_REDACTED, message)
+            record.args = ()
+
+        # Also scrub exception text if present — a logger.exception() call
+        # could embed a URL (including the api_key param) in the traceback.
+        if record.exc_text and _API_KEY_PATTERN in record.exc_text:
+            record.exc_text = _API_KEY_RE.sub(_API_KEY_REDACTED, record.exc_text)
+
+        return True
+
+
+def _install_api_key_redact_filter() -> None:
+    """Attach :class:`_ApiKeyRedactFilter` to all handlers of relevant loggers.
+
+    Filters on *handlers* apply to every record that reaches the handler,
+    regardless of which logger originally emitted it.  This is more robust
+    than filtering the logger itself because it survives httpx adding child
+    loggers (e.g. ``httpx.client``) in future releases.
+
+    The function is idempotent: the module-level ``_redact_filter_installed``
+    flag prevents duplicate filters when multiple ``FredClient`` instances
+    are created.
+    """
+
+    global _redact_filter_installed  # noqa: PLW0603
+    if _redact_filter_installed:
+        return
+
+    flt = _ApiKeyRedactFilter()
+
+    # Attach to all handlers on the root logger and the httpx / httpcore
+    # loggers.  New handlers added after this call will not have the filter,
+    # but that is acceptable: the important case is the logging.basicConfig
+    # StreamHandler that is the common default.
+    for logger_name in ("", "httpx", "httpcore"):
+        logger = logging.getLogger(logger_name) if logger_name else logging.root
+        for handler in logger.handlers:
+            handler.addFilter(flt)
+        # Also attach to the logger itself as a belt-and-suspenders guard for
+        # handlers added later.
+        logger.addFilter(flt)
+
+    _redact_filter_installed = True
 
 
 class FredClient:
@@ -65,6 +139,7 @@ class FredClient:
             timeout=self._timeout,
         )
         self._logger = logging.getLogger(__name__)
+        _install_api_key_redact_filter()
 
     @staticmethod
     def _redact_url(url: httpx.URL) -> str:

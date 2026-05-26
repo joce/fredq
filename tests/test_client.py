@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import httpx
 import pytest
+from typing_extensions import override
 
-from fredq.client import FredClient
+from fredq.client import (
+    FredClient,
+    _ApiKeyRedactFilter,  # pyright: ignore[reportPrivateUsage]
+)
 from fredq.exceptions import (
     FredClientUsageError,
     FredRequestError,
@@ -184,3 +189,107 @@ async def test_fred_unavailable_error_message_is_safe(httpx_mock: HTTPXMock) -> 
     msg = str(exc_info.value)
     assert "super-secret" not in msg
     assert "api call: /fred/series" in msg
+
+
+# Item 1 — _ApiKeyRedactFilter tests
+
+
+def test_redact_filter_scrubs_child_logger_message() -> None:
+    """Filter on a handler scrubs api_key even when emitted by a child logger."""
+
+    # Create a handler with the filter and a child logger pointing at it.
+    stream_records: list[logging.LogRecord] = []
+
+    class _CapturingHandler(logging.Handler):
+        @override
+        def emit(self, record: logging.LogRecord) -> None:
+            stream_records.append(record)
+
+    handler = _CapturingHandler()
+    handler.addFilter(_ApiKeyRedactFilter())
+
+    child_logger = logging.getLogger("httpx.client")
+    child_logger.addHandler(handler)
+    child_logger.setLevel(logging.DEBUG)
+    child_logger.propagate = False
+
+    try:
+        child_logger.info(
+            "HTTP Request: GET https://api.stlouisfed.org/fred/series?series_id=GNPCA&api_key=secret&file_type=json"
+        )
+    finally:
+        child_logger.removeHandler(handler)
+        child_logger.propagate = True
+
+    assert len(stream_records) == 1
+    formatted = stream_records[0].getMessage()
+    assert "secret" not in formatted
+    assert "api_key=[REDACTED]" in formatted
+
+
+def test_redact_filter_scrubs_exception_text() -> None:
+    """Filter scrubs api_key that appears in exc_text (from logger.exception)."""
+
+    flt = _ApiKeyRedactFilter()
+
+    record = logging.LogRecord(
+        name="fredq.client",
+        level=logging.ERROR,
+        pathname="",
+        lineno=0,
+        msg="Request failed",
+        args=(),
+        exc_info=None,
+    )
+    # Simulate formatted exception text containing a URL with api_key.
+    record.exc_text = (
+        "Traceback (most recent call last):\n"
+        "  ...\n"
+        "httpx.HTTPStatusError: 400 for https://api.stlouisfed.org/fred/series?"
+        "series_id=GNPCA&api_key=topsecret&file_type=json"
+    )
+
+    flt.filter(record)
+
+    assert "topsecret" not in (record.exc_text or "")
+    assert "api_key=[REDACTED]" in (record.exc_text or "")
+
+
+def test_redact_filter_passes_through_records_without_api_key() -> None:
+    """Records without 'api_key=' in the message are passed through unchanged."""
+
+    flt = _ApiKeyRedactFilter()
+    record = logging.LogRecord(
+        name="httpx",
+        level=logging.DEBUG,
+        pathname="",
+        lineno=0,
+        msg="HTTP/1.1 200 OK",
+        args=(),
+        exc_info=None,
+    )
+
+    result = flt.filter(record)
+
+    assert result is True
+    assert record.getMessage() == "HTTP/1.1 200 OK"
+
+
+def test_both_reserved_keys_rejected_together() -> None:
+    """Passing both api_key and file_type raises and names both keys."""
+
+    import asyncio  # noqa: PLC0415
+
+    client = FredClient(api_key="secret")
+
+    async def _run() -> None:
+        try:
+            with pytest.raises(FredClientUsageError) as exc_info:
+                await client.get("/fred/series", {"file_type": "xml", "api_key": "foo"})
+            msg = str(exc_info.value)
+            assert "api_key" in msg
+            assert "file_type" in msg
+        finally:
+            await client.aclose()
+
+    asyncio.run(_run())
