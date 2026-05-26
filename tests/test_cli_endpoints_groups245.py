@@ -289,6 +289,23 @@ def test_category_related_tags_invalid_order_by_exits_2(
     assert "unsupported value" in err or "bad_field" in err
 
 
+def test_category_related_tags_missing_tag_names_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """category-related-tags exits 2 when --tag-names is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            ["category-related-tags", "--category-id", "32991"],
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert exc_info.value.code == EXIT_USAGE
+
+
 # ---------------------------------------------------------------------------
 # Group 4 — Tags
 # ---------------------------------------------------------------------------
@@ -356,6 +373,27 @@ def test_tags_invalid_order_by_exits_2(
     )
     assert rc == EXIT_USAGE
     assert "unsupported value" in err or "bad_field" in err
+
+
+def test_tags_tag_names_semicolon_url_encoded(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Tags sends tag_names with URL-encoded semicolons."""
+    body = '{"tags": [], "count": 0}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/fred/tags?tag_names=usa%3Bannual{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, stdout, _ = _run(
+        ["tags", "--tag-names", "usa;annual"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+    assert '"tags"' in stdout
 
 
 def test_related_tags_happy_path(

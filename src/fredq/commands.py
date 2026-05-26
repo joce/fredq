@@ -199,7 +199,7 @@ _ORDER_BY_SERIES_SEARCH: Final[tuple[str, ...]] = (
     "group_popularity",
 )
 
-_ORDER_BY_SERIES_TAGS: Final[tuple[str, ...]] = (
+_ORDER_BY_TAG_LIKE: Final[tuple[str, ...]] = (
     "series_count",
     "popularity",
     "created",
@@ -240,41 +240,14 @@ _ORDER_BY_RELEASE_SERIES: Final[tuple[str, ...]] = (
     "group_popularity",
 )
 
-_ORDER_BY_RELEASE_TAGS: Final[tuple[str, ...]] = (
-    "series_count",
-    "popularity",
-    "created",
-    "name",
-    "group_id",
-)
-
-# Tags endpoints share the same order_by set as release-tags / series-tags.
-_ORDER_BY_TAGS: Final[tuple[str, ...]] = (
-    "series_count",
-    "popularity",
-    "created",
-    "name",
-    "group_id",
-)
+# release-tags / series-tags / category-tags / global tags all use the same set.
+# (named _ORDER_BY_TAG_LIKE — canonical; kept as aliases for removed constants)
 
 # category-series shares the same order_by set as release-series.
 _ORDER_BY_CATEGORY_SERIES: Final[tuple[str, ...]] = _ORDER_BY_RELEASE_SERIES
 
-# tags-series shares the same order_by set as series-search (minus search_rank).
-_ORDER_BY_TAGS_SERIES: Final[tuple[str, ...]] = (
-    "series_id",
-    "title",
-    "units",
-    "frequency",
-    "seasonal_adjustment",
-    "realtime_start",
-    "realtime_end",
-    "last_updated",
-    "observation_start",
-    "observation_end",
-    "popularity",
-    "group_popularity",
-)
+# tags-series shares the same order_by set as release-series (minus search_rank).
+_ORDER_BY_TAGS_SERIES: Final[tuple[str, ...]] = _ORDER_BY_RELEASE_SERIES
 
 _CATEGORY_ID_PARAM: Final[ParamSpec] = ParamSpec(
     name="category_id",
@@ -318,6 +291,27 @@ _INCLUDE_RELEASE_DATES_WITH_NO_DATA_PARAM: Final[ParamSpec] = ParamSpec(
     cli_name="include-release-dates-with-no-data",
     kind=ParamKind.BOOLEAN,
     help="Include release dates that have no data (true/false).",
+)
+
+_SEARCH_TEXT_PARAM: Final[ParamSpec] = ParamSpec(
+    name="search_text",
+    cli_name="search-text",
+    kind=ParamKind.STRING,
+    help="Full-text search string to filter results by name.",
+    metavar="TEXT",
+)
+
+_TAG_NAMES_REQUIRED_PARAM: Final[ParamSpec] = ParamSpec(
+    name="tag_names",
+    cli_name="tag-names",
+    kind=ParamKind.CSV,
+    help=(
+        "Semicolon-separated list of tags already applied "
+        "(required). Order does not matter."
+    ),
+    required=True,
+    csv_separator=";",
+    metavar="TAGS",
 )
 
 
@@ -487,7 +481,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _TAG_SEARCH_TEXT_PARAM,
             _LIMIT_PARAM,
             _OFFSET_PARAM,
-            _order_by_param(_ORDER_BY_SERIES_TAGS),
+            _order_by_param(_ORDER_BY_TAG_LIKE),
             _SORT_ORDER_PARAM,
         ),
         examples=(
@@ -517,18 +511,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 required=True,
                 metavar="TEXT",
             ),
-            ParamSpec(
-                name="tag_names",
-                cli_name="tag-names",
-                kind=ParamKind.CSV,
-                help=(
-                    "Semicolon-separated list of tags already applied "
-                    "(required). Order does not matter."
-                ),
-                required=True,
-                csv_separator=";",
-                metavar="TAGS",
-            ),
+            _TAG_NAMES_REQUIRED_PARAM,
             _REALTIME_START_PARAM,
             _REALTIME_END_PARAM,
             _TAG_GROUP_ID_PARAM,
@@ -536,7 +519,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _EXCLUDE_TAG_NAMES_PARAM,
             _LIMIT_PARAM,
             _OFFSET_PARAM,
-            _order_by_param(_ORDER_BY_SERIES_TAGS),
+            _order_by_param(_ORDER_BY_TAG_LIKE),
             _SORT_ORDER_PARAM,
         ),
         examples=(
@@ -607,7 +590,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SERIES_ID_PARAM,
             _REALTIME_START_PARAM,
             _REALTIME_END_PARAM,
-            _order_by_param(_ORDER_BY_SERIES_TAGS),
+            _order_by_param(_ORDER_BY_TAG_LIKE),
             _SORT_ORDER_PARAM,
         ),
         examples=(
@@ -687,6 +670,151 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ("start_time and end_time use FRED's YYYYMMDDHhmm format, not YYYY-MM-DD."),
         ),
     ),
+    # ------------------------------------------------------------------
+    # Group 2 — Category browse (6 endpoints)
+    # ------------------------------------------------------------------
+    CommandSpec(
+        name="category",
+        path="/fred/category",
+        summary="Show metadata for one FRED category.",
+        description=(
+            "Return the category record for the given category ID, including "
+            "the category name and parent category ID."
+        ),
+        params=(_CATEGORY_ID_PARAM,),
+        examples=(
+            "fredq category --category-id 0",
+            "fredq category --category-id 32991",
+        ),
+        notes=("The root category (ID 0) is the top of the FRED hierarchy.",),
+    ),
+    CommandSpec(
+        name="category-children",
+        path="/fred/category/children",
+        summary="List child categories of a FRED category.",
+        description=(
+            "Return the direct child categories of the given category. "
+            "Each record includes the child category ID, name, and parent ID."
+        ),
+        params=(
+            _CATEGORY_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+        ),
+        examples=(
+            "fredq category-children --category-id 0",
+            "fredq category-children --category-id 32991",
+        ),
+    ),
+    CommandSpec(
+        name="category-related",
+        path="/fred/category/related",
+        summary="List categories related to a given FRED category.",
+        description=(
+            "Return categories that FRED has tagged as related to the specified "
+            "category. Related categories are editorially linked, not strictly "
+            "hierarchical."
+        ),
+        params=(
+            _CATEGORY_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+        ),
+        examples=(
+            "fredq category-related --category-id 32991",
+            "fredq category-related --category-id 106",
+        ),
+    ),
+    CommandSpec(
+        name="category-series",
+        path="/fred/category/series",
+        summary="List series belonging to one FRED category.",
+        description=(
+            "Return the series records published under the specified category. "
+            "Supports tag filtering, attribute filtering, and sorting."
+        ),
+        params=(
+            _CATEGORY_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_CATEGORY_SERIES),
+            _SORT_ORDER_PARAM,
+            _FILTER_VARIABLE_SERIES_PARAM,
+            _FILTER_VALUE_PARAM,
+            _TAG_NAMES_PARAM,
+            _EXCLUDE_TAG_NAMES_PARAM,
+        ),
+        examples=(
+            "fredq category-series --category-id 32991 --limit 5",
+            (
+                "fredq category-series --category-id 106 "
+                "--tag-names 'usa;annual' --limit 10"
+            ),
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="category-tags",
+        path="/fred/category/tags",
+        summary="List tags for series in one FRED category.",
+        description=(
+            "Return tags associated with series published under the specified "
+            "category. Supports group and text filtering."
+        ),
+        params=(
+            _CATEGORY_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _TAG_NAMES_PARAM,
+            _TAG_GROUP_ID_PARAM,
+            _SEARCH_TEXT_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_TAG_LIKE),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq category-tags --category-id 32991 --limit 10",
+            "fredq category-tags --category-id 106 --tag-group-id geo",
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="category-related-tags",
+        path="/fred/category/related_tags",
+        summary="List tags related to a category and existing tag filter.",
+        description=(
+            "Return tags related to series in the specified category that are "
+            "also tagged with the given tag names. Use to drill down into a "
+            "category tag hierarchy."
+        ),
+        params=(
+            _CATEGORY_ID_PARAM,
+            _TAG_NAMES_REQUIRED_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _TAG_GROUP_ID_PARAM,
+            _SEARCH_TEXT_PARAM,
+            _EXCLUDE_TAG_NAMES_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_TAG_LIKE),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq category-related-tags --category-id 32991 --tag-names usa",
+            (
+                "fredq category-related-tags --category-id 32991 "
+                "--tag-names 'usa;annual' --limit 5"
+            ),
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    # ------------------------------------------------------------------
+    # Group 3 — Releases / calendar (9 endpoints)
+    # ------------------------------------------------------------------
     CommandSpec(
         name="releases",
         path="/fred/releases",
@@ -839,16 +967,10 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
             _TAG_NAMES_PARAM,
             _TAG_GROUP_ID_PARAM,
-            ParamSpec(
-                name="search_text",
-                cli_name="search-text",
-                kind=ParamKind.STRING,
-                help="Full-text search string to filter tags.",
-                metavar="TEXT",
-            ),
+            _SEARCH_TEXT_PARAM,
             _LIMIT_PARAM,
             _OFFSET_PARAM,
-            _order_by_param(_ORDER_BY_RELEASE_TAGS),
+            _order_by_param(_ORDER_BY_TAG_LIKE),
             _SORT_ORDER_PARAM,
         ),
         examples=(
@@ -868,32 +990,15 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         params=(
             _RELEASE_ID_PARAM,
-            ParamSpec(
-                name="tag_names",
-                cli_name="tag-names",
-                kind=ParamKind.CSV,
-                help=(
-                    "Semicolon-separated list of tags already applied "
-                    "(required). Order does not matter."
-                ),
-                required=True,
-                csv_separator=";",
-                metavar="TAGS",
-            ),
+            _TAG_NAMES_REQUIRED_PARAM,
             _REALTIME_START_PARAM,
             _REALTIME_END_PARAM,
             _TAG_GROUP_ID_PARAM,
-            ParamSpec(
-                name="search_text",
-                cli_name="search-text",
-                kind=ParamKind.STRING,
-                help="Full-text search string to filter tags.",
-                metavar="TEXT",
-            ),
+            _SEARCH_TEXT_PARAM,
             _EXCLUDE_TAG_NAMES_PARAM,
             _LIMIT_PARAM,
             _OFFSET_PARAM,
-            _order_by_param(_ORDER_BY_RELEASE_TAGS),
+            _order_by_param(_ORDER_BY_TAG_LIKE),
             _SORT_ORDER_PARAM,
         ),
         examples=(
@@ -953,260 +1058,8 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
         notes=("The response is a hierarchical JSON tree, not a flat array.",),
     ),
     # ------------------------------------------------------------------
-    # Group 2 — Category browse (6 endpoints)
-    # ------------------------------------------------------------------
-    CommandSpec(
-        name="category",
-        path="/fred/category",
-        summary="Show metadata for one FRED category.",
-        description=(
-            "Return the category record for the given category ID, including "
-            "the category name and parent category ID."
-        ),
-        params=(
-            ParamSpec(
-                name="category_id",
-                cli_name="category-id",
-                kind=ParamKind.INTEGER,
-                help=(
-                    "FRED category identifier (e.g. 0 for root, "
-                    "32991 for Money & Banking)."
-                ),
-                required=True,
-                metavar="ID",
-            ),
-        ),
-        examples=(
-            "fredq category --category-id 0",
-            "fredq category --category-id 32991",
-        ),
-        notes=("The root category (ID 0) is the top of the FRED hierarchy.",),
-    ),
-    CommandSpec(
-        name="category-children",
-        path="/fred/category/children",
-        summary="List child categories of a FRED category.",
-        description=(
-            "Return the direct child categories of the given category. "
-            "Each record includes the child category ID, name, and parent ID."
-        ),
-        params=(
-            _CATEGORY_ID_PARAM,
-            _REALTIME_START_PARAM,
-            _REALTIME_END_PARAM,
-        ),
-        examples=(
-            "fredq category-children --category-id 0",
-            "fredq category-children --category-id 32991",
-        ),
-    ),
-    CommandSpec(
-        name="category-related",
-        path="/fred/category/related",
-        summary="List categories related to a given FRED category.",
-        description=(
-            "Return categories that FRED has tagged as related to the specified "
-            "category. Related categories are editorially linked, not strictly "
-            "hierarchical."
-        ),
-        params=(
-            _CATEGORY_ID_PARAM,
-            _REALTIME_START_PARAM,
-            _REALTIME_END_PARAM,
-        ),
-        examples=(
-            "fredq category-related --category-id 32991",
-            "fredq category-related --category-id 106",
-        ),
-    ),
-    CommandSpec(
-        name="category-series",
-        path="/fred/category/series",
-        summary="List series belonging to one FRED category.",
-        description=(
-            "Return the series records published under the specified category. "
-            "Supports tag filtering, attribute filtering, and sorting."
-        ),
-        params=(
-            _CATEGORY_ID_PARAM,
-            _REALTIME_START_PARAM,
-            _REALTIME_END_PARAM,
-            _LIMIT_PARAM,
-            _OFFSET_PARAM,
-            _order_by_param(_ORDER_BY_CATEGORY_SERIES),
-            _SORT_ORDER_PARAM,
-            _FILTER_VARIABLE_SERIES_PARAM,
-            _FILTER_VALUE_PARAM,
-            _TAG_NAMES_PARAM,
-            _EXCLUDE_TAG_NAMES_PARAM,
-        ),
-        examples=(
-            "fredq category-series --category-id 32991 --limit 5",
-            (
-                "fredq category-series --category-id 106 "
-                "--tag-names 'usa;annual' --limit 10"
-            ),
-        ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
-    ),
-    CommandSpec(
-        name="category-tags",
-        path="/fred/category/tags",
-        summary="List tags for series in one FRED category.",
-        description=(
-            "Return tags associated with series published under the specified "
-            "category. Supports group and text filtering."
-        ),
-        params=(
-            _CATEGORY_ID_PARAM,
-            _REALTIME_START_PARAM,
-            _REALTIME_END_PARAM,
-            _TAG_NAMES_PARAM,
-            _TAG_GROUP_ID_PARAM,
-            ParamSpec(
-                name="search_text",
-                cli_name="search-text",
-                kind=ParamKind.STRING,
-                help="Full-text search string to filter tags.",
-                metavar="TEXT",
-            ),
-            _LIMIT_PARAM,
-            _OFFSET_PARAM,
-            _order_by_param(_ORDER_BY_TAGS),
-            _SORT_ORDER_PARAM,
-        ),
-        examples=(
-            "fredq category-tags --category-id 32991 --limit 10",
-            "fredq category-tags --category-id 106 --tag-group-id geo",
-        ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
-    ),
-    CommandSpec(
-        name="category-related-tags",
-        path="/fred/category/related_tags",
-        summary="List tags related to a category and existing tag filter.",
-        description=(
-            "Return tags related to series in the specified category that are "
-            "also tagged with the given tag names. Use to drill down into a "
-            "category tag hierarchy."
-        ),
-        params=(
-            _CATEGORY_ID_PARAM,
-            ParamSpec(
-                name="tag_names",
-                cli_name="tag-names",
-                kind=ParamKind.CSV,
-                help=(
-                    "Semicolon-separated list of tags already applied "
-                    "(required). Order does not matter."
-                ),
-                required=True,
-                csv_separator=";",
-                metavar="TAGS",
-            ),
-            _REALTIME_START_PARAM,
-            _REALTIME_END_PARAM,
-            _TAG_GROUP_ID_PARAM,
-            ParamSpec(
-                name="search_text",
-                cli_name="search-text",
-                kind=ParamKind.STRING,
-                help="Full-text search string to filter tags.",
-                metavar="TEXT",
-            ),
-            _EXCLUDE_TAG_NAMES_PARAM,
-            _LIMIT_PARAM,
-            _OFFSET_PARAM,
-            _order_by_param(_ORDER_BY_TAGS),
-            _SORT_ORDER_PARAM,
-        ),
-        examples=(
-            "fredq category-related-tags --category-id 32991 --tag-names usa",
-            (
-                "fredq category-related-tags --category-id 32991 "
-                "--tag-names 'usa;annual' --limit 5"
-            ),
-        ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
-    ),
-    # ------------------------------------------------------------------
     # Group 4 — Tags (3 endpoints)
     # ------------------------------------------------------------------
-    CommandSpec(
-        name="tags",
-        path="/fred/tags",
-        summary="List all FRED tags.",
-        description=(
-            "Return the full catalog of FRED tags. Each record includes the "
-            "tag name, group ID, notes, creation date, and series count."
-        ),
-        params=(
-            _REALTIME_START_PARAM,
-            _REALTIME_END_PARAM,
-            _TAG_NAMES_PARAM,
-            _TAG_GROUP_ID_PARAM,
-            ParamSpec(
-                name="search_text",
-                cli_name="search-text",
-                kind=ParamKind.STRING,
-                help="Full-text search string to filter tags by name.",
-                metavar="TEXT",
-            ),
-            _LIMIT_PARAM,
-            _OFFSET_PARAM,
-            _order_by_param(_ORDER_BY_TAGS),
-            _SORT_ORDER_PARAM,
-        ),
-        examples=(
-            "fredq tags --limit 10",
-            "fredq tags --tag-group-id geo --order-by name --sort-order asc",
-        ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
-    ),
-    CommandSpec(
-        name="related-tags",
-        path="/fred/related_tags",
-        summary="List tags related to an existing tag filter.",
-        description=(
-            "Return tags that appear alongside the specified tag names across "
-            "FRED series. Use to discover related tags when narrowing a series "
-            "search."
-        ),
-        params=(
-            ParamSpec(
-                name="tag_names",
-                cli_name="tag-names",
-                kind=ParamKind.CSV,
-                help=(
-                    "Semicolon-separated list of tags already applied "
-                    "(required). Order does not matter."
-                ),
-                required=True,
-                csv_separator=";",
-                metavar="TAGS",
-            ),
-            _REALTIME_START_PARAM,
-            _REALTIME_END_PARAM,
-            _TAG_GROUP_ID_PARAM,
-            ParamSpec(
-                name="search_text",
-                cli_name="search-text",
-                kind=ParamKind.STRING,
-                help="Full-text search string to filter tags by name.",
-                metavar="TEXT",
-            ),
-            _EXCLUDE_TAG_NAMES_PARAM,
-            _LIMIT_PARAM,
-            _OFFSET_PARAM,
-            _order_by_param(_ORDER_BY_TAGS),
-            _SORT_ORDER_PARAM,
-        ),
-        examples=(
-            "fredq related-tags --tag-names usa --limit 10",
-            "fredq related-tags --tag-names 'usa;annual' --limit 5",
-        ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
-    ),
     CommandSpec(
         name="tags-series",
         path="/fred/tags/series",
@@ -1228,6 +1081,58 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
         examples=(
             "fredq tags-series --tag-names usa --limit 5",
             "fredq tags-series --tag-names 'usa;annual' --limit 3",
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="tags",
+        path="/fred/tags",
+        summary="List all FRED tags.",
+        description=(
+            "Return the full catalog of FRED tags. Each record includes the "
+            "tag name, group ID, notes, creation date, and series count."
+        ),
+        params=(
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _TAG_NAMES_PARAM,
+            _TAG_GROUP_ID_PARAM,
+            _SEARCH_TEXT_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_TAG_LIKE),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq tags --limit 10",
+            "fredq tags --tag-group-id geo --order-by name --sort-order asc",
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="related-tags",
+        path="/fred/related_tags",
+        summary="List tags related to an existing tag filter.",
+        description=(
+            "Return tags that appear alongside the specified tag names across "
+            "FRED series. Use to discover related tags when narrowing a series "
+            "search."
+        ),
+        params=(
+            _TAG_NAMES_REQUIRED_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _TAG_GROUP_ID_PARAM,
+            _SEARCH_TEXT_PARAM,
+            _EXCLUDE_TAG_NAMES_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_TAG_LIKE),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq related-tags --tag-names usa --limit 10",
+            "fredq related-tags --tag-names 'usa;annual' --limit 5",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
