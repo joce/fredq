@@ -48,6 +48,10 @@ class CommandSpec:
         return f"{FRED_BASE_URL}{self.path}"
 
 
+# ---------------------------------------------------------------------------
+# Shared parameter constants — define once, reuse via tuple composition.
+# ---------------------------------------------------------------------------
+
 _SERIES_ID_PARAM: Final[ParamSpec] = ParamSpec(
     name="series_id",
     cli_name="series-id",
@@ -57,7 +61,6 @@ _SERIES_ID_PARAM: Final[ParamSpec] = ParamSpec(
     metavar="ID",
 )
 
-
 _REALTIME_START_PARAM: Final[ParamSpec] = ParamSpec(
     name="realtime_start",
     cli_name="realtime-start",
@@ -66,13 +69,142 @@ _REALTIME_START_PARAM: Final[ParamSpec] = ParamSpec(
     metavar="DATE",
 )
 
-
 _REALTIME_END_PARAM: Final[ParamSpec] = ParamSpec(
     name="realtime_end",
     cli_name="realtime-end",
     kind=ParamKind.DATE,
     help="ALFRED realtime end date (YYYY-MM-DD). Defaults to today.",
     metavar="DATE",
+)
+
+_LIMIT_PARAM: Final[ParamSpec] = ParamSpec(
+    name="limit",
+    cli_name="limit",
+    kind=ParamKind.INTEGER,
+    help="Maximum number of results to return (FRED max: 1000).",
+    metavar="N",
+)
+
+_OFFSET_PARAM: Final[ParamSpec] = ParamSpec(
+    name="offset",
+    cli_name="offset",
+    kind=ParamKind.INTEGER,
+    help="Number of results to skip for pagination.",
+    metavar="N",
+)
+
+_SORT_ORDER_PARAM: Final[ParamSpec] = ParamSpec(
+    name="sort_order",
+    cli_name="sort-order",
+    kind=ParamKind.STRING,
+    help="Result order: asc or desc.",
+    allowed_values=("asc", "desc"),
+    metavar="ORDER",
+)
+
+_TAG_NAMES_PARAM: Final[ParamSpec] = ParamSpec(
+    name="tag_names",
+    cli_name="tag-names",
+    kind=ParamKind.CSV,
+    help=(
+        "Semicolon-separated list of tag names to filter by "
+        "(e.g. 'usa;annual'). Order does not matter."
+    ),
+    csv_separator=";",
+    metavar="TAGS",
+)
+
+_EXCLUDE_TAG_NAMES_PARAM: Final[ParamSpec] = ParamSpec(
+    name="exclude_tag_names",
+    cli_name="exclude-tag-names",
+    kind=ParamKind.CSV,
+    help="Semicolon-separated list of tag names to exclude.",
+    csv_separator=";",
+    metavar="TAGS",
+)
+
+_TAG_GROUP_ID_PARAM: Final[ParamSpec] = ParamSpec(
+    name="tag_group_id",
+    cli_name="tag-group-id",
+    kind=ParamKind.STRING,
+    help=(
+        "Filter tags by group: freq (frequency), gen (general), "
+        "geo (geography), geot (geography type), rls (release), "
+        "seas (seasonal adjustment), src (source)."
+    ),
+    allowed_values=("freq", "gen", "geo", "geot", "rls", "seas", "src"),
+    metavar="GROUP",
+)
+
+_TAG_SEARCH_TEXT_PARAM: Final[ParamSpec] = ParamSpec(
+    name="tag_search_text",
+    cli_name="tag-search-text",
+    kind=ParamKind.STRING,
+    help="Full-text search string to filter tags by name.",
+    metavar="TEXT",
+)
+
+_FILTER_VARIABLE_SERIES_PARAM: Final[ParamSpec] = ParamSpec(
+    name="filter_variable",
+    cli_name="filter-variable",
+    kind=ParamKind.STRING,
+    help=("Attribute to filter series by: frequency, units, or seasonal_adjustment."),
+    allowed_values=("frequency", "units", "seasonal_adjustment"),
+    metavar="VAR",
+)
+
+_FILTER_VALUE_PARAM: Final[ParamSpec] = ParamSpec(
+    name="filter_value",
+    cli_name="filter-value",
+    kind=ParamKind.STRING,
+    help="Value to match against --filter-variable.",
+    metavar="VAL",
+)
+
+
+def _order_by_param(allowed: tuple[str, ...]) -> ParamSpec:
+    """Build an order_by ParamSpec with endpoint-specific allowed values.
+
+    Returns:
+        ParamSpec: Configured order_by parameter spec.
+    """
+
+    return ParamSpec(
+        name="order_by",
+        cli_name="order-by",
+        kind=ParamKind.STRING,
+        help=f"Field to sort results by: {', '.join(allowed)}.",
+        allowed_values=allowed,
+        metavar="FIELD",
+    )
+
+
+# ---------------------------------------------------------------------------
+# order_by allowed-value sets per endpoint group
+# ---------------------------------------------------------------------------
+
+_ORDER_BY_SERIES_SEARCH: Final[tuple[str, ...]] = (
+    "search_rank",
+    "series_id",
+    "title",
+    "units",
+    "frequency",
+    "seasonal_adjustment",
+    "realtime_start",
+    "realtime_end",
+    "last_updated",
+    "observation_start",
+    "observation_end",
+    "popularity",
+    "group_popularity",
+)
+
+_ORDER_BY_SERIES_TAGS: Final[tuple[str, ...]] = (
+    "series_count",
+    "popularity",
+    "created",
+    "name",
+    "group_id",
 )
 
 
@@ -168,6 +300,252 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 "Returns the full FRED envelope including count/offset/limit; "
                 "the observations array lives under the 'observations' key."
             ),
+        ),
+    ),
+    CommandSpec(
+        name="series-search",
+        path="/fred/series/search",
+        summary="Search FRED series by keyword.",
+        description=(
+            "Return series records whose title, notes, or series ID match the "
+            "given search text. Supports full-text and series-ID search modes, "
+            "result filtering by frequency/units/seasonal adjustment, and "
+            "tag filtering."
+        ),
+        params=(
+            ParamSpec(
+                name="search_text",
+                cli_name="search-text",
+                kind=ParamKind.STRING,
+                help="Search string to match against series titles and notes.",
+                required=True,
+                metavar="TEXT",
+            ),
+            ParamSpec(
+                name="search_type",
+                cli_name="search-type",
+                kind=ParamKind.STRING,
+                help=(
+                    "Search mode: full_text (default) matches title/notes; "
+                    "series_id matches the series identifier."
+                ),
+                allowed_values=("full_text", "series_id"),
+                metavar="TYPE",
+            ),
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_SERIES_SEARCH),
+            _SORT_ORDER_PARAM,
+            _FILTER_VARIABLE_SERIES_PARAM,
+            _FILTER_VALUE_PARAM,
+            _TAG_NAMES_PARAM,
+            _EXCLUDE_TAG_NAMES_PARAM,
+        ),
+        examples=(
+            "fredq series-search --search-text 'consumer price index' --limit 5",
+            ("fredq series-search --search-text UNRATE --search-type series_id"),
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="series-search-tags",
+        path="/fred/series/search/tags",
+        summary="List tags for a series full-text search.",
+        description=(
+            "Return the tags associated with series matching the given full-text "
+            "search string. Useful for discovering tags to use with "
+            "series-search-related-tags."
+        ),
+        params=(
+            ParamSpec(
+                name="series_search_text",
+                cli_name="series-search-text",
+                kind=ParamKind.STRING,
+                help="Full-text search string used to select the series set.",
+                required=True,
+                metavar="TEXT",
+            ),
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _TAG_NAMES_PARAM,
+            _TAG_GROUP_ID_PARAM,
+            _TAG_SEARCH_TEXT_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_SERIES_TAGS),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq series-search-tags --series-search-text monetary --limit 5",
+            (
+                "fredq series-search-tags --series-search-text inflation "
+                "--tag-group-id geo"
+            ),
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="series-search-related-tags",
+        path="/fred/series/search/related_tags",
+        summary="List tags related to a search and existing tag filter.",
+        description=(
+            "Return tags related to series matching the search text and already "
+            "filtered by the given tag names. Use to drill down into a tag "
+            "hierarchy when narrowing series searches."
+        ),
+        params=(
+            ParamSpec(
+                name="series_search_text",
+                cli_name="series-search-text",
+                kind=ParamKind.STRING,
+                help="Full-text search string used to select the series set.",
+                required=True,
+                metavar="TEXT",
+            ),
+            ParamSpec(
+                name="tag_names",
+                cli_name="tag-names",
+                kind=ParamKind.CSV,
+                help=(
+                    "Semicolon-separated list of tags already applied "
+                    "(required). Order does not matter."
+                ),
+                required=True,
+                csv_separator=";",
+                metavar="TAGS",
+            ),
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _TAG_GROUP_ID_PARAM,
+            _TAG_SEARCH_TEXT_PARAM,
+            _EXCLUDE_TAG_NAMES_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_SERIES_TAGS),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            (
+                "fredq series-search-related-tags "
+                "--series-search-text monetary --tag-names usa"
+            ),
+            (
+                "fredq series-search-related-tags "
+                "--series-search-text inflation --tag-names 'usa;annual' --limit 5"
+            ),
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="series-categories",
+        path="/fred/series/categories",
+        summary="List categories that contain a given series.",
+        description=(
+            "Return the FRED categories that the specified series belongs to. "
+            "Each category record includes its ID, name, and parent ID."
+        ),
+        params=(
+            _SERIES_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+        ),
+        examples=(
+            "fredq series-categories --series-id GNPCA",
+            "fredq series-categories --series-id CPIAUCSL",
+        ),
+    ),
+    CommandSpec(
+        name="series-tags",
+        path="/fred/series/tags",
+        summary="List tags assigned to a FRED series.",
+        description=(
+            "Return the tags attached to the specified series. Each tag record "
+            "includes name, group ID, notes, creation date, and series count."
+        ),
+        params=(
+            _SERIES_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _order_by_param(_ORDER_BY_SERIES_TAGS),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq series-tags --series-id GNPCA",
+            "fredq series-tags --series-id FEDFUNDS --order-by popularity",
+        ),
+    ),
+    CommandSpec(
+        name="series-release",
+        path="/fred/series/release",
+        summary="Show the release that a FRED series belongs to.",
+        description=(
+            "Return the release record associated with the specified series, "
+            "including release ID, name, and press-release flag."
+        ),
+        params=(
+            _SERIES_ID_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+        ),
+        examples=(
+            "fredq series-release --series-id GNPCA",
+            "fredq series-release --series-id CPIAUCSL",
+        ),
+    ),
+    CommandSpec(
+        name="series-updates",
+        path="/fred/series/updates",
+        summary="List recently updated FRED series.",
+        description=(
+            "Return series ordered by their last-updated timestamp, newest "
+            "first. Supports macro/regional filtering and a time-window filter "
+            "for intraday polling."
+        ),
+        params=(
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            ParamSpec(
+                name="filter_value",
+                cli_name="filter-value",
+                kind=ParamKind.STRING,
+                help=(
+                    "Limit results to a data domain: macro, regional, or all "
+                    "(default: all)."
+                ),
+                allowed_values=("macro", "regional", "all"),
+                metavar="DOMAIN",
+            ),
+            ParamSpec(
+                name="start_time",
+                cli_name="start-time",
+                kind=ParamKind.STRING,
+                help=(
+                    "Earliest update time in YYYYMMDDHhmm format "
+                    "(e.g. 202401011200). FRED-specific datetime format."
+                ),
+                metavar="DATETIME",
+            ),
+            ParamSpec(
+                name="end_time",
+                cli_name="end-time",
+                kind=ParamKind.STRING,
+                help=(
+                    "Latest update time in YYYYMMDDHhmm format "
+                    "(e.g. 202401012359). FRED-specific datetime format."
+                ),
+                metavar="DATETIME",
+            ),
+        ),
+        examples=(
+            "fredq series-updates --limit 10",
+            "fredq series-updates --filter-value macro --limit 5",
+        ),
+        notes=(
+            ("start_time and end_time use FRED's YYYYMMDDHhmm format, not YYYY-MM-DD."),
         ),
     ),
 )

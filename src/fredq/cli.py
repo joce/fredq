@@ -125,21 +125,20 @@ def _add_command_param(parser: argparse.ArgumentParser, param: ParamSpec) -> Non
             help=param.help,
         )
         return
-    if param.kind is ParamKind.BOOLEAN:  # pragma: no cover
-        # No FRED endpoint params use BOOLEAN yet; kept for future commands.
-        const = (
-            not param.default if isinstance(param.default, bool) else True
-        )  # pragma: no cover
-        parser.add_argument(  # pragma: no cover
+    if param.kind is ParamKind.BOOLEAN:
+        # Boolean params are exposed as on/off flags (no value argument).
+        # When present, the flag sets the param to True; absent means None
+        # (omitted from the request).
+        parser.add_argument(
             param.option,
             dest=param.name,
             required=param.required,
             default=param.default,
             action="store_const",
-            const=const,
+            const=True,
             help=param.help,
         )
-        return  # pragma: no cover
+        return
     parser.add_argument(
         param.option,
         dest=param.name,
@@ -250,7 +249,8 @@ def _collect_params(
         if raw is None:
             continue
         if isinstance(raw, bool):
-            collected[spec.name] = raw
+            # FRED requires lowercase 'true'/'false', not Python's 'True'/'False'.
+            collected[spec.name] = "true" if raw else "false"
             continue
         coerced = coerce_param(spec, str(raw))
         collected[spec.name] = coerced
