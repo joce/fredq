@@ -8,6 +8,26 @@ from typing import Final
 from fredq.client import FRED_BASE_URL
 from fredq.params import ParamKind, ParamSpec
 
+# Single source of truth for frequency allowed values.
+# Base frequencies accepted by FRED's series/observations endpoint.
+_FREQUENCY_BASE: Final[tuple[str, ...]] = ("d", "w", "bw", "m", "q", "sa", "a")
+# End-of-period variants are the base codes with a "-e" suffix.
+_FREQUENCY_END_OF_PERIOD: Final[tuple[str, ...]] = tuple(
+    f"{b}-e" for b in _FREQUENCY_BASE
+)
+# Smooth-seasonal variants (only monthly and quarterly).
+_FREQUENCY_SMOOTH_SEASONAL: Final[tuple[str, ...]] = ("m-ss", "q-ss")
+
+_FREQUENCY_VALUES: Final[tuple[str, ...]] = (
+    _FREQUENCY_BASE + _FREQUENCY_END_OF_PERIOD + _FREQUENCY_SMOOTH_SEASONAL
+)
+
+_FREQUENCY_HELP: Final[str] = (
+    f"Aggregation frequency: {', '.join(_FREQUENCY_BASE)} "
+    f"(plus -e variants for end-of-period, "
+    f"and -ss for m, q smooth-seasonal)."
+)
+
 
 @dataclass(frozen=True, slots=True)
 class CommandSpec:
@@ -130,33 +150,9 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 name="frequency",
                 cli_name="frequency",
                 kind=ParamKind.STRING,
-                help=(
-                    "Aggregation frequency: d, w, bw, m, q, sa, a (plus -e "
-                    "and -ss variants)."
-                ),
-                # Base frequencies + end-of-period (-e) and smooth-seasonal
-                # (-ss) variants.  Ref: FRED series/observations API docs.
-                allowed_values=(
-                    # Base
-                    "d",
-                    "w",
-                    "bw",
-                    "m",
-                    "q",
-                    "sa",
-                    "a",
-                    # End-of-period variants (-e)
-                    "d-e",
-                    "w-e",
-                    "bw-e",
-                    "m-e",
-                    "q-e",
-                    "sa-e",
-                    "a-e",
-                    # Smooth-seasonal variants (-ss)
-                    "m-ss",
-                    "q-ss",
-                ),
+                help=_FREQUENCY_HELP,
+                # Ref: FRED series/observations API docs.
+                allowed_values=_FREQUENCY_VALUES,
                 metavar="FREQ",
             ),
         ),
