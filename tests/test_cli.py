@@ -272,3 +272,71 @@ def test_fredq_disable_key_file_env_skips_file_fallback(
 
     assert rc == EXIT_USAGE
     assert "FRED API key" in err.getvalue()
+
+
+# C6 — verbose does not leak api_key; FredRequestError URL is redacted
+
+
+def test_verbose_does_not_include_api_key_in_logs(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """--verbose debug logging must never emit the FRED API key."""
+
+    import logging  # noqa: PLC0415
+
+    monkeypatch.setenv("FRED_API_KEY", "my-secret-api-key")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            "https://api.stlouisfed.org/fred/series?"
+            "series_id=GNPCA&api_key=my-secret-api-key&file_type=json"
+        ),
+        text='{"seriess": []}',
+    )
+
+    with caplog.at_level(logging.DEBUG):
+        out = io.StringIO()
+        err = io.StringIO()
+        rc = main(
+            ["--verbose", "series", "--series-id", "GNPCA"],
+            stdout=out,
+            stderr=err,
+        )
+
+    assert rc == EXIT_OK
+    for record in caplog.records:
+        assert "my-secret-api-key" not in record.getMessage()
+
+
+def test_fred_request_error_url_has_no_api_key(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FredRequestError written to stderr must not contain api_key= or its value."""
+
+    monkeypatch.setenv("FRED_API_KEY", "top-secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            "https://api.stlouisfed.org/fred/series?"
+            "series_id=GNPCA&api_key=top-secret&file_type=json"
+        ),
+        status_code=403,
+    )
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+
+    assert rc == 1
+    err_text = err.getvalue()
+    assert "top-secret" not in err_text
+    assert "api_key=" not in err_text

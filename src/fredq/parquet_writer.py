@@ -228,8 +228,11 @@ def _build_metadata(
         "fredq_series_id": context.series_id,
     }
     for key in _ENVELOPE_METADATA_KEYS:
-        if key in envelope and envelope[key] is not None:
-            payload[f"envelope.{key}"] = str(envelope[key])
+        val = envelope.get(key)
+        # Guard: only scalar values can be safely encoded as metadata strings.
+        # Non-scalar values (dicts, lists) are silently skipped (D4).
+        if val is not None and isinstance(val, str | int | float | bool):
+            payload[f"envelope.{key}"] = str(val)
     request_fields: dict[str, str | None] = {
         "request.units": context.units,
         "request.frequency": context.frequency,

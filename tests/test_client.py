@@ -4,10 +4,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import httpx
 import pytest
 
 from fredq.client import FredClient
-from fredq.exceptions import FredClientUsageError, FredRequestError
+from fredq.exceptions import (
+    FredClientUsageError,
+    FredRequestError,
+    FredUnavailableError,
+)
 
 if TYPE_CHECKING:
     from pytest_httpx import HTTPXMock
@@ -108,3 +113,74 @@ async def test_get_retries_retryable_status_codes(httpx_mock: HTTPXMock) -> None
 
     assert body == '{"ok": true}'
     assert len(httpx_mock.get_requests()) == REQUEST_ATTEMPTS
+
+
+# C2 — additional client coverage
+
+
+@pytest.mark.asyncio
+async def test_transport_error_raises_fred_unavailable(httpx_mock: HTTPXMock) -> None:
+    """TransportError exhausted → FredUnavailableError (not a raw httpx error)."""
+
+    url = (
+        "https://api.stlouisfed.org/fred/series?"
+        "series_id=GNPCA&api_key=secret&file_type=json"
+    )
+    # Simulate a transport-level failure on every attempt.
+    for _ in range(REQUEST_ATTEMPTS):
+        httpx_mock.add_exception(httpx.ConnectError("connection refused"), url=url)
+
+    client = FredClient(api_key="secret")
+    try:
+        with pytest.raises(FredUnavailableError):
+            await client.get("/fred/series", {"series_id": "GNPCA"})
+    finally:
+        await client.aclose()
+
+    assert len(httpx_mock.get_requests()) == REQUEST_ATTEMPTS
+
+
+@pytest.mark.asyncio
+async def test_4xx_not_retried(httpx_mock: HTTPXMock) -> None:
+    """4xx errors are not retried — they fail immediately on the first attempt."""
+
+    url = (
+        "https://api.stlouisfed.org/fred/series?"
+        "series_id=GNPCA&api_key=secret&file_type=json"
+    )
+    httpx_mock.add_response(method="GET", url=url, status_code=401)
+
+    client = FredClient(api_key="secret")
+    try:
+        with pytest.raises(FredRequestError) as exc_info:
+            await client.get("/fred/series", {"series_id": "GNPCA"})
+    finally:
+        await client.aclose()
+
+    http_unauthorized = 401
+    assert exc_info.value.status_code == http_unauthorized
+    # Only one request should have been made (no retries).
+    assert len(httpx_mock.get_requests()) == 1
+
+
+@pytest.mark.asyncio
+async def test_fred_unavailable_error_message_is_safe(httpx_mock: HTTPXMock) -> None:
+    """FredUnavailableError message uses context, never the api_key."""
+
+    url = (
+        "https://api.stlouisfed.org/fred/series?"
+        "series_id=GNPCA&api_key=super-secret&file_type=json"
+    )
+    for _ in range(REQUEST_ATTEMPTS):
+        httpx_mock.add_exception(httpx.ConnectError("connection refused"), url=url)
+
+    client = FredClient(api_key="super-secret")
+    try:
+        with pytest.raises(FredUnavailableError) as exc_info:
+            await client.get("/fred/series", {"series_id": "GNPCA"})
+    finally:
+        await client.aclose()
+
+    msg = str(exc_info.value)
+    assert "super-secret" not in msg
+    assert "api call: /fred/series" in msg

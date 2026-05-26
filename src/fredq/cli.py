@@ -325,6 +325,50 @@ def _optional_str(value: object) -> str | None:
     return str(value)
 
 
+_API_KEY_PATTERN: Final[str] = "api_key="
+_API_KEY_REDACTED: Final[str] = "api_key=[REDACTED]"
+
+
+class _ApiKeyRedactFilter(logging.Filter):
+    """Logging filter that strips ``api_key=<value>`` from all log messages.
+
+    Applied globally when ``--verbose`` is active so httpx request-log
+    lines (which include the full URL) do not expose the FRED API key.
+    """
+
+    @override
+    def filter(self, record: logging.LogRecord) -> bool:
+        import re  # noqa: PLC0415
+
+        # Redact the already-formatted message by replacing the args-expanded
+        # form.  We replace record.msg with the fully-formatted + redacted
+        # string and clear record.args so getMessage() returns it verbatim.
+        message = record.getMessage()
+        if _API_KEY_PATTERN in message:
+            record.msg = re.sub(
+                r"api_key=[^&\s\"']+",
+                _API_KEY_REDACTED,
+                message,
+            )
+            record.args = ()
+        return True
+
+
+def _install_api_key_redact_filter() -> None:
+    """Attach :class:`_ApiKeyRedactFilter` to known loggers that may log URLs.
+
+    The root logger's filter only applies to records that originate from the
+    root logger itself; child loggers (like ``httpx``) must be filtered
+    directly.  We also add to the root logger as a belt-and-suspenders guard
+    for any fredq-internal loggers.
+    """
+
+    flt = _ApiKeyRedactFilter()
+    logging.root.addFilter(flt)
+    # httpx logs the full request URL (including api_key) at INFO level.
+    logging.getLogger("httpx").addFilter(flt)
+
+
 def _reconfigure_stream(stream: TextIO, encoding: str = "utf-8") -> None:
     """Reconfigure a text stream's encoding if the stream supports it.
 
@@ -425,6 +469,7 @@ def main(
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
+        _install_api_key_redact_filter()
 
     command_name = getattr(args, "command_name", None)
     if not command_name:

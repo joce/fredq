@@ -147,6 +147,115 @@ def test_envelope_not_object_raises(tmp_path: Path) -> None:
         )
 
 
+# C5 — additional parquet_writer coverage
+
+
+def test_empty_observations_writes_zero_row_table(tmp_path: Path) -> None:
+    """An empty observations array writes a 0-row Parquet table (not an error)."""
+
+    body = _envelope([])
+    out_path = tmp_path / "empty.parquet"
+    descriptor = write_observations_parquet(body, out_path, ObservationsContext("X"))
+
+    assert descriptor["rows"] == 0
+    table = pq.read_table(out_path)
+    assert table.num_rows == 0
+    assert table.column_names == ["date", "value", "realtime_start", "realtime_end"]
+
+
+def test_all_dot_values_column_is_all_nan(tmp_path: Path) -> None:
+    """Observations whose value is '.' are all NaN in the Parquet column."""
+
+    body = _envelope(
+        [
+            {
+                "realtime_start": "2026-05-25",
+                "realtime_end": "2026-05-25",
+                "date": "2024-01-01",
+                "value": ".",
+            },
+            {
+                "realtime_start": "2026-05-25",
+                "realtime_end": "2026-05-25",
+                "date": "2024-02-01",
+                "value": ".",
+            },
+        ]
+    )
+    out_path = tmp_path / "dots.parquet"
+    write_observations_parquet(body, out_path, ObservationsContext("X"))
+
+    rows = pq.read_table(out_path).to_pylist()
+    assert all(math.isnan(row["value"]) for row in rows)
+
+
+def test_oserror_on_write_raises_parquet_writer_error(tmp_path: Path) -> None:
+    """An OSError during pq.write_table raises ParquetWriterError (not OSError)."""
+
+    from unittest.mock import patch  # noqa: PLC0415
+
+    body = _envelope(
+        [
+            {
+                "realtime_start": "2026-05-25",
+                "realtime_end": "2026-05-25",
+                "date": "2024-01-01",
+                "value": "1.0",
+            }
+        ]
+    )
+    out_path = tmp_path / "obs.parquet"
+
+    with (
+        patch("pyarrow.parquet.write_table", side_effect=OSError("disk full")),
+        pytest.raises(ParquetWriterError, match="failed to write"),
+    ):
+        write_observations_parquet(body, out_path, ObservationsContext("X"))
+
+
+def test_non_scalar_envelope_value_does_not_crash(tmp_path: Path) -> None:
+    """Nested-dict or list values in the envelope are silently skipped in metadata."""
+
+    import json  # noqa: PLC0415
+
+    # Inject a non-scalar value under a metadata key to simulate an unexpected
+    # FRED response shape.
+    body_dict = {
+        "realtime_start": "2026-05-25",
+        "realtime_end": "2026-05-25",
+        "observation_start": {"nested": "dict"},  # non-scalar
+        "observation_end": "2024-12-31",
+        "units": "lin",
+        "output_type": 1,
+        "file_type": "json",
+        "order_by": "observation_date",
+        "sort_order": "asc",
+        "count": 1,
+        "offset": 0,
+        "limit": 100000,
+        "observations": [
+            {
+                "realtime_start": "2026-05-25",
+                "realtime_end": "2026-05-25",
+                "date": "2024-01-01",
+                "value": "1",
+            }
+        ],
+    }
+    out_path = tmp_path / "obs.parquet"
+    # Should not raise despite the nested dict.
+    write_observations_parquet(
+        json.dumps(body_dict), out_path, ObservationsContext("X")
+    )
+
+    schema = pq.read_schema(out_path)
+    metadata = {k.decode(): v.decode() for k, v in (schema.metadata or {}).items()}
+    # The nested dict key should NOT appear in metadata.
+    assert "envelope.observation_start" not in metadata
+    # Scalar keys should still be present.
+    assert "envelope.observation_end" in metadata
+
+
 def test_output_type_not_1_raises(tmp_path: Path) -> None:
     """An envelope with output_type != 1 raises ParquetWriterError (A4)."""
 

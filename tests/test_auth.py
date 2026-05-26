@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import pytest
 
@@ -64,6 +65,52 @@ def test_empty_file_treated_as_missing(
     monkeypatch.delenv("FRED_API_KEY", raising=False)
     key_file = tmp_path / "key"
     key_file.write_text("\n", encoding="utf-8")
+
+    with pytest.raises(FredApiKeyMissingError):
+        resolve_api_key(key_path=key_file)
+
+
+# C3 — auth.py edge cases
+
+
+def test_read_key_file_oserror_treated_as_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """OSError while reading the key file is treated as if the key is absent."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    key_file = tmp_path / "key"
+    key_file.write_text("from-file\n", encoding="utf-8")
+
+    # Patch Path.read_text on the auth module's Path so the existing file
+    # appears unreadable.
+    with (
+        patch("fredq.auth.Path.read_text", side_effect=OSError("permission denied")),
+        pytest.raises(FredApiKeyMissingError),
+    ):
+        resolve_api_key(key_path=key_file)
+
+
+def test_multiline_key_file_uses_first_non_empty_line(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """When the key file has multiple lines, only the first non-empty one is used."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    key_file = tmp_path / "key"
+    key_file.write_text("first-key\nsecond-line\n", encoding="utf-8")
+
+    assert resolve_api_key(key_path=key_file) == "first-key"
+
+
+def test_whitespace_only_key_file_treated_as_missing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A key file containing only whitespace is treated as missing."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    key_file = tmp_path / "key"
+    key_file.write_text("   \n\t\n", encoding="utf-8")
 
     with pytest.raises(FredApiKeyMissingError):
         resolve_api_key(key_path=key_file)

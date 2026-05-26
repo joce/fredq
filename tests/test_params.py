@@ -141,3 +141,65 @@ def test_csv_param() -> None:
         help="test",
     )
     assert coerce_param(spec, " a , b , c ") == "a,b,c"
+
+
+# C4 — additional params coverage
+
+
+def test_csv_allowed_values_mismatch_raises() -> None:
+    """CSV items not in allowed_values raise ValueError."""
+
+    spec = ParamSpec(
+        name="units",
+        cli_name="units",
+        kind=ParamKind.CSV,
+        help="test",
+        allowed_values=("lin", "pch"),
+    )
+    with pytest.raises(ValueError, match="unsupported value"):
+        coerce_param(spec, "lin,xyz")
+
+
+def test_csv_min_items_enforced() -> None:
+    """CSV param with min_items rejects lists that are too short."""
+
+    spec = ParamSpec(
+        name="tags",
+        cli_name="tags",
+        kind=ParamKind.CSV,
+        help="test",
+        min_items=2,
+    )
+    with pytest.raises(ValueError, match="at least"):
+        coerce_param(spec, "a")
+
+
+def test_csv_max_items_enforced() -> None:
+    """CSV param with max_items rejects lists that are too long."""
+
+    spec = ParamSpec(
+        name="tags",
+        cli_name="tags",
+        kind=ParamKind.CSV,
+        help="test",
+        max_items=2,
+    )
+    with pytest.raises(ValueError, match="at most"):
+        coerce_param(spec, "a,b,c")
+
+
+def test_parse_boolean_case_insensitive() -> None:
+    """parse_boolean is case-insensitive for common true/false spellings."""
+
+    assert parse_boolean("YES") is True
+    assert parse_boolean("True") is True
+    assert parse_boolean("NO") is False
+    assert parse_boolean("FALSE") is False
+
+
+def test_string_allowed_values_rejects_unknown() -> None:
+    """STRING param with allowed_values rejects values not in the set."""
+
+    spec = _spec(ParamKind.STRING, allowed_values=("lin", "pch", "log"))
+    with pytest.raises(ValueError, match="unsupported value"):
+        coerce_param(spec, "xyz")
