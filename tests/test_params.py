@@ -203,3 +203,27 @@ def test_string_allowed_values_rejects_unknown() -> None:
     spec = _spec(ParamKind.STRING, allowed_values=("lin", "pch", "log"))
     with pytest.raises(ValueError, match="unsupported value"):
         coerce_param(spec, "xyz")
+
+
+# Item 8 — edge-case date string tests
+
+
+def test_parse_date_negative_year_raises() -> None:
+    """'-2024' has a '-' so it enters the ISO path, which rejects it."""
+
+    with pytest.raises(ValueError, match="expected YYYY-MM-DD"):
+        parse_date("-2024")
+
+
+def test_parse_date_trailing_dash_raises() -> None:
+    """'2024-' has a '-'; enters the ISO path, then both parse attempts fail."""
+
+    with pytest.raises(ValueError, match="expected YYYY-MM-DD"):
+        parse_date("2024-")
+
+
+def test_parse_date_whitespace_only_raises() -> None:
+    """A whitespace-only string is rejected (stripped becomes empty)."""
+
+    with pytest.raises(ValueError, match="expected YYYY-MM-DD"):
+        parse_date("   ")
