@@ -340,3 +340,178 @@ def test_fred_request_error_url_has_no_api_key(
     err_text = err.getvalue()
     assert "top-secret" not in err_text
     assert "api_key=" not in err_text
+
+
+# Item 4 — parse_boolean for FREDQ_DISABLE_KEY_FILE
+
+
+def _make_key_file(tmp_path: Path, key: str = "from-file") -> None:
+    """Write a key file at the standard location under tmp_path."""
+
+    key_file = tmp_path / ".fredq" / "api_key"
+    key_file.parent.mkdir(parents=True, exist_ok=True)
+    key_file.write_text(f"{key}\n", encoding="utf-8")
+
+
+def test_fredq_disable_key_file_1_disables(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FREDQ_DISABLE_KEY_FILE=1 skips the key file."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    monkeypatch.setenv("FREDQ_DISABLE_KEY_FILE", "1")
+    _make_key_file(tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+
+    assert rc == EXIT_USAGE
+    assert "FRED API key" in err.getvalue()
+
+
+def test_fredq_disable_key_file_true_disables(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FREDQ_DISABLE_KEY_FILE=true skips the key file."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    monkeypatch.setenv("FREDQ_DISABLE_KEY_FILE", "true")
+    _make_key_file(tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+
+    assert rc == EXIT_USAGE
+    assert "FRED API key" in err.getvalue()
+
+
+def test_fredq_disable_key_file_yes_mixed_case_disables(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FREDQ_DISABLE_KEY_FILE=YES (mixed case) skips the key file."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    monkeypatch.setenv("FREDQ_DISABLE_KEY_FILE", "YES")
+    _make_key_file(tmp_path)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+
+    assert rc == EXIT_USAGE
+    assert "FRED API key" in err.getvalue()
+
+
+def test_fredq_disable_key_file_0_does_not_disable(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FREDQ_DISABLE_KEY_FILE=0 must NOT disable the key file (regression fix)."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    monkeypatch.setenv("FREDQ_DISABLE_KEY_FILE", "0")
+    _make_key_file(tmp_path, key="from-file-key")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            "https://api.stlouisfed.org/fred/series?"
+            "series_id=GNPCA&api_key=from-file-key&file_type=json"
+        ),
+        text='{"seriess": []}',
+    )
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+
+    assert rc == EXIT_OK
+
+
+def test_fredq_disable_key_file_false_does_not_disable(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FREDQ_DISABLE_KEY_FILE=false must NOT disable the key file."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    monkeypatch.setenv("FREDQ_DISABLE_KEY_FILE", "false")
+    _make_key_file(tmp_path, key="from-file-key")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            "https://api.stlouisfed.org/fred/series?"
+            "series_id=GNPCA&api_key=from-file-key&file_type=json"
+        ),
+        text='{"seriess": []}',
+    )
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+
+    assert rc == EXIT_OK
+
+
+def test_fredq_disable_key_file_empty_does_not_disable(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FREDQ_DISABLE_KEY_FILE= (empty) must NOT disable the key file."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    monkeypatch.setenv("FREDQ_DISABLE_KEY_FILE", "")
+    _make_key_file(tmp_path, key="from-file-key")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            "https://api.stlouisfed.org/fred/series?"
+            "series_id=GNPCA&api_key=from-file-key&file_type=json"
+        ),
+        text='{"seriess": []}',
+    )
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+
+    assert rc == EXIT_OK
+
+
+def test_fredq_disable_key_file_garbage_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FREDQ_DISABLE_KEY_FILE=garbage exits with code 2 and an error message."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    monkeypatch.setenv("FREDQ_DISABLE_KEY_FILE", "garbage")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+
+    assert rc == EXIT_USAGE
+    assert "FREDQ_DISABLE_KEY_FILE" in err.getvalue()
+    assert "garbage" in err.getvalue()

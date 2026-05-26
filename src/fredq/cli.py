@@ -18,7 +18,7 @@ from fredq.auth import resolve_api_key
 from fredq.client import FredClient
 from fredq.commands import COMMANDS, COMMANDS_BY_NAME, CommandSpec
 from fredq.exceptions import FredqError
-from fredq.params import ParamKind, ParamSpec, coerce_param
+from fredq.params import ParamKind, ParamSpec, coerce_param, parse_boolean
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -442,9 +442,21 @@ def main(
         return 2
 
     if client is None:
-        use_key_file = not getattr(args, "no_key_file", False) and not bool(
-            os.environ.get("FREDQ_DISABLE_KEY_FILE", "").strip()
-        )
+        disable_key_file_env = os.environ.get("FREDQ_DISABLE_KEY_FILE", "").strip()
+        if disable_key_file_env:
+            try:
+                env_disable_key_file = parse_boolean(disable_key_file_env)
+            except ValueError:
+                err.write(
+                    f"FREDQ_DISABLE_KEY_FILE: invalid boolean value "
+                    f"{disable_key_file_env!r}; "
+                    "expected 1/0, true/false, yes/no, etc.\n"
+                )
+                return 2
+        else:
+            env_disable_key_file = False
+        no_key_file = getattr(args, "no_key_file", False)
+        use_key_file = not no_key_file and not env_disable_key_file
         try:
             api_key = resolve_api_key(
                 explicit=args.api_key, use_key_file=use_key_file, stderr=err
