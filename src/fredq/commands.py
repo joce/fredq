@@ -260,6 +260,22 @@ _ORDER_BY_TAGS: Final[tuple[str, ...]] = (
 # category-series shares the same order_by set as release-series.
 _ORDER_BY_CATEGORY_SERIES: Final[tuple[str, ...]] = _ORDER_BY_RELEASE_SERIES
 
+# tags-series shares the same order_by set as series-search (minus search_rank).
+_ORDER_BY_TAGS_SERIES: Final[tuple[str, ...]] = (
+    "series_id",
+    "title",
+    "units",
+    "frequency",
+    "seasonal_adjustment",
+    "realtime_start",
+    "realtime_end",
+    "last_updated",
+    "observation_start",
+    "observation_end",
+    "popularity",
+    "group_popularity",
+)
+
 _CATEGORY_ID_PARAM: Final[ParamSpec] = ParamSpec(
     name="category_id",
     cli_name="category-id",
@@ -1065,6 +1081,108 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 "fredq category-related-tags --category-id 32991 "
                 "--tag-names 'usa;annual' --limit 5"
             ),
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    # ------------------------------------------------------------------
+    # Group 4 — Tags (3 endpoints)
+    # ------------------------------------------------------------------
+    CommandSpec(
+        name="tags",
+        path="/fred/tags",
+        summary="List all FRED tags.",
+        description=(
+            "Return the full catalog of FRED tags. Each record includes the "
+            "tag name, group ID, notes, creation date, and series count."
+        ),
+        params=(
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _TAG_NAMES_PARAM,
+            _TAG_GROUP_ID_PARAM,
+            ParamSpec(
+                name="search_text",
+                cli_name="search-text",
+                kind=ParamKind.STRING,
+                help="Full-text search string to filter tags by name.",
+                metavar="TEXT",
+            ),
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_TAGS),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq tags --limit 10",
+            "fredq tags --tag-group-id geo --order-by name --sort-order asc",
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="related-tags",
+        path="/fred/related_tags",
+        summary="List tags related to an existing tag filter.",
+        description=(
+            "Return tags that appear alongside the specified tag names across "
+            "FRED series. Use to discover related tags when narrowing a series "
+            "search."
+        ),
+        params=(
+            ParamSpec(
+                name="tag_names",
+                cli_name="tag-names",
+                kind=ParamKind.CSV,
+                help=(
+                    "Semicolon-separated list of tags already applied "
+                    "(required). Order does not matter."
+                ),
+                required=True,
+                csv_separator=";",
+                metavar="TAGS",
+            ),
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _TAG_GROUP_ID_PARAM,
+            ParamSpec(
+                name="search_text",
+                cli_name="search-text",
+                kind=ParamKind.STRING,
+                help="Full-text search string to filter tags by name.",
+                metavar="TEXT",
+            ),
+            _EXCLUDE_TAG_NAMES_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_TAGS),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq related-tags --tag-names usa --limit 10",
+            "fredq related-tags --tag-names 'usa;annual' --limit 5",
+        ),
+        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+    ),
+    CommandSpec(
+        name="tags-series",
+        path="/fred/tags/series",
+        summary="List series matching a set of FRED tags.",
+        description=(
+            "Return series records that are tagged with all of the specified "
+            "tag names. Supports tag exclusion, sorting, and pagination."
+        ),
+        params=(
+            _TAG_NAMES_PARAM,
+            _EXCLUDE_TAG_NAMES_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_TAGS_SERIES),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq tags-series --tag-names usa --limit 5",
+            "fredq tags-series --tag-names 'usa;annual' --limit 3",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
