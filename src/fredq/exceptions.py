@@ -7,6 +7,10 @@ class FredqError(Exception):
     """Base exception for all fredq errors."""
 
 
+class FredClientUsageError(FredqError):
+    """Raised when the caller misuses the FredClient API."""
+
+
 class FredApiKeyMissingError(FredqError):
     """Raised when no FRED API key can be located."""
 

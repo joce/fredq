@@ -140,31 +140,48 @@ def parse_date(value: str) -> str:
         message = "expected YYYY-MM-DD date, ISO datetime, or Unix timestamp"
         raise ValueError(message)
 
-    # Unix timestamp shortcut.
+    # Calendar date or ISO datetime — try before the Unix-timestamp shortcut
+    # so that bare-digit strings like "2024" are not silently treated as an
+    # epoch second (which would return 1970-01-01).
+    #
+    # Python 3.11+ accepts compact ISO forms like "20240101" in
+    # datetime.fromisoformat, but FRED requires the separator form
+    # "YYYY-MM-DD", and we do not want to silently coerce compact strings.
+    # Require at least one "-" so "20240101" is rejected here and falls
+    # through to the Unix-timestamp path (which also rejects it since it
+    # is only 8 digits, below the 10-digit threshold).
+    if "-" in stripped:
+        try:
+            parsed_dt = datetime.fromisoformat(stripped.replace("Z", "+00:00"))
+        except ValueError:
+            parsed_dt = None
+
+        if parsed_dt is not None:
+            if parsed_dt.tzinfo is None:
+                parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
+            return parsed_dt.astimezone(timezone.utc).date().isoformat()
+
+        try:
+            parsed_date = date.fromisoformat(stripped)
+            return parsed_date.isoformat()
+        except ValueError:
+            pass
+
+    # Unix timestamp — only accepted when the string is ≥10 digits (epoch
+    # seconds since 2001-09-09 require 10 digits) so that short digit strings
+    # like "2024" or "20240101" are not silently mis-interpreted.
     try:
         ts = int(stripped)
     except ValueError:
         ts = None
-    if ts is not None:
+    if ts is not None and len(stripped) >= 10:  # noqa: PLR2004
         return datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
 
-    # Calendar date or ISO datetime.
-    try:
-        parsed_dt = datetime.fromisoformat(stripped.replace("Z", "+00:00"))
-    except ValueError:
-        try:
-            parsed_date = date.fromisoformat(stripped)
-        except ValueError as exc:
-            message = (
-                f"expected YYYY-MM-DD date, ISO datetime, or Unix timestamp; "
-                f"got {value!r}"
-            )
-            raise ValueError(message) from exc
-        return parsed_date.isoformat()
-
-    if parsed_dt.tzinfo is None:
-        parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
-    return parsed_dt.astimezone(timezone.utc).date().isoformat()
+    message = (
+        f"expected YYYY-MM-DD date, ISO datetime, or Unix timestamp; "
+        f"got {value!r}"
+    )
+    raise ValueError(message)
 
 
 def coerce_param(spec: ParamSpec, value: str) -> ParamValue:

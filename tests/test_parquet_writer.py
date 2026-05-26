@@ -147,6 +147,21 @@ def test_envelope_not_object_raises(tmp_path: Path) -> None:
         )
 
 
+def test_output_type_not_1_raises(tmp_path: Path) -> None:
+    """An envelope with output_type != 1 raises ParquetWriterError (A4)."""
+
+    body = json.dumps(
+        {
+            "output_type": 2,
+            "observations": [],
+        }
+    )
+    with pytest.raises(ParquetWriterError, match="output_type=1"):
+        write_observations_parquet(
+            body, tmp_path / "obs.parquet", ObservationsContext("X")
+        )
+
+
 def test_unparseable_dates_become_null(tmp_path: Path) -> None:
     """Malformed date strings are written as null rather than failing the write."""
 

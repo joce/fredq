@@ -8,7 +8,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Final, Protocol
+from typing import TYPE_CHECKING, Final, Protocol, TextIO
 
 from fredq import __version__
 from fredq.auth import resolve_api_key
@@ -267,6 +267,7 @@ def _handle_parquet_output(
     args: argparse.Namespace,
     body: str,
     params: dict[str, ParamValue],
+    out: TextIO,
 ) -> None:
     """Convert ``body`` to Parquet and write to ``args.out_path``.
 
@@ -289,8 +290,8 @@ def _handle_parquet_output(
         realtime_end=_optional_str(params.get("realtime_end")),
     )
     descriptor = write_observations_parquet(body, args.out_path, context)
-    sys.stdout.write(json.dumps(descriptor, separators=(",", ":")))
-    sys.stdout.write("\n")
+    out.write(json.dumps(descriptor, separators=(",", ":")))
+    out.write("\n")
 
 
 def _optional_str(value: object) -> str | None:
@@ -299,12 +300,51 @@ def _optional_str(value: object) -> str | None:
     return str(value)
 
 
-def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
+def _reconfigure_stream(stream: TextIO, encoding: str = "utf-8") -> None:
+    """Reconfigure a text stream's encoding if the stream supports it.
+
+    On Windows the default console encoding may not be UTF-8.  Calling
+    ``reconfigure(encoding='utf-8')`` is the standard idiom to fix that
+    without replacing the stream object.  The call is a no-op on streams
+    that do not expose ``reconfigure`` (e.g. ``io.StringIO`` in tests).
+    """
+
+    reconfigure = getattr(stream, "reconfigure", None)
+    if reconfigure is not None:
+        reconfigure(encoding=encoding)
+
+
+def main(  # noqa: C901, PLR0911, PLR0912
+    argv: Sequence[str] | None = None,
+    *,
+    stdout: TextIO | None = None,
+    stderr: TextIO | None = None,
+    client: _FredClientProtocol | None = None,
+) -> int:
     """Run the fredq CLI.
+
+    Args:
+        argv: Argument list (defaults to ``sys.argv[1:]``).
+        stdout: Output stream (defaults to ``sys.stdout``).
+        stderr: Error stream (defaults to ``sys.stderr``).
+        client: Pre-built FRED client for dependency injection in tests.
+            When ``None``, a :class:`FredClient` is constructed from the
+            resolved API key.
 
     Returns:
         int: Process exit code.
     """
+
+    out = stdout or sys.stdout
+    err = stderr or sys.stderr
+
+    # Ensure UTF-8 on Windows where the default console encoding may differ.
+    # Skip reconfiguration when caller-supplied streams are passed in (e.g.
+    # io.StringIO used in tests), as those do not need it.
+    if stdout is None:
+        _reconfigure_stream(out)
+    if stderr is None:
+        _reconfigure_stream(err)
 
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -314,44 +354,47 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
 
     command_name = getattr(args, "command_name", None)
     if not command_name:
-        parser.print_help()
+        parser.print_help(out)
         return 2
 
     command = COMMANDS_BY_NAME[command_name]
 
     pairing_error = _enforce_parquet_arg_pairing(args)
     if pairing_error is not None:
-        sys.stderr.write(f"{pairing_error}\n")
+        err.write(f"{pairing_error}\n")
         return 2
 
-    try:
-        api_key = resolve_api_key(explicit=args.api_key)
-    except FredqError as exc:
-        sys.stderr.write(f"{exc}\n")
-        return 2
+    if client is None:
+        try:
+            api_key = resolve_api_key(explicit=args.api_key)
+        except FredqError as exc:
+            err.write(f"{exc}\n")
+            return 2
+        active_client: _FredClientProtocol = FredClient(api_key)
+    else:
+        active_client = client
 
     try:
         params = _collect_params(command, args)
     except ValueError as exc:
-        sys.stderr.write(f"{exc}\n")
+        err.write(f"{exc}\n")
         return 2
 
-    client = FredClient(api_key)
     try:
-        body = asyncio.run(_run_command(client, command, params))
+        body = asyncio.run(_run_command(active_client, command, params))
     except FredqError as exc:
-        sys.stderr.write(f"{exc}\n")
+        err.write(f"{exc}\n")
         return 1
 
     if getattr(args, "output_format", "json") == "parquet":
         try:
-            _handle_parquet_output(args, body, params)
+            _handle_parquet_output(args, body, params, out)
         except FredqError as exc:
-            sys.stderr.write(f"{exc}\n")
+            err.write(f"{exc}\n")
             return 1
         return 0
 
-    sys.stdout.write(body)
+    out.write(body)
     if not body.endswith("\n"):
-        sys.stdout.write("\n")
+        out.write("\n")
     return 0

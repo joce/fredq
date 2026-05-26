@@ -77,6 +77,7 @@ def write_observations_parquet(
 
     pa, pq = _import_pyarrow()
     envelope = _parse_envelope(observations_json_text)
+    _check_output_type(envelope)
     observations = _extract_observations(envelope)
     table = _build_table(observations, envelope, context, pa)
     _write_table(pq, table, out_path)
@@ -106,6 +107,28 @@ def _import_pyarrow() -> tuple[Any, Any]:
     except ImportError as exc:
         raise ParquetWriterError(_MISSING_PYARROW_MESSAGE) from exc
     return pa, pq
+
+
+_EXPECTED_OUTPUT_TYPE: Final[int] = 1
+
+
+def _check_output_type(envelope: dict[str, Any]) -> None:
+    """Raise if the envelope's output_type is not 1 (FRED default).
+
+    FRED's ``output_type`` controls observation format: 1 = date/value pairs,
+    2 = vintage dates x series, 3 = initial release only, 4 = latest + vintage
+    dates. The Parquet writer only knows how to flatten the default type-1
+    shape into rows; other types produce a different structure.
+
+    Raises:
+        ParquetWriterError: If ``output_type`` is present and not equal to 1.
+    """
+
+    output_type = envelope.get("output_type")
+    if output_type is None or output_type == _EXPECTED_OUTPUT_TYPE:
+        return
+    message = f"--format parquet requires output_type=1; got {output_type}"
+    raise ParquetWriterError(message)
 
 
 def _parse_envelope(text: str) -> dict[str, Any]:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 import pytest
@@ -66,3 +67,47 @@ def test_empty_file_treated_as_missing(
 
     with pytest.raises(FredApiKeyMissingError):
         resolve_api_key(key_path=key_file)
+
+
+# A5 — file permission warnings (POSIX only)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="chmod not meaningful on Windows")
+def test_wide_mode_key_file_emits_warning(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A key file with group/world read bits triggers a stderr warning."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    key_file = tmp_path / "api_key"
+    key_file.write_text("mykey\n", encoding="utf-8")
+    key_file.chmod(0o644)
+
+    key = resolve_api_key(key_path=key_file)
+
+    assert key == "mykey"
+    captured = capsys.readouterr()
+    assert "warning" in captured.err
+    assert "chmod 600" in captured.err
+
+
+@pytest.mark.skipif(os.name == "nt", reason="chmod not meaningful on Windows")
+def test_tight_mode_key_file_no_warning(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A key file with mode 600 produces no warning."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    key_file = tmp_path / "api_key"
+    key_file.write_text("mykey\n", encoding="utf-8")
+    key_file.chmod(0o600)
+
+    key = resolve_api_key(key_path=key_file)
+
+    assert key == "mykey"
+    captured = capsys.readouterr()
+    assert not captured.err

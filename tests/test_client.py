@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from fredq.client import FredClient
-from fredq.exceptions import FredRequestError
+from fredq.exceptions import FredClientUsageError, FredRequestError
 
 if TYPE_CHECKING:
     from pytest_httpx import HTTPXMock
@@ -62,6 +62,30 @@ async def test_get_redacts_api_key_from_request_error(
     assert "secret-key" not in str(exc_info.value)
     assert "api_key=" not in str(exc_info.value)
     assert "series_id=GNPCA" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_get_rejects_caller_supplied_api_key() -> None:
+    """Passing api_key in params raises FredClientUsageError immediately."""
+
+    client = FredClient(api_key="secret")
+    try:
+        with pytest.raises(FredClientUsageError, match="api_key"):
+            await client.get("/fred/series", {"api_key": "other"})
+    finally:
+        await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_get_rejects_caller_supplied_file_type() -> None:
+    """Passing file_type in params raises FredClientUsageError immediately."""
+
+    client = FredClient(api_key="secret")
+    try:
+        with pytest.raises(FredClientUsageError, match="file_type"):
+            await client.get("/fred/series", {"file_type": "xml"})
+    finally:
+        await client.aclose()
 
 
 @pytest.mark.asyncio

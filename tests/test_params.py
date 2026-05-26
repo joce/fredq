@@ -82,6 +82,55 @@ def test_date_param_rejects_garbage() -> None:
         parse_date("not-a-date")
 
 
+# A1 — parse_date digit-only boundary tests
+
+
+def test_parse_date_bare_year_raises() -> None:
+    """A bare 4-digit year like '2024' must not silently become 1970-01-01."""
+
+    with pytest.raises(ValueError, match="expected YYYY-MM-DD"):
+        parse_date("2024")
+
+
+def test_parse_date_compact_yyyymmdd_raises() -> None:
+    """'20240101' is not ISO 8601 (no separators) and must be rejected."""
+
+    with pytest.raises(ValueError, match="expected YYYY-MM-DD"):
+        parse_date("20240101")
+
+
+def test_parse_date_unix_timestamp_still_works() -> None:
+    """10-digit Unix timestamps continue to be converted correctly."""
+
+    assert parse_date("1704067200") == "2024-01-01"
+
+
+def test_parse_date_iso_date_still_works() -> None:
+    """YYYY-MM-DD dates pass through unchanged."""
+
+    assert parse_date("2024-01-01") == "2024-01-01"
+
+
+def test_parse_date_iso_datetime_with_z_still_works() -> None:
+    """ISO datetimes ending with Z are accepted and stripped to the date part."""
+
+    assert parse_date("2024-01-01T00:00:00Z") == "2024-01-01"
+
+
+def test_parse_date_invalid_month_raises() -> None:
+    """Month 13 is invalid; date.fromisoformat rejects it."""
+
+    with pytest.raises(ValueError, match="expected YYYY-MM-DD"):
+        parse_date("2024-13-40")
+
+
+def test_parse_date_invalid_day_raises() -> None:
+    """Day 30 does not exist in February; date.fromisoformat rejects it."""
+
+    with pytest.raises(ValueError, match="expected YYYY-MM-DD"):
+        parse_date("2024-02-30")
+
+
 def test_csv_param() -> None:
     """CSV values are split, stripped, and rejoined."""
 

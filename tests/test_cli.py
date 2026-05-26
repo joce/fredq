@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 from typing import TYPE_CHECKING, Final
 
 import pytest
@@ -97,3 +98,38 @@ def test_main_missing_key_errors_cleanly(
     captured = capsys.readouterr()
     assert rc == EXIT_USAGE
     assert "FRED API key" in captured.err
+
+
+# A3 — non-ASCII body round-trips without raising
+
+
+def test_main_non_ascii_body_does_not_crash(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """A response body containing non-ASCII characters is written without crashing.
+
+    Uses ``io.StringIO`` streams so the test is platform-independent;
+    the important assertion is that no UnicodeEncodeError is raised.
+    """
+
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    body = '{"note": "café"}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            "https://api.stlouisfed.org/fred/series?"
+            "series_id=GNPCA&api_key=secret&file_type=json"
+        ),
+        text=body,
+    )
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+
+    assert rc == EXIT_OK
+    assert "é" in out.getvalue()

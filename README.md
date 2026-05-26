@@ -32,6 +32,14 @@ Get a free key from <https://fred.stlouisfed.org/docs/api/api_key.html>.
 1. `FRED_API_KEY` environment variable.
 2. File at `~/.fredq/api_key` (single line, key only).
 
+On POSIX systems, restrict the file so only your user can read it:
+
+```bash
+chmod 600 ~/.fredq/api_key
+```
+
+`fredq` emits a warning if the file is readable by group or world.
+
 ## Usage
 
 ```bash

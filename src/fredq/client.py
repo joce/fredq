@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING, Any, Final, Literal
 
 import httpx
 
-from fredq.exceptions import FredRequestError, FredUnavailableError
+from fredq.exceptions import (
+    FredClientUsageError,
+    FredRequestError,
+    FredUnavailableError,
+)
 
 if TYPE_CHECKING:
     from fredq.types import ParamValue
@@ -118,11 +122,24 @@ class FredClient:
 
         Returns:
             str: Raw FRED response body.
+
+        Raises:
+            FredClientUsageError: If ``params`` contains ``api_key`` or
+                ``file_type``.
         """
 
+        reserved_keys: frozenset[str] = frozenset({"api_key", "file_type"})
+        forbidden = reserved_keys & params.keys()
+        if forbidden:
+            keys_str = ", ".join(sorted(forbidden))
+            message = (
+                f"caller must not supply reserved parameter(s): {keys_str}; "
+                "fredq injects them automatically"
+            )
+            raise FredClientUsageError(message)
         request_params: dict[str, ParamValue] = dict(params)
         request_params["api_key"] = self._api_key
-        request_params.setdefault("file_type", "json")
+        request_params["file_type"] = "json"
         host = base_url or self._base_url
         response = await self._request_or_raise(
             "GET",
