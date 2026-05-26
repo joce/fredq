@@ -6,9 +6,12 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, Protocol, TextIO
+
+from typing_extensions import override
 
 from fredq import __version__
 from fredq.auth import resolve_api_key
@@ -52,6 +55,17 @@ class _HelpFormatter(
 
         super().__init__(prog, max_help_position=_HELP_MAX_POSITION, width=_HELP_WIDTH)
 
+    @override
+    def _get_help_string(self, action: argparse.Action) -> str:
+        help_text = action.help
+        if help_text is None:
+            help_text = ""
+        if action.default is argparse.SUPPRESS or action.default is None:
+            return help_text
+        if "%(default)" in help_text:
+            return help_text
+        return f"{help_text} (default: %(default)s)"
+
 
 def _examples_text(examples: tuple[str, ...]) -> str:
     return "\n".join(f"  {example}" for example in examples)
@@ -87,7 +101,18 @@ def _add_global_options(parser: argparse.ArgumentParser) -> None:
         default=None,
         help=(
             "FRED API key override. By default fredq reads the key from the "
-            "FRED_API_KEY environment variable, or from ~/.fredq/api_key."
+            "FRED_API_KEY environment variable, or from ~/.fredq/api_key. "
+            "(visible in process listings; prefer FRED_API_KEY)"
+        ),
+    )
+    parser.add_argument(
+        "--no-key-file",
+        dest="no_key_file",
+        action="store_true",
+        default=False,
+        help=(
+            "Skip the ~/.fredq/api_key fallback. Equivalent to setting "
+            "FREDQ_DISABLE_KEY_FILE=1."
         ),
     )
 
@@ -258,7 +283,7 @@ async def _run_command(
     params: dict[str, ParamValue],
 ) -> str:
     try:
-        return await client.get(command.path, params, base_url=command.base_url)
+        return await client.get(command.path, params)
     finally:
         await client.aclose()
 
@@ -314,7 +339,56 @@ def _reconfigure_stream(stream: TextIO, encoding: str = "utf-8") -> None:
         reconfigure(encoding=encoding)
 
 
-def main(  # noqa: C901, PLR0911, PLR0912
+def _dispatch_command(
+    args: argparse.Namespace,
+    command: CommandSpec,
+    out: TextIO,
+    err: TextIO,
+    active_client: _FredClientProtocol,
+) -> int:
+    """Resolve params, call FRED, and write output.
+
+    Extracted from :func:`main` to remove ``PLR0911`` / ``C901`` violations
+    and make the dispatch step unit-testable independently of argument parsing.
+
+    Args:
+        args: Parsed namespace (includes ``output_format``, ``out_path``, etc.).
+        command: The matched :class:`CommandSpec`.
+        out: Destination stream for the response body / descriptor.
+        err: Destination stream for error messages.
+        active_client: Constructed or injected FRED client.
+
+    Returns:
+        int: Process exit code (0 = success, 1 = request error, 2 = usage error).
+    """
+
+    try:
+        params = _collect_params(command, args)
+    except ValueError as exc:
+        err.write(f"{exc}\n")
+        return 2
+
+    try:
+        body = asyncio.run(_run_command(active_client, command, params))
+    except FredqError as exc:
+        err.write(f"{exc}\n")
+        return 1
+
+    if getattr(args, "output_format", "json") == "parquet":
+        try:
+            _handle_parquet_output(args, body, params, out)
+        except FredqError as exc:
+            err.write(f"{exc}\n")
+            return 1
+        return 0
+
+    out.write(body)
+    if not body.endswith("\n"):
+        out.write("\n")
+    return 0
+
+
+def main(
     argv: Sequence[str] | None = None,
     *,
     stdout: TextIO | None = None,
@@ -365,8 +439,13 @@ def main(  # noqa: C901, PLR0911, PLR0912
         return 2
 
     if client is None:
+        use_key_file = not getattr(args, "no_key_file", False) and not bool(
+            os.environ.get("FREDQ_DISABLE_KEY_FILE", "").strip()
+        )
         try:
-            api_key = resolve_api_key(explicit=args.api_key)
+            api_key = resolve_api_key(
+                explicit=args.api_key, use_key_file=use_key_file
+            )
         except FredqError as exc:
             err.write(f"{exc}\n")
             return 2
@@ -374,27 +453,4 @@ def main(  # noqa: C901, PLR0911, PLR0912
     else:
         active_client = client
 
-    try:
-        params = _collect_params(command, args)
-    except ValueError as exc:
-        err.write(f"{exc}\n")
-        return 2
-
-    try:
-        body = asyncio.run(_run_command(active_client, command, params))
-    except FredqError as exc:
-        err.write(f"{exc}\n")
-        return 1
-
-    if getattr(args, "output_format", "json") == "parquet":
-        try:
-            _handle_parquet_output(args, body, params, out)
-        except FredqError as exc:
-            err.write(f"{exc}\n")
-            return 1
-        return 0
-
-    out.write(body)
-    if not body.endswith("\n"):
-        out.write("\n")
-    return 0
+    return _dispatch_command(args, command, out, err, active_client)

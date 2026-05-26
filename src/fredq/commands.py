@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Final
 
+from fredq.client import FRED_BASE_URL
 from fredq.params import ParamKind, ParamSpec
 
 
@@ -19,13 +20,12 @@ class CommandSpec:
     params: tuple[ParamSpec, ...]
     examples: tuple[str, ...]
     notes: tuple[str, ...] = ()
-    base_url: str = "https://api.stlouisfed.org"
 
     @property
     def fred_url(self) -> str:
         """Return the full FRED URL for this endpoint."""
 
-        return f"{self.base_url}{self.path}"
+        return f"{FRED_BASE_URL}{self.path}"
 
 
 _SERIES_ID_PARAM: Final[ParamSpec] = ParamSpec(
@@ -133,6 +133,29 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 help=(
                     "Aggregation frequency: d, w, bw, m, q, sa, a (plus -e "
                     "and -ss variants)."
+                ),
+                # Base frequencies + end-of-period (-e) and smooth-seasonal
+                # (-ss) variants.  Ref: FRED series/observations API docs.
+                allowed_values=(
+                    # Base
+                    "d",
+                    "w",
+                    "bw",
+                    "m",
+                    "q",
+                    "sa",
+                    "a",
+                    # End-of-period variants (-e)
+                    "d-e",
+                    "w-e",
+                    "bw-e",
+                    "m-e",
+                    "q-e",
+                    "sa-e",
+                    "a-e",
+                    # Smooth-seasonal variants (-ss)
+                    "m-ss",
+                    "q-ss",
                 ),
                 metavar="FREQ",
             ),

@@ -133,3 +133,142 @@ def test_main_non_ascii_body_does_not_crash(
 
     assert rc == EXIT_OK
     assert "é" in out.getvalue()
+
+
+# B4 — frequency allowed-values validation
+
+
+def test_invalid_frequency_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """An unrecognized --frequency value is rejected before any HTTP call."""
+
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(
+        ["series-observations", "--series-id", "GNPCA", "--frequency", "xyz"],
+        stdout=out,
+        stderr=err,
+    )
+
+    assert rc != EXIT_OK
+    assert "unsupported value" in err.getvalue() or "xyz" in err.getvalue()
+
+
+def test_valid_frequency_end_of_period_accepted(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """End-of-period frequency suffixes like 'q-e' and 'm-ss' are accepted."""
+
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            "https://api.stlouisfed.org/fred/series/observations?"
+            "series_id=GNPCA&frequency=q-e&api_key=secret&file_type=json"
+        ),
+        text='{"observations": []}',
+    )
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(
+        ["series-observations", "--series-id", "GNPCA", "--frequency", "q-e"],
+        stdout=out,
+        stderr=err,
+    )
+
+    assert rc == EXIT_OK
+
+
+def test_valid_frequency_smooth_seasonal_accepted(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Smooth-seasonal frequency 'm-ss' is accepted."""
+
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            "https://api.stlouisfed.org/fred/series/observations?"
+            "series_id=GNPCA&frequency=m-ss&api_key=secret&file_type=json"
+        ),
+        text='{"observations": []}',
+    )
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(
+        ["series-observations", "--series-id", "GNPCA", "--frequency", "m-ss"],
+        stdout=out,
+        stderr=err,
+    )
+
+    assert rc == EXIT_OK
+
+
+# B6 — --no-key-file and FREDQ_DISABLE_KEY_FILE
+
+
+def test_no_key_file_flag_skips_file_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """--no-key-file causes FredApiKeyMissingError even when key file exists."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    key_file = tmp_path / ".fredq" / "api_key"
+    key_file.parent.mkdir(parents=True, exist_ok=True)
+    key_file.write_text("from-file\n", encoding="utf-8")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(
+        ["--no-key-file", "series", "--series-id", "GNPCA"],
+        stdout=out,
+        stderr=err,
+    )
+
+    assert rc == EXIT_USAGE
+    assert "FRED API key" in err.getvalue()
+
+
+def test_fredq_disable_key_file_env_skips_file_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FREDQ_DISABLE_KEY_FILE=1 skips the key file even when it exists."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    monkeypatch.setenv("FREDQ_DISABLE_KEY_FILE", "1")
+    key_file = tmp_path / ".fredq" / "api_key"
+    key_file.parent.mkdir(parents=True, exist_ok=True)
+    key_file.write_text("from-file\n", encoding="utf-8")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(
+        ["series", "--series-id", "GNPCA"],
+        stdout=out,
+        stderr=err,
+    )
+
+    assert rc == EXIT_USAGE
+    assert "FRED API key" in err.getvalue()

@@ -95,8 +95,8 @@ def test_parquet_round_trip(
     assert out_path.exists()
     descriptor = json.loads(captured.out)
     assert descriptor["format"] == "parquet"
-    assert descriptor["command"] == "series-observations"
-    assert descriptor["series_id"] == "CPIAUCSL"
+    assert descriptor["fredq_command"] == "series-observations"
+    assert descriptor["fredq_series_id"] == "CPIAUCSL"
 
     table = pq.read_table(out_path)
     expected_rows = 2

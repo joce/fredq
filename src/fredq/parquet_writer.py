@@ -84,8 +84,8 @@ def write_observations_parquet(
     return {
         "format": "parquet",
         "out": str(out_path),
-        "command": "series-observations",
-        "series_id": context.series_id,
+        "fredq_command": "series-observations",
+        "fredq_series_id": context.series_id,
         "rows": table.num_rows,
         "bytes": out_path.stat().st_size,
     }
@@ -220,10 +220,12 @@ _ENVELOPE_METADATA_KEYS: Final[tuple[str, ...]] = (
 def _build_metadata(
     envelope: dict[str, Any], context: ObservationsContext
 ) -> dict[bytes, bytes]:
+    # Key naming: use "fredq_" prefix for tool-owned fields to match sister
+    # tools (yoghurt uses "yoghurt_command", "yoghurt_version" etc.).
     payload: dict[str, str] = {
         "fredq_version": __version__,
-        "command": "series-observations",
-        "series_id": context.series_id,
+        "fredq_command": "series-observations",
+        "fredq_series_id": context.series_id,
     }
     for key in _ENVELOPE_METADATA_KEYS:
         if key in envelope and envelope[key] is not None:

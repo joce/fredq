@@ -65,8 +65,8 @@ def test_write_round_trip(tmp_path: Path) -> None:
     descriptor = write_observations_parquet(body, out_path, context)
 
     assert descriptor["format"] == "parquet"
-    assert descriptor["command"] == "series-observations"
-    assert descriptor["series_id"] == "CPIAUCSL"
+    assert descriptor["fredq_command"] == "series-observations"
+    assert descriptor["fredq_series_id"] == "CPIAUCSL"
     expected_rows = 2
     assert descriptor["rows"] == expected_rows
     assert descriptor["bytes"] == out_path.stat().st_size
@@ -108,8 +108,8 @@ def test_envelope_metadata_recorded(tmp_path: Path) -> None:
 
     schema = pq.read_schema(out_path)
     metadata = {k.decode(): v.decode() for k, v in (schema.metadata or {}).items()}
-    assert metadata["command"] == "series-observations"
-    assert metadata["series_id"] == "CPIAUCSL"
+    assert metadata["fredq_command"] == "series-observations"
+    assert metadata["fredq_series_id"] == "CPIAUCSL"
     assert metadata["envelope.units"] == "pch"
     assert metadata["envelope.count"] == "1"
     assert metadata["request.units"] == "pch"

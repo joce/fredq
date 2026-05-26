@@ -17,6 +17,10 @@ from fredq.exceptions import (
 if TYPE_CHECKING:
     from fredq.types import ParamValue
 
+# Public constant so commands.py and tests can reference the base URL without
+# importing the full class.  Moved from CommandSpec.base_url (B2).
+FRED_BASE_URL: Final[str] = "https://api.stlouisfed.org"
+
 
 class FredClient:
     """Async FRED API client.
@@ -26,7 +30,7 @@ class FredClient:
     on every request and redacts the API key from any error message.
     """
 
-    _FRED_BASE_URL: Final[str] = "https://api.stlouisfed.org"
+    _FRED_BASE_URL: Final[str] = FRED_BASE_URL
     _USER_AGENT: Final[str] = "fredq/0.0.1 (+https://github.com/joce/fredq)"
     _REQUEST_ATTEMPTS: Final[int] = 3
     _RETRYABLE_STATUS_CODES: Final[frozenset[int]] = frozenset(

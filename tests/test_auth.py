@@ -69,6 +69,22 @@ def test_empty_file_treated_as_missing(
         resolve_api_key(key_path=key_file)
 
 
+# B6 — use_key_file=False skips file even when present
+
+
+def test_use_key_file_false_skips_file(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """use_key_file=False causes the file fallback to be skipped."""
+
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    key_file = tmp_path / "key"
+    key_file.write_text("from-file\n", encoding="utf-8")
+
+    with pytest.raises(FredApiKeyMissingError):
+        resolve_api_key(key_path=key_file, use_key_file=False)
+
+
 # A5 — file permission warnings (POSIX only)
 
 
