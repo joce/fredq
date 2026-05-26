@@ -1,0 +1,34 @@
+# Byte-compiled / optimized files
+__pycache__/
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+coverage.xml
+junit*.xml
+htmlcov/
+
+# Virtual environments and uv cache
+.venv/
+.uv-cache/
+
+# Tool caches
+.ruff_cache/
+.tox/
+.mypy_cache/
+node_modules/
+
+# Editors
+.vscode/
+
+# Claude Code local state
+.claude/
+
+# Local API key material (never commit)
+.fredq-key
+fredq-key.txt
+
+# Worktrees + scratch
+.worktrees/
+output/
+tmp/

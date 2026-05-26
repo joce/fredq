@@ -1,0 +1,13 @@
+{
+  "name": "fredq",
+  "version": "0.0.1",
+  "private": true,
+  "description": "LLM-friendly CLI for raw FRED (Federal Reserve Economic Data) API JSON.",
+  "scripts": {
+    "spell": "cspell .",
+    "spell:changed": "node tools/spell-changed.mjs"
+  },
+  "devDependencies": {
+    "cspell": "^9.2.2"
+  }
+}

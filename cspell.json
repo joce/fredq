@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  "useGitignore": true,
+  "ignorePaths": [
+    ".git",
+    ".gitignore",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tox",
+    ".uv-cache",
+    ".venv",
+    "cspell.json",
+    "htmlcov",
+    "Makefile",
+    "node_modules",
+    "pyproject.toml",
+    "tox.ini",
+    "uv.lock"
+  ],
+  "files": [
+    "**/*.{md,py,toml,json,yml,yaml,ps1}"
+  ],
+  "dictionaries": ["python"],
+  "ignoreWords": [
+    "alfred",
+    "fredq",
+    "geofred",
+    "posargs",
+    "testpaths"
+  ],
+  "words": [
+    "capsys",
+    "jocelynlegault",
+    "Legault",
+    "stlouisfed",
+    "vintagedates"
+  ]
+}

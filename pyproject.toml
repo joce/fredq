@@ -1,0 +1,223 @@
+[project]
+name = "fredq"
+version = "0.0.1"
+description = "LLM-friendly CLI for raw FRED (Federal Reserve Economic Data) API JSON."
+readme = "README.md"
+authors = [{ name = "Jocelyn Legault", email = "jocelynlegault@gmail.com" }]
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10, <4.0"
+keywords = [
+    "fred",
+    "federal-reserve",
+    "economic-data",
+    "macro",
+    "cli",
+    "llm-tools",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "httpx>=0.28,<1.0",
+    "typing-extensions>=4.13",
+]
+
+[project.optional-dependencies]
+parquet = ["pyarrow>=15,<25"]
+
+[project.scripts]
+fredq = "fredq.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/joce/fredq"
+Repository = "https://github.com/joce/fredq"
+Issues = "https://github.com/joce/fredq/issues"
+
+[dependency-groups]
+tox = [
+    "tox>=4.53,<5.0",
+    "tox-gh-actions>=3.0,<4.0",
+    "tox-uv>=1.35,<2.0",
+]
+dev = [
+    { include-group = "tox" },
+    "black>=25.9,<27.0",
+    "coverage>=7.10,<8.0",
+    "isort>=7,<9",
+    "pyarrow>=15,<25",
+    "pylint>=4.0,<5.0",
+    "pyright>=1.1.409,<2.0",
+    "pytest>=9.0,<10.0",
+    "pytest-asyncio>=1.2,<2.0",
+    "pytest-cov>=7.0,<8.0",
+    "pytest-httpx>=0.36,<1.0",
+    "pytest-timeout>=2.4,<3.0",
+    "pytest-xdist[psutil]>=3.8,<4.0",
+    "ruff>=0.15,<1.0",
+    'tzdata; sys_platform == "win32"',
+]
+
+[tool.black]
+target-version = ["py310"]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+py_version = "auto"
+skip = ["__pycache__", ".venv", ".uv-cache", ".git", ".pytest_cache", ".tox"]
+
+[tool.pyright]
+include = ["src", "tests"]
+typeCheckingMode = "strict"
+
+[tool.pytest.ini_options]
+pythonpath = "src"
+testpaths = ["tests"]
+timeout = 10
+asyncio_mode = "auto"
+markers = [
+    "unit: Fast, isolated unit tests",
+    "integration: Tests involving the live FRED API",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = ["tests/*", "*/__main__.py", "src/fredq/types.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+precision = 2
+exclude_also = [
+    "if sys\\.version_info",
+    "^\\s+from typing(_extensions)?\\s+import",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.ruff]
+exclude = [
+    "__pycache__",
+    ".git",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".specstory",
+    ".tox",
+    ".uv-cache",
+    ".venv",
+    ".vscode",
+]
+line-length = 88
+indent-width = 4
+target-version = "py310"
+
+[tool.ruff.format]
+indent-style = "space"
+line-ending = "lf"
+quote-style = "double"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+select = [
+    "F",
+    "E",
+    "W",
+    "I",
+    "N",
+    "ERA",
+    "UP",
+    "PL",
+    "FLY",
+    "PERF",
+    "FURB",
+    "DOC",
+    "RUF",
+    "TRY",
+    "D",
+    "C90",
+    "YTT",
+    "ANN",
+    "ASYNC",
+    "S",
+    "BLE",
+    "FBT",
+    "B",
+    "A",
+    "COM",
+    "C4",
+    "DTZ",
+    "T10",
+    "EM",
+    "FA",
+    "INT",
+    "ISC",
+    "ICN",
+    "LOG",
+    "G",
+    "INP",
+    "PIE",
+    "T20",
+    "PYI",
+    "PT",
+    "Q",
+    "RSE",
+    "RET",
+    "SLF",
+    "SLOT",
+    "SIM",
+    "TID",
+    "TC",
+    "ARG",
+    "PTH",
+    "PGH",
+]
+fixable = ["ALL"]
+unfixable = []
+ignore = [
+    "COM812",
+    "D105",
+    "D202",
+    "D203",
+    "D213",
+    "D413",
+]
+preview = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "DOC201",
+    "DOC402",
+    "DOC501",
+    "PLC2701",
+    "S101",
+    "SLF001",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fredq"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "AGENTS.md", "LICENSE", "README.md", "pyproject.toml"]
+
+[build-system]
+requires = ["hatchling>=1.29,<2.0"]
+build-backend = "hatchling.build"
