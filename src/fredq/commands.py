@@ -647,6 +647,13 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "fredq releases-dates --limit 10",
             "fredq releases-dates --include-release-dates-with-no-data",
         ),
+        notes=(
+            (
+                "Default realtime range is broad (calendar year start to "
+                "9999-12-31), unlike most endpoints which default to today. "
+                "Pass --realtime-start / --realtime-end to narrow."
+            ),
+        ),
     ),
     CommandSpec(
         name="release",
