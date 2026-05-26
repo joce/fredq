@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
     from pytest_httpx import HTTPXMock
 
+    from fredq.types import ParamValue
+
 EXIT_USAGE: Final[int] = 2
 EXIT_OK: Final[int] = 0
 
@@ -515,3 +517,54 @@ def test_fredq_disable_key_file_garbage_exits_2(
     assert rc == EXIT_USAGE
     assert "FREDQ_DISABLE_KEY_FILE" in err.getvalue()
     assert "garbage" in err.getvalue()
+
+
+# Item 5 — DI smoke test for _FredClientProtocol
+
+
+class _FakeFredClient:
+    """Minimal fake satisfying _FredClientProtocol for DI testing."""
+
+    def __init__(self, response: str) -> None:
+        self.response = response
+        self.calls: list[tuple[str, dict[str, ParamValue]]] = []
+        self.closed = False
+
+    async def get(
+        self,
+        path: str,
+        params: dict[str, ParamValue],
+        *,
+        base_url: str | None = None,  # noqa: ARG002
+    ) -> str:
+        self.calls.append((path, dict(params)))
+        return self.response
+
+    async def aclose(self) -> None:
+        self.closed = True
+
+
+def test_di_fake_client_used_without_http() -> None:
+    """main() with a fake client exercises _FredClientProtocol without real HTTP."""
+
+    fake = _FakeFredClient('{"seriess": [{"id": "GNPCA"}]}')
+    out = io.StringIO()
+    err = io.StringIO()
+
+    rc = main(
+        ["series", "--series-id", "GNPCA"],
+        client=fake,
+        stdout=out,
+        stderr=err,
+    )
+
+    assert rc == EXIT_OK
+    # Fake was called with the expected path and series_id param.
+    assert len(fake.calls) == 1
+    path, params = fake.calls[0]
+    assert path == "/fred/series"
+    assert params.get("series_id") == "GNPCA"
+    # No real HTTP was made (no httpx_mock needed).
+    # Response body written to stdout.
+    assert '"GNPCA"' in out.getvalue()
+    assert fake.closed
