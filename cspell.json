@@ -25,16 +25,36 @@
   "dictionaries": ["python"],
   "ignoreWords": [
     "alfred",
+    "censusdivision",
+    "censusregion",
+    "delenv",
+    "edgarq",
     "fredq",
     "geofred",
+    "homebuilder",
+    "necta",
     "posargs",
-    "testpaths"
+    "pyfredapi",
+    "pystlouisfed",
+    "seriess",
+    "testpaths",
+    "topojson",
+    "unparseable"
   ],
   "words": [
+    "ACMR",
     "capsys",
     "jocelynlegault",
+    "joce",
     "Legault",
     "stlouisfed",
     "vintagedates"
-  ]
+  ],
+  "patterns": [
+    {
+      "name": "fred_series_id",
+      "pattern": "/\\b[A-Z][A-Z0-9]{2,}\\b/"
+    }
+  ],
+  "ignoreRegExpList": ["fred_series_id"]
 }
