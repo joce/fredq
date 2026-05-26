@@ -96,6 +96,34 @@ def _install_api_key_redact_filter() -> None:
     _redact_filter_installed = True
 
 
+# Design note — why httpx event_hooks were NOT used for URL scrubbing
+# -----------------------------------------------------------------------
+# httpx supports ``event_hooks={"request": [callback]}`` which fires a
+# callback with the live ``httpx.Request`` object just before the request
+# is sent.  The appeal is intercepting the request before httpx logs the
+# URL.  However, this approach has a fundamental problem:
+#
+#   * The ``request.url`` on the ``Request`` object is what httpx actually
+#     uses for the HTTP call.  Mutating it to strip the ``api_key`` param
+#     would also strip it from the real request, breaking authentication.
+#
+#   * We cannot replace the URL with a redacted copy for logging purposes
+#     without also affecting the in-flight request.  httpx has no separate
+#     "URL for display" field.
+#
+#   * Logging a custom message from the hook and then suppressing httpx's
+#     own log lines would require patching httpx internals that are not
+#     part of its public API.
+#
+# The logging filter on handlers (``_ApiKeyRedactFilter``) is the correct
+# defense: it intercepts records after they are fully formatted but before
+# they are written to any sink, and it is robust to httpx's logger hierarchy
+# because it is attached to the logger objects themselves as a fall-through.
+#
+# Future maintainers: please do not re-introduce an event_hooks scrubber;
+# the above constraints have not changed.
+
+
 class FredClient:
     """Async FRED API client.
 
