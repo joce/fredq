@@ -40,6 +40,9 @@ class CommandSpec:
     params: tuple[ParamSpec, ...]
     examples: tuple[str, ...]
     notes: tuple[str, ...] = ()
+    mutually_dependent_params: tuple[frozenset[str], ...] = ()
+    at_least_one_of: tuple[frozenset[str], ...] = ()
+    requires_partner: tuple[tuple[str, str], ...] = ()
 
     @property
     def fred_url(self) -> str:
@@ -458,6 +461,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ("fredq series-search --search-text UNRATE --search-type series_id"),
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
     ),
     CommandSpec(
         name="series-search-tags",
@@ -757,6 +761,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ),
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
     ),
     CommandSpec(
         name="category-tags",
@@ -937,6 +942,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ),
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
     ),
     CommandSpec(
         name="release-sources",
