@@ -163,6 +163,11 @@ _FILTER_VALUE_PARAM: Final[ParamSpec] = ParamSpec(
     name="filter_value",
     cli_name="filter-value",
     kind=ParamKind.STRING,
+    # filter_value validation is intentionally deferred to FRED.
+    # frequency values are display names ("Annual", "Monthly", etc.) distinct
+    # from the frequency code set; units has hundreds of data-driven values;
+    # seasonal_adjustment has four stable values but a partial allowlist would
+    # be inconsistent. An invalid value receives a FRED 400 immediately.
     help="Value to match against --filter-variable.",
     metavar="VAL",
 )
