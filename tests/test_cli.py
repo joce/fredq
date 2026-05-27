@@ -519,6 +519,31 @@ def test_fredq_disable_key_file_garbage_exits_2(
     assert "garbage" in err.getvalue()
 
 
+def test_fredq_disable_key_file_garbage_with_empty_api_key_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FREDQ_DISABLE_KEY_FILE=garbage exits 2 even when FRED_API_KEY is set but empty.
+
+    Regression: when FRED_API_KEY="" (set but empty) the env var parse failure
+    must still exit 2 immediately, not fall through to the key file or succeed
+    via any other mechanism.
+    """
+
+    monkeypatch.setenv("FRED_API_KEY", "")
+    monkeypatch.setenv("FREDQ_DISABLE_KEY_FILE", "garbage")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+
+    out = io.StringIO()
+    err = io.StringIO()
+    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+
+    assert rc == EXIT_USAGE
+    assert "invalid boolean value" in err.getvalue()
+    assert "garbage" in err.getvalue()
+
+
 # Item 5 — DI smoke test for _FredClientProtocol
 
 
