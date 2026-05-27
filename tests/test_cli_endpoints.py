@@ -1070,3 +1070,26 @@ def test_exclude_tag_names_without_tag_names_exits_2(
     )
     assert rc == EXIT_USAGE
     assert "--tag-names" in err
+
+
+# ---------------------------------------------------------------------------
+# Item 3 — tags-series: at_least_one_of enforces --tag-names independently
+# ---------------------------------------------------------------------------
+
+
+def test_tags_series_exclude_only_error_comes_from_at_least_one_of(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """tags-series --exclude-tag-names without --tag-names exits 2.
+
+    Rejection comes from the at_least_one_of rule (not requires_partner,
+    which is redundant and will be removed). The error must mention --tag-names.
+    """
+    rc, _, err = _run(
+        ["tags-series", "--exclude-tag-names", "usa", "--limit", "3"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert "--tag-names" in err

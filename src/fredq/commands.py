@@ -1103,7 +1103,6 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "--tag-names is required; --exclude-tag-names may optionally accompany it.",
         ),
         at_least_one_of=(frozenset({"tag_names"}),),
-        requires_partner=(("exclude_tag_names", "tag_names"),),
     ),
     CommandSpec(
         name="tags",
