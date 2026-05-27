@@ -743,6 +743,80 @@ def test_release_tables_happy_path(
     assert '"elements"' in stdout
 
 
+# ---------------------------------------------------------------------------
+# Item 1 — FRED ID bounds: category_id, source_id, release_id, element_id >= 1
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("args", "description"),
+    [
+        (["category", "--category-id", "0"], "category --category-id 0"),
+        (["category", "--category-id", "-5"], "category --category-id -5"),
+        (["source", "--source-id", "0"], "source --source-id 0"),
+        (["source", "--source-id", "-1"], "source --source-id -1"),
+        (["release", "--release-id", "0"], "release --release-id 0"),
+        (["release", "--release-id", "-3"], "release --release-id -3"),
+        (
+            ["release-tables", "--release-id", "53", "--element-id", "0"],
+            "release-tables --element-id 0",
+        ),
+        (
+            ["release-tables", "--release-id", "53", "--element-id", "-1"],
+            "release-tables --element-id -1",
+        ),
+    ],
+)
+def test_fred_id_zero_or_negative_exits_2(
+    args: list[str],
+    description: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FRED integer IDs must be >= 1; zero or negative values exit 2."""
+    rc, _, err = _run(args, monkeypatch=monkeypatch, tmp_path=tmp_path)
+    assert rc == EXIT_USAGE, f"{description}: expected exit 2"
+    assert ">= 1" in err, f"{description}: expected '>= 1' in stderr, got: {err!r}"
+
+
+@pytest.mark.parametrize(
+    ("args", "url_suffix", "body"),
+    [
+        (
+            ["category", "--category-id", "1"],
+            "/fred/category?category_id=1",
+            '{"categories": [{"id": 1}]}',
+        ),
+        (
+            ["source", "--source-id", "1"],
+            "/fred/source?source_id=1",
+            '{"sources": [{"id": 1}]}',
+        ),
+        (
+            ["release", "--release-id", "1"],
+            "/fred/release?release_id=1",
+            '{"releases": [{"id": 1}]}',
+        ),
+    ],
+)
+def test_fred_id_positive_accepted(  # noqa: PLR0913, PLR0917
+    args: list[str],
+    url_suffix: str,
+    body: str,
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """FRED integer IDs >= 1 are accepted and forwarded to the API."""
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{_BASE}{url_suffix}{_KEY_SUFFIX}",
+        text=body,
+    )
+    rc, _out, _ = _run(args, monkeypatch=monkeypatch, tmp_path=tmp_path)
+    assert rc == EXIT_OK
+
+
 def test_release_tables_include_observation_values_flag(
     httpx_mock: HTTPXMock,
     monkeypatch: pytest.MonkeyPatch,

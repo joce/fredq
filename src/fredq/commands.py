@@ -259,9 +259,10 @@ _CATEGORY_ID_PARAM: Final[ParamSpec] = ParamSpec(
     name="category_id",
     cli_name="category-id",
     kind=ParamKind.INTEGER,
-    help="FRED category identifier (e.g. 0 for root, 32991 for Money & Banking).",
+    help="FRED category identifier (e.g. 32991 for Money & Banking).",
     required=True,
     metavar="ID",
+    min_value=1,
 )
 
 _ORDER_BY_SOURCES: Final[tuple[str, ...]] = (
@@ -281,6 +282,7 @@ _SOURCE_ID_PARAM: Final[ParamSpec] = ParamSpec(
     help="FRED source identifier (e.g. 1 for Board of Governors, 3 for St. Louis Fed).",
     required=True,
     metavar="ID",
+    min_value=1,
 )
 
 _RELEASE_ID_PARAM: Final[ParamSpec] = ParamSpec(
@@ -290,6 +292,7 @@ _RELEASE_ID_PARAM: Final[ParamSpec] = ParamSpec(
     help="FRED release identifier (e.g. 53 for GDP, 10 for CPI).",
     required=True,
     metavar="ID",
+    min_value=1,
 )
 
 _INCLUDE_RELEASE_DATES_WITH_NO_DATA_PARAM: Final[ParamSpec] = ParamSpec(
@@ -1042,6 +1045,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
                     "Omit to retrieve the full table."
                 ),
                 metavar="ID",
+                min_value=1,
             ),
             ParamSpec(
                 name="include_observation_values",
