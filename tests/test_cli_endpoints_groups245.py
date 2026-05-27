@@ -82,14 +82,14 @@ def test_category_happy_path(
     tmp_path: Path,
 ) -> None:
     """Category returns raw FRED JSON body."""
-    body = '{"categories": [{"id": 32991, "name": "Money, Banking", "parent_id": 0}]}'
+    body = '{"categories": [{"id": 0, "name": "Categories", "parent_id": 0}]}'
     httpx_mock.add_response(
         method="GET",
-        url=(f"{_BASE}/fred/category?category_id=32991{_KEY_SUFFIX}"),
+        url=(f"{_BASE}/fred/category?category_id=0{_KEY_SUFFIX}"),
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category", "--category-id", "32991"],
+        ["category", "--category-id", "0"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -106,11 +106,11 @@ def test_category_children_happy_path(
     body = '{"categories": []}'
     httpx_mock.add_response(
         method="GET",
-        url=(f"{_BASE}/fred/category/children?category_id=32991{_KEY_SUFFIX}"),
+        url=(f"{_BASE}/fred/category/children?category_id=0{_KEY_SUFFIX}"),
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category-children", "--category-id", "32991"],
+        ["category-children", "--category-id", "0"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )

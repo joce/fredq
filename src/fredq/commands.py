@@ -264,10 +264,13 @@ _CATEGORY_ID_PARAM: Final[ParamSpec] = ParamSpec(
     name="category_id",
     cli_name="category-id",
     kind=ParamKind.INTEGER,
-    help="FRED category identifier (e.g. 32991 for Money & Banking).",
+    help=(
+        "FRED category identifier (e.g. 32991 for Money & Banking)."
+        " The root category (ID 0) is the top of the FRED hierarchy."
+    ),
     required=True,
     metavar="ID",
-    min_value=1,
+    min_value=0,
 )
 
 _ORDER_BY_SOURCES: Final[tuple[str, ...]] = (

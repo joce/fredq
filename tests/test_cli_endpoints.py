@@ -744,15 +744,29 @@ def test_release_tables_happy_path(
 
 
 # ---------------------------------------------------------------------------
-# Item 1 — FRED ID bounds: category_id, source_id, release_id, element_id >= 1
+# Item 1 — FRED ID bounds:
+#   category_id >= 0 (0 is the documented FRED root category)
+#   source_id, release_id, element_id >= 1 (FRED rejects 0 for these)
 # ---------------------------------------------------------------------------
+
+
+def test_category_id_negative_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Negative category_id values exit 2 (category_id must be >= 0)."""
+    rc, _, err = _run(
+        ["category", "--category-id", "-5"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert ">= 0" in err, f"expected '>= 0' in stderr, got: {err!r}"
 
 
 @pytest.mark.parametrize(
     ("args", "description"),
     [
-        (["category", "--category-id", "0"], "category --category-id 0"),
-        (["category", "--category-id", "-5"], "category --category-id -5"),
         (["source", "--source-id", "0"], "source --source-id 0"),
         (["source", "--source-id", "-1"], "source --source-id -1"),
         (["release", "--release-id", "0"], "release --release-id 0"),
@@ -773,10 +787,34 @@ def test_fred_id_zero_or_negative_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """FRED integer IDs must be >= 1; zero or negative values exit 2."""
+    """Source/release/element IDs must be >= 1; zero or negative values exit 2.
+
+    Note: category_id is excluded — category_id=0 is the FRED root and is valid;
+    see test_category_id_zero_accepted and test_category_id_negative_exits_2.
+    """
     rc, _, err = _run(args, monkeypatch=monkeypatch, tmp_path=tmp_path)
     assert rc == EXIT_USAGE, f"{description}: expected exit 2"
     assert ">= 1" in err, f"{description}: expected '>= 1' in stderr, got: {err!r}"
+
+
+def test_category_id_zero_accepted(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """category_id=0 is the FRED root category and must be accepted (not exit 2)."""
+    body = '{"categories": [{"id": 0, "name": "Categories", "parent_id": 0}]}'
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{_BASE}/fred/category?category_id=0{_KEY_SUFFIX}",
+        text=body,
+    )
+    rc, _out, _ = _run(
+        ["category", "--category-id", "0"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
 
 
 @pytest.mark.parametrize(
