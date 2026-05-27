@@ -462,6 +462,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
+        requires_partner=(("exclude_tag_names", "tag_names"),),
     ),
     CommandSpec(
         name="series-search-tags",
@@ -762,6 +763,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
+        requires_partner=(("exclude_tag_names", "tag_names"),),
     ),
     CommandSpec(
         name="category-tags",
@@ -943,6 +945,7 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
+        requires_partner=(("exclude_tag_names", "tag_names"),),
     ),
     CommandSpec(
         name="release-sources",
@@ -1091,7 +1094,12 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "fredq tags-series --tag-names usa --limit 5",
             "fredq tags-series --tag-names 'usa;annual' --limit 3",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=(
+            "Tag lists use semicolons as separators (e.g. 'usa;annual').",
+            "--tag-names is required; --exclude-tag-names may optionally accompany it.",
+        ),
+        at_least_one_of=(frozenset({"tag_names"}),),
+        requires_partner=(("exclude_tag_names", "tag_names"),),
     ),
     CommandSpec(
         name="tags",
