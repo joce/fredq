@@ -227,3 +227,68 @@ def test_parse_date_whitespace_only_raises() -> None:
 
     with pytest.raises(ValueError, match="expected YYYY-MM-DD"):
         parse_date("   ")
+
+
+# Bug 2 — INTEGER min_value / max_value bounds
+
+
+def test_integer_min_value_rejects_below_minimum() -> None:
+    """INTEGER with min_value=1 rejects 0 and negative values."""
+
+    spec = _spec(ParamKind.INTEGER, min_value=1, max_value=1000)
+    with pytest.raises(ValueError, match="must be >= 1"):
+        coerce_param(spec, "0")
+
+
+def test_integer_min_value_rejects_negative() -> None:
+    """INTEGER with min_value=1 rejects -5."""
+
+    spec = _spec(ParamKind.INTEGER, min_value=1, max_value=1000)
+    with pytest.raises(ValueError, match="must be >= 1"):
+        coerce_param(spec, "-5")
+
+
+def test_integer_max_value_rejects_above_maximum() -> None:
+    """INTEGER with max_value=1000 rejects 1001."""
+
+    spec = _spec(ParamKind.INTEGER, min_value=1, max_value=1000)
+    with pytest.raises(ValueError, match="must be <= 1000"):
+        coerce_param(spec, "1001")
+
+
+def test_integer_min_value_boundary_accepted() -> None:
+    """INTEGER with min_value=1 accepts 1 (boundary value)."""
+
+    spec = _spec(ParamKind.INTEGER, min_value=1, max_value=1000)
+    assert coerce_param(spec, "1") == 1
+
+
+def test_integer_max_value_boundary_accepted() -> None:
+    """INTEGER with max_value=1000 accepts 1000 (boundary value)."""
+
+    spec = _spec(ParamKind.INTEGER, min_value=1, max_value=1000)
+    result = coerce_param(spec, "1000")
+    assert result == 1000  # noqa: PLR2004
+
+
+def test_integer_without_bounds_any_value_works() -> None:
+    """INTEGER with no bounds still accepts any integer (no regression)."""
+
+    spec = _spec(ParamKind.INTEGER)
+    assert coerce_param(spec, "-999") == -999  # noqa: PLR2004
+    assert coerce_param(spec, "9999999") == 9999999  # noqa: PLR2004
+
+
+def test_integer_offset_min_zero_rejects_negative() -> None:
+    """INTEGER with min_value=0 (offset) rejects -1."""
+
+    spec = _spec(ParamKind.INTEGER, min_value=0)
+    with pytest.raises(ValueError, match="must be >= 0"):
+        coerce_param(spec, "-1")
+
+
+def test_integer_offset_min_zero_accepts_zero() -> None:
+    """INTEGER with min_value=0 accepts 0."""
+
+    spec = _spec(ParamKind.INTEGER, min_value=0)
+    assert coerce_param(spec, "0") == 0

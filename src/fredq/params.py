@@ -37,6 +37,8 @@ class ParamSpec:
     max_items: int | None = None
     allowed_values: tuple[str, ...] = ()
     csv_separator: str = ","
+    min_value: int | None = None
+    max_value: int | None = None
 
     @property
     def option(self) -> str:
@@ -199,10 +201,17 @@ def coerce_param(spec: ParamSpec, value: str) -> ParamValue:
         return _coerce_csv_param(spec, value)
     if spec.kind is ParamKind.INTEGER:
         try:
-            return int(value)
+            int_value = int(value)
         except ValueError as exc:
             message = f"{spec.option} expects an integer"
             raise ValueError(message) from exc
+        if spec.min_value is not None and int_value < spec.min_value:
+            message = f"{spec.option} must be >= {spec.min_value}"
+            raise ValueError(message)
+        if spec.max_value is not None and int_value > spec.max_value:
+            message = f"{spec.option} must be <= {spec.max_value}"
+            raise ValueError(message)
+        return int_value
     if spec.kind is ParamKind.DATE:
         try:
             return parse_date(value)

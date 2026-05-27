@@ -419,6 +419,50 @@ def test_releases_invalid_order_by_exits_2(
     assert "unsupported value" in err or "bad_field" in err
 
 
+# Bug 2 — --limit client-side bounds validation
+
+
+def test_releases_limit_zero_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The releases command rejects --limit 0 (below minimum of 1)."""
+    rc, _, err = _run(
+        ["releases", "--limit", "0"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert ">= 1" in err or "1" in err
+
+
+def test_releases_limit_negative_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The releases command rejects --limit -5 (negative)."""
+    rc, _, _ = _run(
+        ["releases", "--limit", "-5"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+
+
+def test_releases_limit_above_max_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The releases command rejects --limit 1001 (above maximum of 1000)."""
+    rc, _, err = _run(
+        ["releases", "--limit", "1001"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert "<= 1000" in err or "1000" in err
+
+
 def test_releases_dates_happy_path(
     httpx_mock: HTTPXMock,
     monkeypatch: pytest.MonkeyPatch,
@@ -742,3 +786,213 @@ def test_release_tables_element_id_integer_param(
         tmp_path=tmp_path,
     )
     assert rc == EXIT_OK
+
+
+# ---------------------------------------------------------------------------
+# Bug 3 — --filter-variable and --filter-value must appear together
+# ---------------------------------------------------------------------------
+
+
+_FILTER_COMMANDS: Final[list[tuple[str, list[str]]]] = [
+    ("series-search", ["--search-text", "gdp"]),
+    ("category-series", ["--category-id", "32991"]),
+    ("release-series", ["--release-id", "53"]),
+]
+
+
+@pytest.mark.parametrize(("command", "required_args"), _FILTER_COMMANDS)
+def test_filter_variable_without_filter_value_exits_2(
+    command: str,
+    required_args: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """--filter-variable without --filter-value exits 2 with a directed message."""
+    rc, _, err = _run(
+        [command, *required_args, "--filter-variable", "frequency"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert "--filter-value" in err
+
+
+@pytest.mark.parametrize(("command", "required_args"), _FILTER_COMMANDS)
+def test_filter_value_without_filter_variable_exits_2(
+    command: str,
+    required_args: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """--filter-value without --filter-variable exits 2 with a directed message."""
+    rc, _, err = _run(
+        [command, *required_args, "--filter-value", "Annual"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert "--filter-variable" in err
+
+
+_FILTER_COMMANDS_WITH_URLS: Final[list[tuple[str, list[str], str]]] = [
+    (
+        "series-search",
+        ["--search-text", "gdp"],
+        "/fred/series/search?search_text=gdp&filter_variable=frequency&filter_value=Annual",
+    ),
+    (
+        "category-series",
+        ["--category-id", "32991"],
+        "/fred/category/series?category_id=32991&filter_variable=frequency&filter_value=Annual",
+    ),
+    (
+        "release-series",
+        ["--release-id", "53"],
+        "/fred/release/series?release_id=53&filter_variable=frequency&filter_value=Annual",
+    ),
+]
+
+_FILTER_COMMANDS_BASE_URLS: Final[list[tuple[str, list[str], str]]] = [
+    ("series-search", ["--search-text", "gdp"], "/fred/series/search?search_text=gdp"),
+    (
+        "category-series",
+        ["--category-id", "32991"],
+        "/fred/category/series?category_id=32991",
+    ),
+    ("release-series", ["--release-id", "53"], "/fred/release/series?release_id=53"),
+]
+
+
+@pytest.mark.parametrize(
+    ("command", "required_args", "url_suffix"), _FILTER_COMMANDS_WITH_URLS
+)
+def test_filter_variable_and_value_together_exit_0(  # noqa: PLR0913, PLR0917
+    command: str,
+    required_args: list[str],
+    url_suffix: str,
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """--filter-variable and --filter-value together succeed (exit 0)."""
+    body = '{"seriess": [], "count": 0}'
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{_BASE}{url_suffix}{_KEY_SUFFIX}",
+        text=body,
+    )
+    rc, _, _ = _run(
+        [
+            command,
+            *required_args,
+            "--filter-variable",
+            "frequency",
+            "--filter-value",
+            "Annual",
+        ],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+
+
+@pytest.mark.parametrize(
+    ("command", "required_args", "url_suffix"), _FILTER_COMMANDS_BASE_URLS
+)
+def test_neither_filter_variable_nor_value_exits_0(  # noqa: PLR0913, PLR0917
+    command: str,
+    required_args: list[str],
+    url_suffix: str,
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Neither --filter-variable nor --filter-value is also valid (exit 0)."""
+    body = '{"seriess": [], "count": 0}'
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{_BASE}{url_suffix}{_KEY_SUFFIX}",
+        text=body,
+    )
+    rc, _, _ = _run(
+        [command, *required_args],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+
+
+# ---------------------------------------------------------------------------
+# Bug 4 — tag-name partner requirements
+# ---------------------------------------------------------------------------
+
+
+def test_tags_series_no_tags_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """tags-series with no --tag-names or --exclude-tag-names exits 2."""
+    rc, _, err = _run(
+        ["tags-series", "--limit", "3"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert "--tag-names" in err or "--exclude-tag-names" in err
+
+
+def test_tags_series_with_tag_names_exits_0(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """tags-series with --tag-names exits 0."""
+    body = '{"seriess": [], "count": 0}'
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{_BASE}/fred/tags/series?tag_names=usa{_KEY_SUFFIX}",
+        text=body,
+    )
+    rc, _, _ = _run(
+        ["tags-series", "--tag-names", "usa"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_OK
+
+
+def test_tags_series_with_exclude_only_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """The tags-series command with only --exclude-tag-names exits 2."""
+    rc, _, _ = _run(
+        ["tags-series", "--exclude-tag-names", "monthly"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+
+
+_EXCLUDE_TAG_COMMANDS: Final[list[tuple[str, list[str]]]] = [
+    ("release-series", ["--release-id", "53"]),
+    ("category-series", ["--category-id", "32991"]),
+    ("series-search", ["--search-text", "gdp"]),
+]
+
+
+@pytest.mark.parametrize(("command", "required_args"), _EXCLUDE_TAG_COMMANDS)
+def test_exclude_tag_names_without_tag_names_exits_2(
+    command: str,
+    required_args: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """--exclude-tag-names without --tag-names exits 2 with a directed message."""
+    rc, _, err = _run(
+        [command, *required_args, "--exclude-tag-names", "nsa"],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == EXIT_USAGE
+    assert "--tag-names" in err

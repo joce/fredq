@@ -81,16 +81,19 @@ _LIMIT_PARAM: Final[ParamSpec] = ParamSpec(
     name="limit",
     cli_name="limit",
     kind=ParamKind.INTEGER,
-    help="Maximum number of results to return (FRED max: 1000).",
+    help="Maximum number of results to return (1-1000).",
     metavar="N",
+    min_value=1,
+    max_value=1000,
 )
 
 _OFFSET_PARAM: Final[ParamSpec] = ParamSpec(
     name="offset",
     cli_name="offset",
     kind=ParamKind.INTEGER,
-    help="Number of results to skip for pagination.",
+    help="Number of results to skip for pagination (>= 0).",
     metavar="N",
+    min_value=0,
 )
 
 _SORT_ORDER_PARAM: Final[ParamSpec] = ParamSpec(
