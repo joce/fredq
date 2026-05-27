@@ -53,6 +53,28 @@ _TRUE_VALUES: Final[frozenset[str]] = frozenset({"1", "true", "t", "yes", "y", "
 _FALSE_VALUES: Final[frozenset[str]] = frozenset({"0", "false", "f", "no", "n", "off"})
 
 
+def bounds_suffix(min_value: int | None, max_value: int | None) -> str:
+    """Return a parenthesised bounds annotation suitable for help text.
+
+    Examples:
+        bounds_suffix(1, 1000) -> " (1-1000)"
+        bounds_suffix(0, None) -> " (>= 0)"
+        bounds_suffix(None, 100) -> " (<= 100)"
+        bounds_suffix(None, None) -> ""
+
+    Returns:
+        str: The bounds suffix, including a leading space when non-empty.
+    """
+
+    if min_value is not None and max_value is not None:
+        return f" ({min_value}-{max_value})"
+    if min_value is not None:
+        return f" (>= {min_value})"
+    if max_value is not None:
+        return f" (<= {max_value})"
+    return ""
+
+
 def _coerce_string_param(spec: ParamSpec, value: str) -> str:
     stripped = value.strip()
     if not stripped:

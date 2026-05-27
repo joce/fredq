@@ -519,6 +519,26 @@ def test_fredq_disable_key_file_garbage_exits_2(
     assert "garbage" in err.getvalue()
 
 
+# Item 2 — derived bounds in help text
+
+
+def test_limit_help_contains_bounds(capsys: pytest.CaptureFixture[str]) -> None:
+    """The --limit help text contains the 1-1000 bound derived from the spec."""
+    # series-search has --limit; any command with _LIMIT_PARAM works here.
+    with pytest.raises(SystemExit):
+        main(["series-search", "--help"])
+    captured = capsys.readouterr()
+    assert "1-1000" in captured.out
+
+
+def test_offset_help_contains_bounds(capsys: pytest.CaptureFixture[str]) -> None:
+    """The --offset help text contains the '>= 0' bound derived from the spec."""
+    with pytest.raises(SystemExit):
+        main(["series-search", "--help"])
+    captured = capsys.readouterr()
+    assert ">= 0" in captured.out
+
+
 def test_fredq_disable_key_file_garbage_with_empty_api_key_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

@@ -292,3 +292,41 @@ def test_integer_offset_min_zero_accepts_zero() -> None:
 
     spec = _spec(ParamKind.INTEGER, min_value=0)
     assert coerce_param(spec, "0") == 0
+
+
+# Item 2 — bounds_suffix helper and ParamSpec-derived help
+
+
+def test_bounds_suffix_both_bounds() -> None:
+    """Both min and max produce '(1-1000)' style suffix."""
+    from fredq.params import bounds_suffix  # noqa: PLC0415
+
+    assert bounds_suffix(1, 1000) == " (1-1000)"
+
+
+def test_bounds_suffix_min_only() -> None:
+    """Only min_value produces '>= N' style suffix."""
+    from fredq.params import bounds_suffix  # noqa: PLC0415
+
+    assert bounds_suffix(0, None) == " (>= 0)"
+
+
+def test_bounds_suffix_max_only() -> None:
+    """Only max_value produces '<= N' style suffix."""
+    from fredq.params import bounds_suffix  # noqa: PLC0415
+
+    assert bounds_suffix(None, 100) == " (<= 100)"
+
+
+def test_bounds_suffix_no_bounds() -> None:
+    """No bounds returns empty string."""
+    from fredq.params import bounds_suffix  # noqa: PLC0415
+
+    assert not bounds_suffix(None, None)
+
+
+def test_bounds_suffix_arbitrary_values() -> None:
+    """Changing bounds updates the suffix."""
+    from fredq.params import bounds_suffix  # noqa: PLC0415
+
+    assert bounds_suffix(2, 999) == " (2-999)"

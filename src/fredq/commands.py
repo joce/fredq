@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from fredq.client import FRED_BASE_URL
-from fredq.params import ParamKind, ParamSpec
+from fredq.params import ParamKind, ParamSpec, bounds_suffix
 
 # Single source of truth for frequency allowed values.
 # Base frequencies accepted by FRED's series/observations endpoint.
@@ -84,7 +84,7 @@ _LIMIT_PARAM: Final[ParamSpec] = ParamSpec(
     name="limit",
     cli_name="limit",
     kind=ParamKind.INTEGER,
-    help="Maximum number of results to return (1-1000).",
+    help=f"Maximum number of results to return{bounds_suffix(1, 1000)}.",
     metavar="N",
     min_value=1,
     max_value=1000,
@@ -94,7 +94,7 @@ _OFFSET_PARAM: Final[ParamSpec] = ParamSpec(
     name="offset",
     cli_name="offset",
     kind=ParamKind.INTEGER,
-    help="Number of results to skip for pagination (>= 0).",
+    help=f"Number of results to skip for pagination{bounds_suffix(0, None)}.",
     metavar="N",
     min_value=0,
 )
