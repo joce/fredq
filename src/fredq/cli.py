@@ -227,18 +227,18 @@ def _set_command_parser(parser: argparse.ArgumentParser, command: CommandSpec) -
         _add_parquet_negative_guards(parser)
 
 
-def build_parser() -> argparse.ArgumentParser:
-    """Build fredq's argument parser.
+# Type alias used by _build_parser_impl to keep the return annotation concise.
+_GroupParsers = dict[str, argparse.ArgumentParser]
 
-    Flat commands (``group=None``) are added directly to the root subparser.
-    Grouped commands (``group="geofred"``, etc.) are nested one level deeper:
-    the group name becomes a top-level subcommand whose own subparsers hold
-    the individual commands.  Routing still works by ``command_name`` (the
-    globally unique ``CommandSpec.name``) so ``_dispatch_command`` is
-    unchanged.
+
+def _build_parser_impl() -> tuple[argparse.ArgumentParser, _GroupParsers]:
+    """Core parser construction shared by :func:`build_parser` and :func:`main`.
 
     Returns:
-        argparse.ArgumentParser: The configured root parser.
+        tuple: ``(root_parser, group_parsers)`` where ``group_parsers`` maps
+            each group name (e.g. ``"geofred"``) to its
+            :class:`argparse.ArgumentParser` so callers can print group-scoped
+            help when the user stops at the group level.
     """
 
     parser = argparse.ArgumentParser(
@@ -250,11 +250,19 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=_HelpFormatter,
     )
     _add_global_options(parser)
-    subparsers = parser.add_subparsers(dest="command_name", metavar="COMMAND")
+    # Use a private dest so the root-level choice (flat command name or group
+    # name) is not clobbered when a group's own subparsers also writes to
+    # "command_name".  Flat commands set command_name via set_defaults; grouped
+    # leaf commands also set command_name via set_defaults.  The _top_command
+    # key captures only the first-level token so main() can detect
+    # group-without-subcommand invocations (where command_name stays None).
+    subparsers = parser.add_subparsers(dest="_top_command", metavar="COMMAND")
 
-    # Collect group subparsers actions by group name in stable insertion order.
-    # Values are argparse._SubParsersAction objects stored as Any to avoid
-    # pyright complaints about the private argparse type.
+    # Maps group name → group ArgumentParser (used to print group-scoped help).
+    group_parsers: dict[str, argparse.ArgumentParser] = {}
+
+    # Maps group name → _SubParsersAction (used to add group subcommands).
+    # Stored as Any to avoid pyright complaints about the private argparse type.
     group_subparsers_map: dict[str, Any] = {}
 
     for command in COMMANDS:
@@ -277,6 +285,7 @@ def build_parser() -> argparse.ArgumentParser:
                     formatter_class=_HelpFormatter,
                 )
                 _add_global_options(group_parser)
+                group_parsers[command.group] = group_parser
                 group_subparsers_map[command.group] = group_parser.add_subparsers(
                     dest="command_name", metavar="SUBCOMMAND"
                 )
@@ -292,6 +301,24 @@ def build_parser() -> argparse.ArgumentParser:
             )
             _set_command_parser(group_sub, command)
 
+    return parser, group_parsers
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Build fredq's argument parser.
+
+    Flat commands (``group=None``) are added directly to the root subparser.
+    Grouped commands (``group="geofred"``, etc.) are nested one level deeper:
+    the group name becomes a top-level subcommand whose own subparsers hold
+    the individual commands.  Routing still works by ``command_name`` (the
+    globally unique ``CommandSpec.name``) so ``_dispatch_command`` is
+    unchanged.
+
+    Returns:
+        argparse.ArgumentParser: The configured root parser.
+    """
+
+    parser, _ = _build_parser_impl()
     return parser
 
 
@@ -635,16 +662,26 @@ def main(
     if stderr is None:
         _reconfigure_stream(err)
 
-    parser = build_parser()
+    parser, group_parsers = _build_parser_impl()
     args = parser.parse_args(argv)
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
 
     command_name = getattr(args, "command_name", None)
-    # command_name is None when no subcommand was given; it equals a group
-    # name (e.g. "geofred") when the user stopped at the group level.
-    if not command_name or command_name not in COMMANDS_BY_NAME:
+    top_command = getattr(args, "_top_command", None)
+    # command_name is None when no leaf command was resolved:
+    #   - No argument at all → top_command is also None → root help.
+    #   - User typed a group name but omitted the subcommand → top_command is
+    #     the group name, command_name is None → print group-scoped help so the
+    #     user sees the group's subcommands rather than the full root listing.
+    if not command_name:
+        if top_command and top_command in group_parsers:
+            group_parsers[top_command].print_help(out)
+        else:
+            parser.print_help(out)
+        return 2
+    if command_name not in COMMANDS_BY_NAME:
         parser.print_help(out)
         return 2
 

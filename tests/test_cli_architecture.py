@@ -119,6 +119,49 @@ def test_group_without_subcommand_exits_2(
     assert rc == EXIT_USAGE
 
 
+def test_geofred_no_subcommand_shows_geofred_help(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """``fredq geofred`` (no subcommand) prints the geofred group help, not root help.
+
+    The geofred subcommands must appear; root-only commands like ``releases``
+    and ``category`` must NOT appear.
+    """
+    rc, stdout, _ = _run(["geofred"], monkeypatch=monkeypatch, tmp_path=tmp_path)
+    assert rc == EXIT_USAGE
+    # The four geofred subcommands must be listed.
+    assert "series-group" in stdout
+    assert "series-data" in stdout
+    assert "regional-data" in stdout
+    assert "shapes" in stdout
+    # Root-level-only commands must not bleed into the group help.
+    assert "releases" not in stdout
+    assert "category" not in stdout
+
+
+def test_fredq_no_command_still_shows_root_help(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """``fredq`` (no command at all) still prints root help — no regression."""
+    rc, stdout, _ = _run([], monkeypatch=monkeypatch, tmp_path=tmp_path)
+    assert rc == EXIT_USAGE
+    # Root help lists flat commands.
+    assert "releases" in stdout or "series" in stdout
+
+
+def test_fredq_nonexistent_command_still_exits_2() -> None:
+    """``fredq nonexistent`` still exits 2 (root unknown-command path unchanged).
+
+    argparse calls sys.exit(2) directly for an invalid choice, so we catch
+    SystemExit rather than using the _run helper.
+    """
+    with pytest.raises(SystemExit) as exc_info:
+        main(["nonexistent"], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE
+
+
 def test_command_spec_group_field_defaults_to_none() -> None:
     """All commands with group=None are recognizably flat top-level."""
     flat = [c for c in COMMANDS if c.group is None]
