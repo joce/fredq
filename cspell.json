@@ -25,6 +25,7 @@
   "dictionaries": ["python"],
   "ignoreWords": [
     "alfred",
+    "badmethod",
     "bannual",
     "censusdivision",
     "censusregion",

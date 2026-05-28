@@ -21,7 +21,7 @@ def test_commands_have_unique_names() -> None:
 
 
 def test_commands_paths_are_rooted() -> None:
-    """All endpoint paths start with ``/fred/``."""
+    """All endpoint paths start with ``/fred/`` or ``/geofred/``."""
 
     for command in COMMANDS:
-        assert command.path.startswith("/fred/"), command.path
+        assert command.path.startswith(("/fred/", "/geofred/")), command.path

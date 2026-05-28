@@ -340,7 +340,7 @@ _TAG_NAMES_REQUIRED_PARAM: Final[ParamSpec] = ParamSpec(
 
 # v1 starts with two endpoints to prove the pattern; remaining ~29 added
 # incrementally. See AGENTS.md "Architecture" + docs/v2-geofred.md.
-COMMANDS: Final[tuple[CommandSpec, ...]] = (
+_CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
     CommandSpec(
         name="series",
         path="/fred/series",
@@ -1234,6 +1234,235 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
     ),
 )
+
+# ---------------------------------------------------------------------------
+# GeoFRED (Maps) API — shared param constants
+# ---------------------------------------------------------------------------
+
+_GEOFRED_REGION_TYPES: Final[tuple[str, ...]] = (
+    "bea",
+    "msa",
+    "frb",
+    "necta",
+    "state",
+    "country",
+    "county",
+    "censusregion",
+    "censusdivision",
+)
+
+_SERIES_GROUP_PARAM: Final[ParamSpec] = ParamSpec(
+    name="series_group",
+    cli_name="series-group",
+    kind=ParamKind.STRING,
+    help=(
+        "GeoFRED series group ID (e.g. 882). "
+        "Discover via 'fredq geofred series-group --series-id <id>'."
+    ),
+    required=True,
+    metavar="ID",
+)
+
+_REGION_TYPE_PARAM: Final[ParamSpec] = ParamSpec(
+    name="region_type",
+    cli_name="region-type",
+    kind=ParamKind.STRING,
+    help=(
+        "Region type: bea, msa, frb, necta, state, country, county, "
+        "censusregion, censusdivision."
+    ),
+    required=True,
+    allowed_values=_GEOFRED_REGION_TYPES,
+    metavar="REGION",
+)
+
+_SHAPE_PARAM: Final[ParamSpec] = ParamSpec(
+    name="shape",
+    cli_name="shape",
+    kind=ParamKind.STRING,
+    help=(
+        "Region polygon set: bea, msa, frb, necta, state, country, county, "
+        "censusregion, censusdivision."
+    ),
+    required=True,
+    allowed_values=_GEOFRED_REGION_TYPES,
+    metavar="SHAPE",
+)
+
+_DATE_PARAM: Final[ParamSpec] = ParamSpec(
+    name="date",
+    cli_name="date",
+    kind=ParamKind.DATE,
+    help="Date to fetch data for (YYYY-MM-DD).",
+    metavar="DATE",
+)
+
+_DATE_REQUIRED_PARAM: Final[ParamSpec] = ParamSpec(
+    name="date",
+    cli_name="date",
+    kind=ParamKind.DATE,
+    help="Date to fetch data for (YYYY-MM-DD).",
+    required=True,
+    metavar="DATE",
+)
+
+_START_DATE_PARAM: Final[ParamSpec] = ParamSpec(
+    name="start_date",
+    cli_name="start-date",
+    kind=ParamKind.DATE,
+    help="Earliest date (YYYY-MM-DD).",
+    metavar="DATE",
+)
+
+_SEASON_PARAM: Final[ParamSpec] = ParamSpec(
+    name="season",
+    cli_name="season",
+    kind=ParamKind.STRING,
+    help="Seasonality code: SA, NSA, SSA, SAAR, NSAAR.",
+    required=True,
+    allowed_values=("SA", "NSA", "SSA", "SAAR", "NSAAR"),
+    metavar="SEASON",
+)
+
+_AGGREGATION_METHOD_PARAM: Final[ParamSpec] = ParamSpec(
+    name="aggregation_method",
+    cli_name="aggregation-method",
+    kind=ParamKind.STRING,
+    help="Aggregation method: avg, sum, eop.",
+    allowed_values=("avg", "sum", "eop"),
+    metavar="METHOD",
+)
+
+_UNITS_DISPLAY_PARAM: Final[ParamSpec] = ParamSpec(
+    name="units",
+    cli_name="units",
+    kind=ParamKind.STRING,
+    help=(
+        "Units display name (e.g. 'Dollars', 'Percent', 'Index 2017=100'). "
+        "Get from 'fredq geofred series-group --series-id <id>'."
+    ),
+    required=True,
+    metavar="UNITS",
+)
+
+# GeoFRED regional/data accepts the lowercase single-letter frequency codes
+# that match frequency_short from series-group (e.g. "a" for Annual).
+# The full set observed in practice mirrors the core FRED base frequencies.
+_GEOFRED_FREQUENCY_PARAM: Final[ParamSpec] = ParamSpec(
+    name="frequency",
+    cli_name="frequency",
+    kind=ParamKind.STRING,
+    help=(
+        "Frequency code matching frequency_short from 'geofred series-group': "
+        "d (daily), w (weekly), bw (biweekly), m (monthly), "
+        "q (quarterly), sa (semiannual), a (annual)."
+    ),
+    required=True,
+    allowed_values=_FREQUENCY_BASE,
+    metavar="FREQ",
+)
+
+# ---------------------------------------------------------------------------
+# GeoFRED COMMANDS (appended after source-releases)
+# ---------------------------------------------------------------------------
+
+_GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
+    CommandSpec(
+        name="series-group",
+        path="/geofred/series/group",
+        group="geofred",
+        summary="Show GeoFRED series group metadata (region, season, frequency, units).",  # noqa: E501
+        description=(
+            "Return the series_group ID, season, frequency, units (display names), "
+            "and observation range needed to call geofred regional-data."
+        ),
+        params=(_SERIES_ID_PARAM,),
+        examples=("fredq geofred series-group --series-id WIPCPI",),
+    ),
+    CommandSpec(
+        name="series-data",
+        path="/geofred/series/data",
+        group="geofred",
+        summary="Fetch regional time-series data for one FRED series.",
+        description=(
+            "Return a time series of regional observation values for the "
+            "specified FRED series. Each observation includes the region name, "
+            "FIPS code, date, and value."
+        ),
+        params=(
+            _SERIES_ID_PARAM,
+            _DATE_PARAM,
+            _START_DATE_PARAM,
+        ),
+        examples=(
+            "fredq geofred series-data --series-id WIPCPI",
+            ("fredq geofred series-data --series-id WIPCPI --start-date 2020-01-01"),
+        ),
+    ),
+    CommandSpec(
+        name="regional-data",
+        path="/geofred/regional/data",
+        group="geofred",
+        summary="Fetch a regional snapshot — all regions for one date.",
+        description=(
+            "Return observation values for all regions of the specified series "
+            "group on a single date. Each record includes the region name, "
+            "FIPS code, and observation value."
+        ),
+        params=(
+            _SERIES_GROUP_PARAM,
+            _REGION_TYPE_PARAM,
+            _DATE_REQUIRED_PARAM,
+            _SEASON_PARAM,
+            _GEOFRED_FREQUENCY_PARAM,
+            _UNITS_DISPLAY_PARAM,
+            _START_DATE_PARAM,
+            _AGGREGATION_METHOD_PARAM,
+        ),
+        examples=(
+            (
+                "fredq geofred regional-data --series-group 882 "
+                "--region-type state --date 2020-01-01 "
+                "--season NSA --frequency a --units Dollars"
+            ),
+        ),
+        notes=(
+            (
+                "Run 'fredq geofred series-group --series-id <id>' first to "
+                "discover the correct --series-group, --season, and --units "
+                "values."
+            ),
+            (
+                "--frequency takes the API code, not the display name: "
+                "use 'a' for Annual, 'q' for Quarterly, 'm' for Monthly, "
+                "'w' for Weekly, 'd' for Daily."
+            ),
+        ),
+    ),
+    CommandSpec(
+        name="shapes",
+        path="/geofred/shapes/file",
+        group="geofred",
+        output_to_file=True,
+        summary="Download a GeoJSON shape file for a GeoFRED region type.",
+        description=(
+            "Download the polygon boundary file for the specified region type "
+            "and write it to --out. The response is GeoJSON."
+        ),
+        params=(_SHAPE_PARAM,),
+        examples=("fredq geofred shapes --shape state --out states.geojson",),
+        notes=(
+            "Output is GeoJSON. The msa shape is ~1.6 MB.",
+            (
+                "Coordinates are quantized integers, not WGS84. To render on a "
+                "map you must apply the transform parameters embedded in the "
+                "response to dequantize."
+            ),
+        ),
+    ),
+)
+
+COMMANDS: Final[tuple[CommandSpec, ...]] = _CORE_COMMANDS + _GEOFRED_COMMANDS
 
 
 COMMANDS_BY_NAME: Final[dict[str, CommandSpec]] = {
