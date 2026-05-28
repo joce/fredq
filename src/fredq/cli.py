@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Final, Protocol, TextIO
+from typing import TYPE_CHECKING, Any, Final, Protocol, TextIO
 
 from typing_extensions import override
 
@@ -201,11 +201,27 @@ def _add_parquet_negative_guards(parser: argparse.ArgumentParser) -> None:
     parser.set_defaults(_parquet_unsupported=True)
 
 
+def _add_body_to_file_out_option(parser: argparse.ArgumentParser) -> None:
+    """Register required ``--out PATH`` on a body-to-file command."""
+
+    parser.add_argument(
+        "--out",
+        dest="out_path",
+        type=Path,
+        required=True,
+        metavar="PATH",
+        help="Destination file for the response body. Required.",
+    )
+    parser.set_defaults(_body_to_file=True)
+
+
 def _set_command_parser(parser: argparse.ArgumentParser, command: CommandSpec) -> None:
     for param in command.params:
         _add_command_param(parser, param)
     parser.set_defaults(command_name=command.name)
-    if command.name in _PARQUET_COMMANDS:
+    if command.output_to_file:
+        _add_body_to_file_out_option(parser)
+    elif command.name in _PARQUET_COMMANDS:
         _add_parquet_output_options(parser)
     else:
         _add_parquet_negative_guards(parser)
@@ -213,6 +229,13 @@ def _set_command_parser(parser: argparse.ArgumentParser, command: CommandSpec) -
 
 def build_parser() -> argparse.ArgumentParser:
     """Build fredq's argument parser.
+
+    Flat commands (``group=None``) are added directly to the root subparser.
+    Grouped commands (``group="geofred"``, etc.) are nested one level deeper:
+    the group name becomes a top-level subcommand whose own subparsers hold
+    the individual commands.  Routing still works by ``command_name`` (the
+    globally unique ``CommandSpec.name``) so ``_dispatch_command`` is
+    unchanged.
 
     Returns:
         argparse.ArgumentParser: The configured root parser.
@@ -228,15 +251,47 @@ def build_parser() -> argparse.ArgumentParser:
     )
     _add_global_options(parser)
     subparsers = parser.add_subparsers(dest="command_name", metavar="COMMAND")
+
+    # Collect group subparsers actions by group name in stable insertion order.
+    # Values are argparse._SubParsersAction objects stored as Any to avoid
+    # pyright complaints about the private argparse type.
+    group_subparsers_map: dict[str, Any] = {}
+
     for command in COMMANDS:
-        sub = subparsers.add_parser(
-            command.name,
-            help=command.summary,
-            description=command.description,
-            epilog=_epilog_for_command(command),
-            formatter_class=_HelpFormatter,
-        )
-        _set_command_parser(sub, command)
+        if command.group is None:
+            # Flat top-level command — existing behavior.
+            sub = subparsers.add_parser(
+                command.name,
+                help=command.summary,
+                description=command.description,
+                epilog=_epilog_for_command(command),
+                formatter_class=_HelpFormatter,
+            )
+            _set_command_parser(sub, command)
+        else:
+            # Nested command: ensure the group subparser exists.
+            if command.group not in group_subparsers_map:
+                group_parser = subparsers.add_parser(
+                    command.group,
+                    help="GeoFRED Maps API commands.",
+                    formatter_class=_HelpFormatter,
+                )
+                _add_global_options(group_parser)
+                group_subparsers_map[command.group] = group_parser.add_subparsers(
+                    dest="command_name", metavar="SUBCOMMAND"
+                )
+
+            group_sub: argparse.ArgumentParser = group_subparsers_map[
+                command.group
+            ].add_parser(
+                command.name,
+                help=command.summary,
+                description=command.description,
+                epilog=_epilog_for_command(command),
+                formatter_class=_HelpFormatter,
+            )
+            _set_command_parser(group_sub, command)
+
     return parser
 
 
@@ -365,6 +420,29 @@ def _handle_parquet_output(
     out.write("\n")
 
 
+def _write_body_to_file(
+    args: argparse.Namespace,
+    body: str,
+    command: CommandSpec,
+    out: TextIO,
+) -> None:
+    """Write ``body`` verbatim to ``args.out_path`` and emit a descriptor to ``out``.
+
+    The descriptor JSON has keys ``command``, ``out``, and ``bytes``.
+    """
+
+    out_path: Path = args.out_path
+    encoded = body.encode("utf-8")
+    out_path.write_bytes(encoded)
+    descriptor = {
+        "command": command.name,
+        "out": str(out_path),
+        "bytes": len(encoded),
+    }
+    out.write(json.dumps(descriptor, separators=(",", ":")))
+    out.write("\n")
+
+
 def _optional_str(value: object) -> str | None:
     if value is None:
         return None
@@ -385,7 +463,15 @@ def _reconfigure_stream(stream: TextIO, encoding: str = "utf-8") -> None:
         reconfigure(encoding=encoding)
 
 
-def _dispatch_command(
+def _write_json_body(body: str, out: TextIO) -> None:
+    """Write a raw JSON body to ``out``, appending a newline if absent."""
+
+    out.write(body)
+    if not body.endswith("\n"):
+        out.write("\n")
+
+
+def _dispatch_command(  # noqa: PLR0911
     args: argparse.Namespace,
     command: CommandSpec,
     out: TextIO,
@@ -425,6 +511,10 @@ def _dispatch_command(
         err.write(f"{exc}\n")
         return 1
 
+    if command.output_to_file:
+        _write_body_to_file(args, body, command, out)
+        return 0
+
     if getattr(args, "output_format", "json") == "parquet":
         try:
             _handle_parquet_output(args, body, params, out)
@@ -433,10 +523,53 @@ def _dispatch_command(
             return 1
         return 0
 
-    out.write(body)
-    if not body.endswith("\n"):
-        out.write("\n")
+    _write_json_body(body, out)
     return 0
+
+
+def _resolve_client(
+    args: argparse.Namespace,
+    client: _FredClientProtocol | None,
+    err: TextIO,
+) -> tuple[_FredClientProtocol, bool]:
+    """Resolve the FRED client from args or an injected client.
+
+    When ``had_error`` is True the caller should propagate exit code 2;
+    the error message has already been written to ``err``.
+
+    Returns:
+        tuple[_FredClientProtocol, bool]: ``(client, had_error)`` pair.
+    """
+
+    if client is not None:
+        return client, False
+
+    disable_key_file_env = os.environ.get("FREDQ_DISABLE_KEY_FILE", "").strip()
+    if disable_key_file_env:
+        try:
+            env_disable_key_file = parse_boolean(disable_key_file_env)
+        except ValueError:
+            err.write(
+                f"FREDQ_DISABLE_KEY_FILE: invalid boolean value "
+                f"{disable_key_file_env!r}; "
+                "expected 1/0, true/false, yes/no, etc.\n"
+            )
+            # Return a dummy client; caller checks the error flag before using it.
+            return FredClient(""), True
+    else:
+        env_disable_key_file = False
+
+    no_key_file = getattr(args, "no_key_file", False)
+    use_key_file = not no_key_file and not env_disable_key_file
+    try:
+        api_key = resolve_api_key(
+            explicit=args.api_key, use_key_file=use_key_file, stderr=err
+        )
+    except FredqError as exc:
+        err.write(f"{exc}\n")
+        return FredClient(""), True
+
+    return FredClient(api_key), False
 
 
 def main(
@@ -478,42 +611,24 @@ def main(
         logging.basicConfig(level=logging.DEBUG)
 
     command_name = getattr(args, "command_name", None)
-    if not command_name:
+    # command_name is None when no subcommand was given; it equals a group
+    # name (e.g. "geofred") when the user stopped at the group level.
+    if not command_name or command_name not in COMMANDS_BY_NAME:
         parser.print_help(out)
         return 2
 
     command = COMMANDS_BY_NAME[command_name]
 
-    pairing_error = _enforce_parquet_arg_pairing(args)
-    if pairing_error is not None:
-        err.write(f"{pairing_error}\n")
-        return 2
-
-    if client is None:
-        disable_key_file_env = os.environ.get("FREDQ_DISABLE_KEY_FILE", "").strip()
-        if disable_key_file_env:
-            try:
-                env_disable_key_file = parse_boolean(disable_key_file_env)
-            except ValueError:
-                err.write(
-                    f"FREDQ_DISABLE_KEY_FILE: invalid boolean value "
-                    f"{disable_key_file_env!r}; "
-                    "expected 1/0, true/false, yes/no, etc.\n"
-                )
-                return 2
-        else:
-            env_disable_key_file = False
-        no_key_file = getattr(args, "no_key_file", False)
-        use_key_file = not no_key_file and not env_disable_key_file
-        try:
-            api_key = resolve_api_key(
-                explicit=args.api_key, use_key_file=use_key_file, stderr=err
-            )
-        except FredqError as exc:
-            err.write(f"{exc}\n")
+    # Body-to-file commands use --out for raw body output, not parquet.
+    # Skip the parquet pairing check for them.
+    if not command.output_to_file:
+        pairing_error = _enforce_parquet_arg_pairing(args)
+        if pairing_error is not None:
+            err.write(f"{pairing_error}\n")
             return 2
-        active_client: _FredClientProtocol = FredClient(api_key)
-    else:
-        active_client = client
+
+    active_client, client_error = _resolve_client(args, client, err)
+    if client_error:
+        return 2
 
     return _dispatch_command(args, command, out, err, active_client)

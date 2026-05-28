@@ -43,6 +43,12 @@ class CommandSpec:
     mutually_dependent_params: tuple[frozenset[str], ...] = ()
     at_least_one_of: tuple[frozenset[str], ...] = ()
     requires_partner: tuple[tuple[str, str], ...] = ()
+    # Non-None: command lives under a nested subcommand group (e.g. "geofred").
+    # None (default): top-level flat command — existing behavior unchanged.
+    group: str | None = None
+    # When True, the CLI registers --out as a required argument and writes the
+    # raw response body to that file instead of stdout.
+    output_to_file: bool = False
 
     @property
     def fred_url(self) -> str:

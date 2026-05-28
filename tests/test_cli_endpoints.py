@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Final
 import pytest
 
 from fredq.cli import main
-from fredq.commands import COMMANDS
+from fredq.commands import COMMANDS, CommandSpec
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -47,11 +47,18 @@ def _run(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("command", [c.name for c in COMMANDS])
-def test_all_commands_help_exits_cleanly(command: str) -> None:
+def _help_args_for(command: CommandSpec) -> list[str]:
+    """Return the argv list to invoke --help for a command (handles groups)."""
+    if command.group is not None:
+        return [command.group, command.name, "--help"]
+    return [command.name, "--help"]
+
+
+@pytest.mark.parametrize("command", list(COMMANDS))
+def test_all_commands_help_exits_cleanly(command: CommandSpec) -> None:
     """Every command in COMMANDS must respond to --help with exit 0."""
     with pytest.raises(SystemExit) as exc_info:
-        main([command, "--help"])
+        main(_help_args_for(command))
     assert exc_info.value.code == 0
 
 
