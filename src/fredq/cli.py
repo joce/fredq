@@ -420,6 +420,24 @@ def _handle_parquet_output(
     out.write("\n")
 
 
+class _WriteBodyError(FredqError):
+    """Raised when the response body cannot be written to the destination file.
+
+    Wraps OS-level errors (FileNotFoundError, PermissionError, disk full, …)
+    so the CLI can surface a clean stderr message and exit 1 instead of letting
+    an unhandled exception propagate.  The parent directory is intentionally
+    *not* created automatically — creating directories without an explicit flag
+    would be surprising behavior for a CLI tool.
+    """
+
+    def __init__(self, path: Path, cause: OSError) -> None:
+        """Initialize the write error."""
+
+        super().__init__(f"failed to write {path}: {cause}")
+        self.path = path
+        self.cause = cause
+
+
 def _write_body_to_file(
     args: argparse.Namespace,
     body: str,
@@ -429,11 +447,20 @@ def _write_body_to_file(
     """Write ``body`` verbatim to ``args.out_path`` and emit a descriptor to ``out``.
 
     The descriptor JSON has keys ``command``, ``out``, and ``bytes``.
+
+    Raises:
+        _WriteBodyError: When the OS rejects the write (missing parent
+            directory, permission denied, disk full, etc.).  The parent
+            directory is never auto-created; pass an existing directory or
+            create it beforehand.
     """
 
     out_path: Path = args.out_path
     encoded = body.encode("utf-8")
-    out_path.write_bytes(encoded)
+    try:
+        out_path.write_bytes(encoded)
+    except OSError as exc:
+        raise _WriteBodyError(out_path, exc) from exc
     descriptor = {
         "command": command.name,
         "out": str(out_path),
@@ -512,7 +539,11 @@ def _dispatch_command(  # noqa: PLR0911
         return 1
 
     if command.output_to_file:
-        _write_body_to_file(args, body, command, out)
+        try:
+            _write_body_to_file(args, body, command, out)
+        except FredqError as exc:
+            err.write(f"{exc}\n")
+            return 1
         return 0
 
     if getattr(args, "output_format", "json") == "parquet":

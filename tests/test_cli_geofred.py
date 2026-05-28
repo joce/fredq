@@ -340,3 +340,32 @@ def test_geofred_shapes_invalid_shape_exits_2(
     )
     assert rc == EXIT_USAGE
     assert "unsupported value" in err or "invalid-shape" in err
+
+
+def test_geofred_shapes_missing_parent_dir_exits_1_with_message(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Geofred shapes exits 1 when the output parent directory does not exist.
+
+    A raw FileNotFoundError traceback must not appear; only a clean stderr
+    message and exit code 1.
+    """
+    body = '{"type":"FeatureCollection","features":[]}'
+    # The parent directory "missing-dir" is never created.
+    out_path = tmp_path / "missing-dir" / "out.geojson"
+    httpx_mock.add_response(
+        method="GET",
+        url=(f"{_BASE}/geofred/shapes/file?shape=state{_KEY_SUFFIX}"),
+        text=body,
+    )
+    rc, _, err = _run(
+        ["geofred", "shapes", "--shape", "state", "--out", str(out_path)],
+        monkeypatch=monkeypatch,
+        tmp_path=tmp_path,
+    )
+    assert rc == 1
+    # Stderr must mention what went wrong — either the failing path fragment or
+    # a generic "failed to write" style message.
+    assert "missing-dir" in err or "failed to write" in err.lower()
