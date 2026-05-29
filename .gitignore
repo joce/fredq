@@ -32,3 +32,6 @@ fredq-key.txt
 .worktrees/
 output/
 tmp/
+
+# Ad-hoc fredq report fleet (generated artifacts, data dumps, builders)
+report/
