@@ -51,13 +51,16 @@
   "words": [
     "ACMR",
     "backtests",
+    "basemaps",
     "caplog",
     "capsys",
     "datetimes",
+    "Highcharts",
     "intraday",
     "jocelynlegault",
     "joce",
     "Legault",
+    "reproject",
     "stlouisfed",
     "vintagedates"
   ],
