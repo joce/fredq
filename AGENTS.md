@@ -50,7 +50,7 @@ When adding or editing a CLI command:
 
 ## Output formats
 - **Default**: raw FRED JSON to stdout, exactly as returned.
-- **Parquet** (planned): opt-in via `--format parquet --out PATH` on observation-style endpoints only (`series/observations`, `release/dates`, where tabular makes sense).
+- **Parquet**: opt-in via `--format parquet --out PATH`, `series-observations` only. Parses the response into a typed table (`date`, `value`, realtime bounds) with the response envelope stored as schema metadata. Other endpoints reject `--format parquet` with a usage error.
 - Other endpoints stay JSON-only.
 
 ## Workflow
@@ -75,8 +75,10 @@ When adding or editing a CLI command:
   - Sources: `1` (Board of Governors), `3` (Bureau of Labor Statistics)
 - Add targeted probes when an endpoint is series-sensitive, but keep this baseline for broad API-surface discovery.
 
-## Out of scope (v1)
-- GeoFRED / Maps API endpoints (different base URL, GeoJSON output). See `docs/v2-geofred.md`.
+## GeoFRED / Maps
+- Implemented under the `geofred` subcommand group (`series-group`, `series-data`, `regional-data`, `shapes`). Different base URL; regional data keyed by FIPS; `shapes` returns Highcharts-format GeoJSON in a Lambert Conformal Conic projection (not WGS84).
+
+## Out of scope
 - Mapping FRED JSON into Python domain models.
 - Separate documentation/discovery subcommands.
 - Secrets or API keys in checked-in files.

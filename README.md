@@ -26,23 +26,44 @@ help.
   more useful as a columnar table than as JSON.
 - ALFRED point-in-time support (`--realtime-start`, `--realtime-end`,
   `series-vintagedates`).
+- GeoFRED / Maps regional data (`geofred` subcommands): regional time series,
+  all-region snapshots, series-group metadata, and GeoJSON shape files.
 
-## Install From Source
+## Install
 
-fredq is currently intended to run from a local checkout. It is a Python 3.10+
-project managed with [uv](https://docs.astral.sh/uv/).
+fredq is a Python 3.10+ project. Install it as a tool with
+[uv](https://docs.astral.sh/uv/) or with pip:
+
+```powershell
+uv tool install fredq
+# or
+pip install fredq
+```
+
+For Parquet output, include the `parquet` extra:
+
+```powershell
+uv tool install "fredq[parquet]"
+# or
+pip install "fredq[parquet]"
+```
+
+Then run:
+
+```powershell
+fredq --help
+```
+
+### From Source
+
+To run from a local checkout (development):
 
 ```powershell
 uv sync --all-groups
-```
-
-Run the CLI from the repository:
-
-```powershell
 uv run fredq --help
 ```
 
-Or install it as a package from a local checkout:
+Or install the checkout as a tool:
 
 ```powershell
 uv tool install .
@@ -112,7 +133,7 @@ List recent economic releases:
 uv run fredq releases --limit 10
 ```
 
-Show the calendar of upcoming release dates:
+List recent release publication dates across all releases:
 
 ```powershell
 uv run fredq releases-dates --limit 20
@@ -135,6 +156,13 @@ ALFRED point-in-time: see what GDP looked like on a past date:
 ```powershell
 uv run fredq series-vintagedates --series-id GNPCA
 uv run fredq series-observations --series-id GNPCA --realtime-start 2024-09-25
+```
+
+Fetch GeoFRED regional data — per-capita income by state for one year:
+
+```powershell
+uv run fredq geofred series-group --series-id WIPCPI
+uv run fredq geofred series-data --series-id WIPCPI --start-date 2022-01-01
 ```
 
 ## Parquet Output
@@ -162,8 +190,9 @@ context (units, frequency, realtime range) are stored as schema key-value
 metadata so the table is self-describing.
 
 Parquet writes are scoped to `series-observations` only; every other command
-stays JSON-only. The writer rejects `--output-type` values other than the
-default (`1`).
+stays JSON-only, and rejects `--format parquet` with a usage error. Parquet
+output assumes FRED's default observation layout (one row per observation);
+fredq does not expose FRED's alternative `output_type` modes.
 
 ## Commands
 
@@ -235,6 +264,20 @@ Current commands, grouped by how often they're reached for:
 | `sources` | List all FRED data sources. |
 | `source` | Show metadata for one FRED source. |
 | `source-releases` | List releases published by one FRED source. |
+
+**GeoFRED / Maps (`geofred` subcommands)**
+
+| Command | FRED data |
+| --- | --- |
+| `geofred series-group` | Show GeoFRED series-group metadata (region type, season, frequency, units). |
+| `geofred series-data` | Fetch the regional time series for one FRED series. |
+| `geofred regional-data` | Fetch a regional snapshot — all regions for a single date. |
+| `geofred shapes` | Download a GeoJSON shape file for a region type, to `--out`. |
+
+The GeoFRED endpoints use a different base URL and return regional data keyed by
+FIPS code. `geofred shapes` returns Highcharts-format GeoJSON whose coordinates
+are in a Lambert Conformal Conic projection (not WGS84); reproject before mixing
+with lat/lon basemaps. See `fredq geofred --help` for the full subcommand list.
 
 Each endpoint has its own adaptive help:
 

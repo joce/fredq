@@ -1,6 +1,6 @@
 [project]
 name = "fredq"
-version = "0.1.0"
+dynamic = ["version"]
 description = "LLM-friendly CLI for raw FRED (Federal Reserve Economic Data) API JSON."
 readme = "README.md"
 authors = [{ name = "Jocelyn Legault", email = "jocelynlegault@gmail.com" }]
@@ -239,11 +239,14 @@ preview = true
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.hatch.version]
+path = "src/fredq/__init__.py"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/fredq"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "tests", "AGENTS.md", "LICENSE", "README.md", "pyproject.toml"]
+include = ["src", "tests", "AGENTS.md", "CHANGELOG.md", "LICENSE", "README.md", "RELEASING.md", "pyproject.toml"]
 
 [build-system]
 requires = ["hatchling>=1.29,<2.0"]
