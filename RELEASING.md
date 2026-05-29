@@ -1,55 +1,40 @@
 # Releasing fredq
 
-fredq publishes to [PyPI](https://pypi.org/project/fredq/) via GitHub Actions
-using **Trusted Publishing** (OIDC) — no API tokens are stored. The workflow is
-`.github/workflows/publish.yml`, triggered when a GitHub Release is published.
+fredq publishes to [PyPI](https://pypi.org/project/fredq/) from GitHub Actions
+(`.github/workflows/publish.yml`) using **Trusted Publishing** (OIDC) — no API
+tokens. The workflow runs when a **GitHub Release is published**; a bare
+`git push` of a tag does *not* trigger it.
 
-## One-time setup
-
-1. **PyPI trusted publisher.** On PyPI, add a *pending publisher* for the project
-   (Account → Publishing, or the project's Settings → Publishing once it exists):
-   - PyPI Project Name: `fredq`
-   - Owner: `joce`
-   - Repository: `fredq`
-   - Workflow filename: `publish.yml`
-   - Environment name: `pypi`
-
-2. **GitHub environment.** Create an environment named `pypi`
-   (repo Settings → Environments). Optionally add required reviewers so a
-   release must be approved before it publishes.
-
-3. (Optional) Repeat step 1 on [TestPyPI](https://test.pypi.org/) to rehearse.
+> Trusted publisher and the `pypi` environment (with required-reviewer approval)
+> are already configured. No per-release infrastructure setup is needed.
 
 ## Cutting a release
 
 Version is single-sourced from `src/fredq/__init__.py` (`__version__`); hatchling
-reads it at build time. There is no separate version in `pyproject.toml`.
+reads it at build time. There is no version field in `pyproject.toml`.
 
 1. Bump `__version__` in `src/fredq/__init__.py` (SemVer).
-2. Move the `## [Unreleased]` notes in `CHANGELOG.md` under a new
-   `## [X.Y.Z]` heading and update the compare links at the bottom.
-3. Commit: `change: release vX.Y.Z`.
-4. Tag and push:
+2. Move the `## [Unreleased]` notes in `CHANGELOG.md` under a new `## [X.Y.Z]`
+   heading and update the compare links at the bottom.
+3. Commit and push to `main`. Wait for CI to go green.
+4. Create the release (this creates the tag *and* triggers publishing):
 
    ```bash
-   git tag vX.Y.Z
-   git push origin main --tags
+   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file path/to/notes.md
    ```
 
-5. Create a GitHub Release for the `vX.Y.Z` tag. Publishing the release triggers
-   `publish.yml`, which builds the sdist + wheel, runs `twine check`, and
-   uploads to PyPI via OIDC.
+   Write real notes (overview + highlights), not a one-liner.
+5. The `publish` job pauses on the `pypi` environment. **Approve the deployment**:
+   the run page shows *"Review pending deployments"* → tick `pypi` → *Approve and
+   deploy*. After approval it uploads to PyPI.
+6. Verify: <https://pypi.org/project/fredq/> shows the new version.
 
-## Verify locally before tagging
+## Verify locally before releasing
 
 ```bash
 uv build
 uvx twine check dist/*
-uv run --version    # sanity
 ```
 
-Confirm the built version matches `__version__`:
-
-```bash
-ls dist/   # fredq-X.Y.Z.tar.gz and fredq-X.Y.Z-py3-none-any.whl
-```
+The built filenames must carry the version you set in `__init__.py`
+(`fredq-X.Y.Z.tar.gz`, `fredq-X.Y.Z-py3-none-any.whl`).
