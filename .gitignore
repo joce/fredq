@@ -1,6 +1,9 @@
 # Byte-compiled / optimized files
 __pycache__/
 
+# Version file generated at build time by hatch-vcs
+src/fredq/_version.py
+
 # Test and coverage output
 .pytest_cache/
 .coverage
