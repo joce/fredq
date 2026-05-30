@@ -194,6 +194,33 @@ stays JSON-only, and rejects `--format parquet` with a usage error. Parquet
 output assumes FRED's default observation layout (one row per observation);
 fredq does not expose FRED's alternative `output_type` modes.
 
+## Discovering IDs
+
+Most commands take an ID (`--series-id`, `--category-id`, `--release-id`,
+`--source-id`). If you don't know one yet, start with the commands that need no
+ID, then chain:
+
+```powershell
+# Find a series ID by keyword
+uv run fredq series-search --search-text "unemployment rate" --limit 10
+
+# List the catalogs
+uv run fredq releases --limit 1000   # release IDs
+uv run fredq sources                 # source IDs
+uv run fredq tags --limit 50         # tag names
+
+# Walk the category tree from the root (0 = root)
+uv run fredq category-children --category-id 0
+```
+
+Then use the ID with the matching command:
+
+```powershell
+uv run fredq series-observations --series-id DGS10
+uv run fredq category-series --category-id 106
+uv run fredq release-series --release-id 10
+```
+
 ## Commands
 
 Use root help to see the command list:
