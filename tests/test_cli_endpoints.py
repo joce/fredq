@@ -1177,7 +1177,7 @@ def test_exclude_tag_names_without_tag_names_exits_2(
 
 
 # ---------------------------------------------------------------------------
-# Item 3 — tags-series: at_least_one_of enforces --tag-names independently
+# Item 3 — tags-series: tag-names is a required positional argument
 # ---------------------------------------------------------------------------
 
 

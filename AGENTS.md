@@ -47,6 +47,7 @@ When adding or editing a CLI command:
 3. **Notes**: real clarifications only — FRED quirks, switch-behavior surprises, dependencies. Drop diary entries and redundant restatements.
 4. **Order in `COMMANDS` tuple by importance**: daily-driver → discovery → entity lookups → schema introspection. Never append to the end.
 5. **Param boilerplate is shared** (`--api-key`, `--realtime-start`, `--realtime-end` use exact strings — copy them). Run `pytest -k help` before and after.
+6. **Positional primary args**: each command's single primary required argument is a positional (its `metavar` is shown in usage); all other parameters are flags. `series-search` / `series-search-tags` / `series-search-related-tags` take the search text positionally; `tags-series` / `related-tags` take the tag list positionally; `geofred regional-data` / `geofred shapes` take their primary (`series_group` / `shape`) positionally.
 
 ## Output formats
 - **Default**: raw FRED JSON to stdout, exactly as returned.

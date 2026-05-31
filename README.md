@@ -100,31 +100,31 @@ from URLs in error messages and from any httpx debug logs emitted under
 Show metadata for a series:
 
 ```powershell
-uv run fredq series --series-id GNPCA
+uv run fredq series GNPCA
 ```
 
 Fetch a series' observations:
 
 ```powershell
-uv run fredq series-observations --series-id CPIAUCSL
+uv run fredq series-observations CPIAUCSL
 ```
 
 Apply a unit transformation and frequency aggregation:
 
 ```powershell
-uv run fredq series-observations --series-id CPIAUCSL --units pch --frequency m
+uv run fredq series-observations CPIAUCSL --units pch --frequency m
 ```
 
 Search for a series by keyword:
 
 ```powershell
-uv run fredq series-search --search-text "10-year treasury" --limit 10
+uv run fredq series-search "10-year treasury" --limit 10
 ```
 
 Browse the FRED category tree from the root:
 
 ```powershell
-uv run fredq category-children --category-id 0
+uv run fredq category-children 0
 ```
 
 List recent economic releases:
@@ -142,27 +142,27 @@ uv run fredq releases-dates --limit 20
 Show metadata for a specific release (53 = GDP):
 
 ```powershell
-uv run fredq release --release-id 53
+uv run fredq release 53
 ```
 
 Find all series tagged with a set of FRED tags:
 
 ```powershell
-uv run fredq tags-series --tag-names "usa;monthly;cpi" --limit 25
+uv run fredq tags-series "usa;monthly;cpi" --limit 25
 ```
 
 ALFRED point-in-time: see what GDP looked like on a past date:
 
 ```powershell
-uv run fredq series-vintagedates --series-id GNPCA
-uv run fredq series-observations --series-id GNPCA --realtime-start 2024-09-25
+uv run fredq series-vintagedates GNPCA
+uv run fredq series-observations GNPCA --realtime-start 2024-09-25
 ```
 
 Fetch GeoFRED regional data — per-capita income by state for one year:
 
 ```powershell
-uv run fredq geofred series-group --series-id WIPCPI
-uv run fredq geofred series-data --series-id WIPCPI --start-date 2022-01-01
+uv run fredq geofred series-group WIPCPI
+uv run fredq geofred series-data WIPCPI --start-date 2022-01-01
 ```
 
 ## Parquet Output
@@ -177,7 +177,7 @@ uv sync --extra parquet
 Then pass `--format parquet --out PATH`:
 
 ```powershell
-uv run fredq series-observations --series-id CPIAUCSL --units pch --frequency m \
+uv run fredq series-observations CPIAUCSL --units pch --frequency m \
   --format parquet --out cpi_yoy.parquet
 ```
 
@@ -196,13 +196,12 @@ fredq does not expose FRED's alternative `output_type` modes.
 
 ## Discovering IDs
 
-Most commands take an ID (`--series-id`, `--category-id`, `--release-id`,
-`--source-id`). If you don't know one yet, start with the commands that need no
-ID, then chain:
+Most commands take an ID as a positional argument. If you don't know one yet,
+start with the commands that need no ID, then chain:
 
 ```powershell
 # Find a series ID by keyword
-uv run fredq series-search --search-text "unemployment rate" --limit 10
+uv run fredq series-search "unemployment rate" --limit 10
 
 # List the catalogs
 uv run fredq releases --limit 1000   # release IDs
@@ -210,15 +209,15 @@ uv run fredq sources                 # source IDs
 uv run fredq tags --limit 50         # tag names
 
 # Walk the category tree from the root (0 = root)
-uv run fredq category-children --category-id 0
+uv run fredq category-children 0
 ```
 
 Then use the ID with the matching command:
 
 ```powershell
-uv run fredq series-observations --series-id DGS10
-uv run fredq category-series --category-id 106
-uv run fredq release-series --release-id 10
+uv run fredq series-observations DGS10
+uv run fredq category-series 106
+uv run fredq release-series 10
 ```
 
 ## Commands
@@ -334,7 +333,7 @@ Tag lists (`--tag-names`, `--exclude-tag-names`) use semicolons as
 separators, matching FRED's wire format:
 
 ```powershell
-uv run fredq tags-series --tag-names "usa;annual"
+uv run fredq tags-series "usa;annual"
 ```
 
 ## ALFRED Point-in-Time
@@ -347,10 +346,10 @@ backtests and for distinguishing data revisions from real-time signals.
 
 ```powershell
 # When were GNP revisions published?
-uv run fredq series-vintagedates --series-id GNPCA
+uv run fredq series-vintagedates GNPCA
 
 # What did GNP look like on 2024-09-25?
-uv run fredq series-observations --series-id GNPCA \
+uv run fredq series-observations GNPCA \
   --realtime-start 2024-09-25 --realtime-end 2024-09-25
 ```
 
@@ -360,7 +359,7 @@ fredq writes the FRED response body to stdout exactly as returned. This makes
 it easy to pipe into tools that expect JSON:
 
 ```powershell
-uv run fredq series --series-id GNPCA | jq .
+uv run fredq series GNPCA | jq .
 uv run fredq releases --limit 25 | jq '.releases[].name'
 ```
 
