@@ -38,3 +38,6 @@ tmp/
 
 # Ad-hoc fredq report fleet (generated artifacts, data dumps, builders)
 report/
+
+# Local brainstorming specs / plans (not committed)
+docs/superpowers/
