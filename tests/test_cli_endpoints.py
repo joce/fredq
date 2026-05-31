@@ -50,7 +50,7 @@ def _run(
 def _help_args_for(command: CommandSpec) -> list[str]:
     """Return the argv list to invoke --help for a command (handles groups)."""
     if command.group is not None:
-        return [command.group, command.name, "--help"]
+        return [command.group, command.leaf or command.name, "--help"]
     return [command.name, "--help"]
 
 
@@ -80,7 +80,7 @@ def test_series_search_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-search", "inflation", "--limit", "3"],
+        ["series", "search", "inflation", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -97,7 +97,7 @@ def test_series_search_missing_positional_exits_2(
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
-        main(["series-search"], stdout=io.StringIO(), stderr=io.StringIO())
+        main(["series", "search"], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
 
 
@@ -107,7 +107,7 @@ def test_series_search_invalid_search_type_exits_2(
 ) -> None:
     """series-search rejects an invalid --search-type value."""
     rc, _, err = _run(
-        ["series-search", "cpi", "--search-type", "bad"],
+        ["series", "search", "cpi", "--search-type", "bad"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -121,7 +121,7 @@ def test_series_search_invalid_filter_variable_exits_2(
 ) -> None:
     """series-search rejects an invalid --filter-variable value."""
     rc, _, err = _run(
-        ["series-search", "cpi", "--filter-variable", "bogus"],
+        ["series", "search", "cpi", "--filter-variable", "bogus"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -135,7 +135,7 @@ def test_series_search_invalid_order_by_exits_2(
 ) -> None:
     """series-search rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["series-search", "cpi", "--order-by", "invalid_field"],
+        ["series", "search", "cpi", "--order-by", "invalid_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -159,7 +159,7 @@ def test_series_search_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-search-tags", "monetary", "--limit", "3"],
+        ["series", "search-tags", "monetary", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -174,7 +174,8 @@ def test_series_search_tags_invalid_tag_group_id_exits_2(
     """series-search-tags rejects an invalid --tag-group-id value."""
     rc, _, err = _run(
         [
-            "series-search-tags",
+            "series",
+            "search-tags",
             "monetary",
             "--tag-group-id",
             "invalid",
@@ -203,7 +204,8 @@ def test_series_search_related_tags_happy_path(
     )
     rc, stdout, _ = _run(
         [
-            "series-search-related-tags",
+            "series",
+            "search-related-tags",
             "monetary",
             "--tag-names",
             "usa",
@@ -234,7 +236,8 @@ def test_series_search_related_tags_semicolon_separator(
     )
     rc, _, _ = _run(
         [
-            "series-search-related-tags",
+            "series",
+            "search-related-tags",
             "cpi",
             "--tag-names",
             "usa;annual",
@@ -258,7 +261,7 @@ def test_series_categories_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-categories", "GNPCA"],
+        ["series", "categories", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -279,7 +282,7 @@ def test_series_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-tags", "GNPCA"],
+        ["series", "tags", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -293,7 +296,7 @@ def test_series_tags_invalid_order_by_exits_2(
 ) -> None:
     """series-tags rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["series-tags", "GNPCA", "--order-by", "bad_field"],
+        ["series", "tags", "GNPCA", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -314,7 +317,7 @@ def test_series_release_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-release", "GNPCA"],
+        ["series", "release", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -335,7 +338,7 @@ def test_series_updates_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-updates", "--limit", "3"],
+        ["series", "updates", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -349,7 +352,7 @@ def test_series_updates_invalid_filter_value_exits_2(
 ) -> None:
     """series-updates rejects an invalid --filter-value value."""
     rc, _, err = _run(
-        ["series-updates", "--filter-value", "national"],
+        ["series", "updates", "--filter-value", "national"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -375,7 +378,7 @@ def test_series_vintagedates_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-vintagedates", "GNPCA", "--limit", "5"],
+        ["series", "vintage-dates", "GNPCA", "--limit", "5"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -392,14 +395,14 @@ def test_series_vintagedates_missing_series_id_exits_2(
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
-        main(["series-vintagedates"], stdout=io.StringIO(), stderr=io.StringIO())
+        main(["series", "vintage-dates"], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
 
 
 def test_series_requires_positional_id() -> None:
-    """Series exits 2 when positional series_id is omitted."""
+    """'series show' exits 2 when positional series_id is omitted."""
     with pytest.raises(SystemExit) as exc:
-        build_parser().parse_args(["series"])
+        build_parser().parse_args(["series", "show"])
     assert exc.value.code == EXIT_USAGE
 
 
@@ -964,23 +967,23 @@ def test_release_tables_element_id_integer_param(
 # ---------------------------------------------------------------------------
 
 
-_FILTER_COMMANDS: Final[list[tuple[str, list[str]]]] = [
-    ("series-search", ["gdp"]),
-    ("category-series", ["32991"]),
-    ("release-series", ["53"]),
+_FILTER_COMMANDS: Final[list[tuple[list[str], list[str]]]] = [
+    (["series", "search"], ["gdp"]),
+    (["category-series"], ["32991"]),
+    (["release-series"], ["53"]),
 ]
 
 
 @pytest.mark.parametrize(("command", "required_args"), _FILTER_COMMANDS)
 def test_filter_variable_without_filter_value_exits_2(
-    command: str,
+    command: list[str],
     required_args: list[str],
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     """--filter-variable without --filter-value exits 2 with a directed message."""
     rc, _, err = _run(
-        [command, *required_args, "--filter-variable", "frequency"],
+        [*command, *required_args, "--filter-variable", "frequency"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -990,14 +993,14 @@ def test_filter_variable_without_filter_value_exits_2(
 
 @pytest.mark.parametrize(("command", "required_args"), _FILTER_COMMANDS)
 def test_filter_value_without_filter_variable_exits_2(
-    command: str,
+    command: list[str],
     required_args: list[str],
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     """--filter-value without --filter-variable exits 2 with a directed message."""
     rc, _, err = _run(
-        [command, *required_args, "--filter-value", "Annual"],
+        [*command, *required_args, "--filter-value", "Annual"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -1005,32 +1008,32 @@ def test_filter_value_without_filter_variable_exits_2(
     assert "--filter-variable" in err
 
 
-_FILTER_COMMANDS_WITH_URLS: Final[list[tuple[str, list[str], str]]] = [
+_FILTER_COMMANDS_WITH_URLS: Final[list[tuple[list[str], list[str], str]]] = [
     (
-        "series-search",
+        ["series", "search"],
         ["gdp"],
         "/fred/series/search?search_text=gdp&filter_variable=frequency&filter_value=Annual",
     ),
     (
-        "category-series",
+        ["category-series"],
         ["32991"],
         "/fred/category/series?category_id=32991&filter_variable=frequency&filter_value=Annual",
     ),
     (
-        "release-series",
+        ["release-series"],
         ["53"],
         "/fred/release/series?release_id=53&filter_variable=frequency&filter_value=Annual",
     ),
 ]
 
-_FILTER_COMMANDS_BASE_URLS: Final[list[tuple[str, list[str], str]]] = [
-    ("series-search", ["gdp"], "/fred/series/search?search_text=gdp"),
+_FILTER_COMMANDS_BASE_URLS: Final[list[tuple[list[str], list[str], str]]] = [
+    (["series", "search"], ["gdp"], "/fred/series/search?search_text=gdp"),
     (
-        "category-series",
+        ["category-series"],
         ["32991"],
         "/fred/category/series?category_id=32991",
     ),
-    ("release-series", ["53"], "/fred/release/series?release_id=53"),
+    (["release-series"], ["53"], "/fred/release/series?release_id=53"),
 ]
 
 
@@ -1038,7 +1041,7 @@ _FILTER_COMMANDS_BASE_URLS: Final[list[tuple[str, list[str], str]]] = [
     ("command", "required_args", "url_suffix"), _FILTER_COMMANDS_WITH_URLS
 )
 def test_filter_variable_and_value_together_exit_0(  # noqa: PLR0913, PLR0917
-    command: str,
+    command: list[str],
     required_args: list[str],
     url_suffix: str,
     httpx_mock: HTTPXMock,
@@ -1054,7 +1057,7 @@ def test_filter_variable_and_value_together_exit_0(  # noqa: PLR0913, PLR0917
     )
     rc, _, _ = _run(
         [
-            command,
+            *command,
             *required_args,
             "--filter-variable",
             "frequency",
@@ -1071,7 +1074,7 @@ def test_filter_variable_and_value_together_exit_0(  # noqa: PLR0913, PLR0917
     ("command", "required_args", "url_suffix"), _FILTER_COMMANDS_BASE_URLS
 )
 def test_neither_filter_variable_nor_value_exits_0(  # noqa: PLR0913, PLR0917
-    command: str,
+    command: list[str],
     required_args: list[str],
     url_suffix: str,
     httpx_mock: HTTPXMock,
@@ -1086,7 +1089,7 @@ def test_neither_filter_variable_nor_value_exits_0(  # noqa: PLR0913, PLR0917
         text=body,
     )
     rc, _, _ = _run(
-        [command, *required_args],
+        [*command, *required_args],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -1152,23 +1155,23 @@ def test_tags_series_with_exclude_only_exits_2(
     assert exc_info.value.code == EXIT_USAGE
 
 
-_EXCLUDE_TAG_COMMANDS: Final[list[tuple[str, list[str]]]] = [
-    ("release-series", ["53"]),
-    ("category-series", ["32991"]),
-    ("series-search", ["gdp"]),
+_EXCLUDE_TAG_COMMANDS: Final[list[tuple[list[str], list[str]]]] = [
+    (["release-series"], ["53"]),
+    (["category-series"], ["32991"]),
+    (["series", "search"], ["gdp"]),
 ]
 
 
 @pytest.mark.parametrize(("command", "required_args"), _EXCLUDE_TAG_COMMANDS)
 def test_exclude_tag_names_without_tag_names_exits_2(
-    command: str,
+    command: list[str],
     required_args: list[str],
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     """--exclude-tag-names without --tag-names exits 2 with a directed message."""
     rc, _, err = _run(
-        [command, *required_args, "--exclude-tag-names", "nsa"],
+        [*command, *required_args, "--exclude-tag-names", "nsa"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )

@@ -362,6 +362,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
     CommandSpec(
         name="series",
         path="/fred/series",
+        group="series",
+        leaf="show",
         summary="Show metadata for one FRED series.",
         description=(
             "Return the series record: title, units, frequency, seasonal "
@@ -369,13 +371,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         params=(_SERIES_ID_PARAM, _REALTIME_START_PARAM, _REALTIME_END_PARAM),
         examples=(
-            "fredq series GNPCA",
-            "fredq series DGS10 --realtime-start 2024-01-01",
+            "fredq series show GNPCA",
+            "fredq series show DGS10 --realtime-start 2024-01-01",
         ),
     ),
     CommandSpec(
         name="series-observations",
         path="/fred/series/observations",
+        group="series",
+        leaf="observations",
         summary="Fetch observations (values) for one FRED series.",
         description=(
             "Return the time series of dated observation values. Supports "
@@ -437,8 +441,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ),
         ),
         examples=(
-            "fredq series-observations GNPCA",
-            "fredq series-observations CPIAUCSL --units pch --frequency m",
+            "fredq series observations GNPCA",
+            "fredq series observations CPIAUCSL --units pch --frequency m",
         ),
         notes=(
             (
@@ -450,6 +454,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
     CommandSpec(
         name="series-search",
         path="/fred/series/search",
+        group="series",
+        leaf="search",
         summary="Search FRED series by keyword.",
         description=(
             "Return series records whose title, notes, or series ID match the "
@@ -490,8 +496,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _EXCLUDE_TAG_NAMES_PARAM,
         ),
         examples=(
-            'fredq series-search "consumer price index" --limit 5',
-            "fredq series-search UNRATE --search-type series_id",
+            'fredq series search "consumer price index" --limit 5',
+            "fredq series search UNRATE --search-type series_id",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
@@ -500,6 +506,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
     CommandSpec(
         name="series-search-tags",
         path="/fred/series/search/tags",
+        group="series",
+        leaf="search-tags",
         summary="List tags for a series full-text search.",
         description=(
             "Return the tags associated with series matching the given full-text "
@@ -527,14 +535,16 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq series-search-tags monetary --limit 5",
-            "fredq series-search-tags inflation --tag-group-id geo",
+            "fredq series search-tags monetary --limit 5",
+            "fredq series search-tags inflation --tag-group-id geo",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
     CommandSpec(
         name="series-search-related-tags",
         path="/fred/series/search/related_tags",
+        group="series",
+        leaf="search-related-tags",
         summary="List tags related to a search and existing tag filter.",
         description=(
             "Return tags related to series matching the search text and already "
@@ -563,9 +573,9 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq series-search-related-tags monetary --tag-names usa",
+            "fredq series search-related-tags monetary --tag-names usa",
             (
-                "fredq series-search-related-tags inflation "
+                "fredq series search-related-tags inflation "
                 "--tag-names 'usa;annual' --limit 5"
             ),
         ),
@@ -574,6 +584,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
     CommandSpec(
         name="series-vintagedates",
         path="/fred/series/vintagedates",
+        group="series",
+        leaf="vintage-dates",
         summary="List vintage dates (revision dates) for one FRED series.",
         description=(
             "Return the dates in history when a series was revised or new data "
@@ -590,13 +602,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq series-vintagedates GNPCA",
-            "fredq series-vintagedates CPIAUCSL --limit 5 --sort-order desc",
+            "fredq series vintage-dates GNPCA",
+            "fredq series vintage-dates CPIAUCSL --limit 5 --sort-order desc",
         ),
     ),
     CommandSpec(
         name="series-categories",
         path="/fred/series/categories",
+        group="series",
+        leaf="categories",
         summary="List categories that contain a given series.",
         description=(
             "Return the FRED categories that the specified series belongs to. "
@@ -608,13 +622,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq series-categories GNPCA",
-            "fredq series-categories CPIAUCSL",
+            "fredq series categories GNPCA",
+            "fredq series categories CPIAUCSL",
         ),
     ),
     CommandSpec(
         name="series-tags",
         path="/fred/series/tags",
+        group="series",
+        leaf="tags",
         summary="List tags assigned to a FRED series.",
         description=(
             "Return the tags attached to the specified series. Each tag record "
@@ -628,13 +644,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq series-tags GNPCA",
-            "fredq series-tags FEDFUNDS --order-by popularity",
+            "fredq series tags GNPCA",
+            "fredq series tags FEDFUNDS --order-by popularity",
         ),
     ),
     CommandSpec(
         name="series-release",
         path="/fred/series/release",
+        group="series",
+        leaf="release",
         summary="Show the release that a FRED series belongs to.",
         description=(
             "Return the release record associated with the specified series, "
@@ -646,13 +664,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq series-release GNPCA",
-            "fredq series-release CPIAUCSL",
+            "fredq series release GNPCA",
+            "fredq series release CPIAUCSL",
         ),
     ),
     CommandSpec(
         name="series-updates",
         path="/fred/series/updates",
+        group="series",
+        leaf="updates",
         summary="List recently updated FRED series.",
         description=(
             "Return series ordered by their last-updated timestamp, newest "
@@ -697,8 +717,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ),
         ),
         examples=(
-            "fredq series-updates --limit 10",
-            "fredq series-updates --filter-value macro --limit 5",
+            "fredq series updates --limit 10",
+            "fredq series updates --filter-value macro --limit 5",
         ),
         notes=(
             ("start_time and end_time use FRED's YYYYMMDDHhmm format, not YYYY-MM-DD."),
