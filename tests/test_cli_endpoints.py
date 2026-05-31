@@ -424,7 +424,7 @@ def test_releases_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["releases", "--limit", "3"],
+        ["release", "list", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -438,7 +438,7 @@ def test_releases_invalid_order_by_exits_2(
 ) -> None:
     """Releases command rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["releases", "--order-by", "bad_field"],
+        ["release", "list", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -455,7 +455,7 @@ def test_releases_limit_zero_exits_2(
 ) -> None:
     """The releases command rejects --limit 0 (below minimum of 1)."""
     rc, _, err = _run(
-        ["releases", "--limit", "0"],
+        ["release", "list", "--limit", "0"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -469,7 +469,7 @@ def test_releases_limit_negative_exits_2(
 ) -> None:
     """The releases command rejects --limit -5 (negative)."""
     rc, _, _ = _run(
-        ["releases", "--limit", "-5"],
+        ["release", "list", "--limit", "-5"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -482,7 +482,7 @@ def test_releases_limit_above_max_exits_2(
 ) -> None:
     """The releases command rejects --limit 1001 (above maximum of 1000)."""
     rc, _, err = _run(
-        ["releases", "--limit", "1001"],
+        ["release", "list", "--limit", "1001"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -495,7 +495,7 @@ def test_releases_dates_happy_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """releases-dates returns raw FRED JSON body."""
+    """Release calendar returns raw FRED JSON body."""
     body = '{"release_dates": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -503,7 +503,7 @@ def test_releases_dates_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["releases-dates", "--limit", "3"],
+        ["release", "calendar", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -516,7 +516,7 @@ def test_releases_dates_include_no_data_flag(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """releases-dates sends include_release_dates_with_no_data=true when flag is set."""
+    """Release calendar sends include_release_dates_with_no_data=true when set."""
     body = '{"release_dates": []}'
     httpx_mock.add_response(
         method="GET",
@@ -527,7 +527,7 @@ def test_releases_dates_include_no_data_flag(
         text=body,
     )
     rc, _, _ = _run(
-        ["releases-dates", "--include-release-dates-with-no-data"],
+        ["release", "calendar", "--include-release-dates-with-no-data"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -547,7 +547,7 @@ def test_release_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release", "53"],
+        ["release", "show", "53"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -560,7 +560,7 @@ def test_release_dates_happy_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-dates returns raw FRED JSON body."""
+    """Release dates returns raw FRED JSON body."""
     body = '{"release_dates": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -568,7 +568,7 @@ def test_release_dates_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-dates", "53", "--limit", "3"],
+        ["release", "dates", "53", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -581,7 +581,7 @@ def test_release_dates_include_no_data_flag(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-dates sends include_release_dates_with_no_data=true when flag is set."""
+    """Release dates sends include_release_dates_with_no_data=true when flag is set."""
     body = '{"release_dates": []}'
     httpx_mock.add_response(
         method="GET",
@@ -593,7 +593,8 @@ def test_release_dates_include_no_data_flag(
     )
     rc, _, _ = _run(
         [
-            "release-dates",
+            "release",
+            "dates",
             "53",
             "--include-release-dates-with-no-data",
         ],
@@ -608,7 +609,7 @@ def test_release_series_happy_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-series returns raw FRED JSON body."""
+    """Release series returns raw FRED JSON body."""
     body = '{"seriess": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -616,7 +617,7 @@ def test_release_series_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-series", "53", "--limit", "3"],
+        ["release", "series", "53", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -628,9 +629,9 @@ def test_release_series_invalid_order_by_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-series rejects an invalid --order-by value."""
+    """Release series rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["release-series", "53", "--order-by", "bad_field"],
+        ["release", "series", "53", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -643,7 +644,7 @@ def test_release_sources_happy_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-sources returns raw FRED JSON body."""
+    """Release sources returns raw FRED JSON body."""
     body = '{"sources": [{"id": 1}]}'
     httpx_mock.add_response(
         method="GET",
@@ -651,7 +652,7 @@ def test_release_sources_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-sources", "53"],
+        ["release", "sources", "53"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -664,7 +665,7 @@ def test_release_tags_happy_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-tags returns raw FRED JSON body."""
+    """Release tags returns raw FRED JSON body."""
     body = '{"tags": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -672,7 +673,7 @@ def test_release_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-tags", "53", "--limit", "3"],
+        ["release", "tags", "53", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -684,9 +685,9 @@ def test_release_tags_invalid_tag_group_id_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-tags rejects an invalid --tag-group-id value."""
+    """Release tags rejects an invalid --tag-group-id value."""
     rc, _, err = _run(
-        ["release-tags", "53", "--tag-group-id", "invalid"],
+        ["release", "tags", "53", "--tag-group-id", "invalid"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -699,7 +700,7 @@ def test_release_related_tags_happy_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-related-tags returns raw FRED JSON body."""
+    """Release related-tags returns raw FRED JSON body."""
     body = '{"tags": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -711,7 +712,8 @@ def test_release_related_tags_happy_path(
     )
     rc, stdout, _ = _run(
         [
-            "release-related-tags",
+            "release",
+            "related-tags",
             "53",
             "--tag-names",
             "usa",
@@ -729,10 +731,11 @@ def test_release_related_tags_invalid_order_by_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-related-tags rejects an invalid --order-by value."""
+    """Release related-tags rejects an invalid --order-by value."""
     rc, _, err = _run(
         [
-            "release-related-tags",
+            "release",
+            "related-tags",
             "53",
             "--tag-names",
             "usa",
@@ -751,7 +754,7 @@ def test_release_tables_happy_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-tables returns raw FRED JSON body."""
+    """Release tables returns raw FRED JSON body."""
     body = '{"elements": {}}'
     httpx_mock.add_response(
         method="GET",
@@ -759,7 +762,7 @@ def test_release_tables_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-tables", "53"],
+        ["release", "tables", "53"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -768,18 +771,18 @@ def test_release_tables_happy_path(
 
 
 @pytest.mark.parametrize(
-    "command",
+    "args",
     [
-        "release",
-        "release-dates",
-        "release-series",
-        "release-sources",
-        "release-tags",
-        "release-tables",
+        ["release", "show"],
+        ["release", "dates"],
+        ["release", "series"],
+        ["release", "sources"],
+        ["release", "tags"],
+        ["release", "tables"],
     ],
 )
 def test_release_missing_positional_exits_2(
-    command: str,
+    args: list[str],
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -788,7 +791,7 @@ def test_release_missing_positional_exits_2(
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
-        main([command], stdout=io.StringIO(), stderr=io.StringIO())
+        main(args, stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
 
 
@@ -796,12 +799,12 @@ def test_release_related_tags_missing_positional_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-related-tags exits 2 when the required positional ID is omitted."""
+    """Release related-tags exits 2 when the required positional ID is omitted."""
     monkeypatch.setenv("FRED_API_KEY", "secret")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
-        main(["release-related-tags"], stdout=io.StringIO(), stderr=io.StringIO())
+        main(["release", "related-tags"], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
 
 
@@ -831,15 +834,15 @@ def test_category_id_negative_exits_2(
     [
         (["source", "--", "0"], "source 0"),
         (["source", "--", "-1"], "source -1"),
-        (["release", "--", "0"], "release 0"),
-        (["release", "--", "-3"], "release -3"),
+        (["release", "show", "--", "0"], "release show 0"),
+        (["release", "show", "--", "-3"], "release show -3"),
         (
-            ["release-tables", "53", "--element-id", "0"],
-            "release-tables --element-id 0",
+            ["release", "tables", "53", "--element-id", "0"],
+            "release tables --element-id 0",
         ),
         (
-            ["release-tables", "53", "--element-id", "-1"],
-            "release-tables --element-id -1",
+            ["release", "tables", "53", "--element-id", "-1"],
+            "release tables --element-id -1",
         ),
     ],
 )
@@ -893,7 +896,7 @@ def test_category_id_zero_accepted(
             '{"sources": [{"id": 1}]}',
         ),
         (
-            ["release", "1"],
+            ["release", "show", "1"],
             "/fred/release?release_id=1",
             '{"releases": [{"id": 1}]}',
         ),
@@ -922,7 +925,7 @@ def test_release_tables_include_observation_values_flag(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-tables sends include_observation_values=true when flag is set."""
+    """Release tables sends include_observation_values=true when flag is set."""
     body = '{"elements": {}}'
     httpx_mock.add_response(
         method="GET",
@@ -933,7 +936,7 @@ def test_release_tables_include_observation_values_flag(
         text=body,
     )
     rc, _, _ = _run(
-        ["release-tables", "53", "--include-observation-values"],
+        ["release", "tables", "53", "--include-observation-values"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -945,7 +948,7 @@ def test_release_tables_element_id_integer_param(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """release-tables sends element_id as an integer query param."""
+    """Release tables sends element_id as an integer query param."""
     body = '{"elements": {}}'
     httpx_mock.add_response(
         method="GET",
@@ -955,7 +958,7 @@ def test_release_tables_element_id_integer_param(
         text=body,
     )
     rc, _, _ = _run(
-        ["release-tables", "53", "--element-id", "12886"],
+        ["release", "tables", "53", "--element-id", "12886"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -970,7 +973,7 @@ def test_release_tables_element_id_integer_param(
 _FILTER_COMMANDS: Final[list[tuple[list[str], list[str]]]] = [
     (["series", "search"], ["gdp"]),
     (["category", "series"], ["32991"]),
-    (["release-series"], ["53"]),
+    (["release", "series"], ["53"]),
 ]
 
 
@@ -1020,7 +1023,7 @@ _FILTER_COMMANDS_WITH_URLS: Final[list[tuple[list[str], list[str], str]]] = [
         "/fred/category/series?category_id=32991&filter_variable=frequency&filter_value=Annual",
     ),
     (
-        ["release-series"],
+        ["release", "series"],
         ["53"],
         "/fred/release/series?release_id=53&filter_variable=frequency&filter_value=Annual",
     ),
@@ -1033,7 +1036,7 @@ _FILTER_COMMANDS_BASE_URLS: Final[list[tuple[list[str], list[str], str]]] = [
         ["32991"],
         "/fred/category/series?category_id=32991",
     ),
-    (["release-series"], ["53"], "/fred/release/series?release_id=53"),
+    (["release", "series"], ["53"], "/fred/release/series?release_id=53"),
 ]
 
 
@@ -1156,7 +1159,7 @@ def test_tags_series_with_exclude_only_exits_2(
 
 
 _EXCLUDE_TAG_COMMANDS: Final[list[tuple[list[str], list[str]]]] = [
-    (["release-series"], ["53"]),
+    (["release", "series"], ["53"]),
     (["category", "series"], ["32991"]),
     (["series", "search"], ["gdp"]),
 ]

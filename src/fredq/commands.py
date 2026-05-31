@@ -880,6 +880,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
     CommandSpec(
         name="releases",
         path="/fred/releases",
+        group="release",
+        leaf="list",
         summary="List all FRED economic data releases.",
         description=(
             "Return the full catalog of FRED releases. Each record includes "
@@ -894,13 +896,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq releases --limit 10",
-            "fredq releases --order-by name --sort-order asc",
+            "fredq release list --limit 10",
+            "fredq release list --order-by name --sort-order asc",
         ),
     ),
     CommandSpec(
         name="releases-dates",
         path="/fred/releases/dates",
+        group="release",
+        leaf="calendar",
         summary="List release dates across all FRED releases.",
         description=(
             "Return publication dates across all releases in the FRED calendar. "
@@ -916,8 +920,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _INCLUDE_RELEASE_DATES_WITH_NO_DATA_PARAM,
         ),
         examples=(
-            "fredq releases-dates --limit 10",
-            "fredq releases-dates --include-release-dates-with-no-data",
+            "fredq release calendar --limit 10",
+            "fredq release calendar --include-release-dates-with-no-data",
         ),
         notes=(
             (
@@ -930,6 +934,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
     CommandSpec(
         name="release",
         path="/fred/release",
+        group="release",
+        leaf="show",
         summary="Show metadata for one FRED release.",
         description=(
             "Return the release record for the given release ID, including "
@@ -941,13 +947,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq release 53",
-            "fredq release 10",
+            "fredq release show 53",
+            "fredq release show 10",
         ),
     ),
     CommandSpec(
         name="release-dates",
         path="/fred/release/dates",
+        group="release",
+        leaf="dates",
         summary="List publication dates for one FRED release.",
         description=(
             "Return the dated publication records for the specified release, "
@@ -963,13 +971,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _INCLUDE_RELEASE_DATES_WITH_NO_DATA_PARAM,
         ),
         examples=(
-            "fredq release-dates 53 --limit 5",
-            "fredq release-dates 10 --sort-order desc",
+            "fredq release dates 53 --limit 5",
+            "fredq release dates 10 --sort-order desc",
         ),
     ),
     CommandSpec(
         name="release-series",
         path="/fred/release/series",
+        group="release",
+        leaf="series",
         summary="List series belonging to one FRED release.",
         description=(
             "Return the series records published under the specified release. "
@@ -989,8 +999,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _EXCLUDE_TAG_NAMES_PARAM,
         ),
         examples=(
-            "fredq release-series 53 --limit 5",
-            "fredq release-series 175 --tag-names 'usa;annual' --limit 10",
+            "fredq release series 53 --limit 5",
+            "fredq release series 175 --tag-names 'usa;annual' --limit 10",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
@@ -999,6 +1009,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
     CommandSpec(
         name="release-sources",
         path="/fred/release/sources",
+        group="release",
+        leaf="sources",
         summary="List sources for one FRED release.",
         description=(
             "Return the source records that publish or maintain the data for "
@@ -1010,13 +1022,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq release-sources 53",
-            "fredq release-sources 10",
+            "fredq release sources 53",
+            "fredq release sources 10",
         ),
     ),
     CommandSpec(
         name="release-tags",
         path="/fred/release/tags",
+        group="release",
+        leaf="tags",
         summary="List tags for one FRED release.",
         description=(
             "Return tags associated with the series published under the "
@@ -1035,14 +1049,16 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq release-tags 53 --limit 10",
-            "fredq release-tags 175 --tag-group-id geo",
+            "fredq release tags 53 --limit 10",
+            "fredq release tags 175 --tag-group-id geo",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
     CommandSpec(
         name="release-related-tags",
         path="/fred/release/related_tags",
+        group="release",
+        leaf="related-tags",
         summary="List tags related to a release and existing tag filter.",
         description=(
             "Return tags related to series in the specified release that are "
@@ -1063,14 +1079,16 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq release-related-tags 53 --tag-names usa",
-            "fredq release-related-tags 175 --tag-names 'usa;annual' --limit 5",
+            "fredq release related-tags 53 --tag-names usa",
+            "fredq release related-tags 175 --tag-names 'usa;annual' --limit 5",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
     CommandSpec(
         name="release-tables",
         path="/fred/release/tables",
+        group="release",
+        leaf="tables",
         summary="Fetch the hierarchical data table for one FRED release.",
         description=(
             "Return the release's element tree — the hierarchical table of "
@@ -1111,8 +1129,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ),
         ),
         examples=(
-            "fredq release-tables 53",
-            "fredq release-tables 53 --include-observation-values",
+            "fredq release tables 53",
+            "fredq release tables 53 --include-observation-values",
         ),
         notes=("The response is a hierarchical JSON tree, not a flat array.",),
     ),
