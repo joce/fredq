@@ -296,6 +296,7 @@ _SOURCE_ID_PARAM: Final[ParamSpec] = ParamSpec(
     cli_name="source-id",
     kind=ParamKind.INTEGER,
     help="FRED source identifier (e.g. 1 for Board of Governors, 3 for St. Louis Fed).",
+    positional=True,
     required=True,
     metavar="ID",
     min_value=1,
@@ -1209,8 +1210,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq source --source-id 1",
-            "fredq source --source-id 18",
+            "fredq source 1",
+            "fredq source 18",
         ),
     ),
     CommandSpec(
@@ -1231,8 +1232,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq source-releases --source-id 1 --limit 5",
-            "fredq source-releases --source-id 3 --order-by name",
+            "fredq source-releases 1 --limit 5",
+            "fredq source-releases 3 --order-by name",
         ),
     ),
 )

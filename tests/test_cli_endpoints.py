@@ -816,8 +816,8 @@ def test_category_id_negative_exits_2(
 @pytest.mark.parametrize(
     ("args", "description"),
     [
-        (["source", "--source-id", "0"], "source --source-id 0"),
-        (["source", "--source-id", "-1"], "source --source-id -1"),
+        (["source", "--", "0"], "source 0"),
+        (["source", "--", "-1"], "source -1"),
         (["release", "--", "0"], "release 0"),
         (["release", "--", "-3"], "release -3"),
         (
@@ -875,7 +875,7 @@ def test_category_id_zero_accepted(
             '{"categories": [{"id": 1}]}',
         ),
         (
-            ["source", "--source-id", "1"],
+            ["source", "1"],
             "/fred/source?source_id=1",
             '{"sources": [{"id": 1}]}',
         ),
