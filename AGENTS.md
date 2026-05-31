@@ -18,6 +18,18 @@ Python 3.10+, uv, httpx, argparse, pytest, pytest-httpx, ruff, pyright, tox, hat
 - Spell changed files: `npm run spell:changed` or `make spell-changed`
 - Full check: `uv run tox`
 
+## Command grouping (noun-verb)
+Commands are organized into six noun groups, each with verb leaves:
+- **series**: `show`, `observations`, `search`, `search-tags`, `search-related-tags`, `vintage-dates`, `categories`, `tags`, `release`, `updates`
+- **category**: `show`, `children`, `related`, `series`, `tags`, `related-tags`
+- **release**: `list`, `show`, `calendar` (all releases dates), `dates` (one release's dates), `series`, `sources`, `tags`, `related-tags`, `tables`
+  - `release calendar` → `/fred/releases/dates`; `release dates ID` → `/fred/release/dates` (distinct endpoints)
+- **source**: `list`, `show`, `releases`
+- **tag**: `list`, `series`, `related`
+- **geofred**: `series-group`, `series-data`, `regional-data`, `shapes` (unchanged; leaf stays None → uses name)
+
+Each `CommandSpec.name` is globally unique and unchanged (routing key). The `leaf` field is display-only.
+
 ## Architecture
 - `src/fredq/client.py` -> FRED HTTP client (single async GET, api_key injection, retries, raw response retrieval).
 - `src/fredq/auth.py` -> Read FRED_API_KEY from env or fallback file.
@@ -47,7 +59,7 @@ When adding or editing a CLI command:
 3. **Notes**: real clarifications only — FRED quirks, switch-behavior surprises, dependencies. Drop diary entries and redundant restatements.
 4. **Order in `COMMANDS` tuple by importance**: daily-driver → discovery → entity lookups → schema introspection. Never append to the end.
 5. **Param boilerplate is shared** (`--api-key`, `--realtime-start`, `--realtime-end` use exact strings — copy them). Run `pytest -k help` before and after.
-6. **Positional primary args**: each command's single primary required argument is a positional (its `metavar` is shown in usage); all other parameters are flags. `series-search` / `series-search-tags` / `series-search-related-tags` take the search text positionally; `tags-series` / `related-tags` take the tag list positionally; `geofred regional-data` / `geofred shapes` take their primary (`series_group` / `shape`) positionally.
+6. **Positional primary args**: each command's single primary required argument is a positional (its `metavar` is shown in usage); all other parameters are flags. `series search` / `series search-tags` / `series search-related-tags` take the search text positionally; `tag series` / `tag related` take the tag list positionally; `geofred regional-data` / `geofred shapes` take their primary (`series_group` / `shape`) positionally.
 
 ## Output formats
 - **Default**: raw FRED JSON to stdout, exactly as returned.
