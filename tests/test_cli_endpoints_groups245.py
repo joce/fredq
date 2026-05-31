@@ -71,6 +71,19 @@ def test_category_required_param_omission_exits_2(
     assert exc_info.value.code == EXIT_USAGE
 
 
+def test_category_missing_positional_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Category exits 2 when the required positional category-id is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(["category"], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE
+
+
 # ---------------------------------------------------------------------------
 # Group 2 — Category browse
 # ---------------------------------------------------------------------------
@@ -89,7 +102,7 @@ def test_category_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category", "--category-id", "0"],
+        ["category", "0"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -110,7 +123,7 @@ def test_category_children_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category-children", "--category-id", "0"],
+        ["category-children", "0"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -131,7 +144,7 @@ def test_category_related_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category-related", "--category-id", "32991"],
+        ["category-related", "32991"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -152,7 +165,7 @@ def test_category_series_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category-series", "--category-id", "32991", "--limit", "3"],
+        ["category-series", "32991", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -168,7 +181,6 @@ def test_category_series_invalid_filter_variable_exits_2(
     rc, _, err = _run(
         [
             "category-series",
-            "--category-id",
             "32991",
             "--filter-variable",
             "bogus",
@@ -188,7 +200,6 @@ def test_category_series_invalid_order_by_exits_2(
     rc, _, err = _run(
         [
             "category-series",
-            "--category-id",
             "32991",
             "--order-by",
             "bad_field",
@@ -213,7 +224,7 @@ def test_category_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category-tags", "--category-id", "32991", "--limit", "3"],
+        ["category-tags", "32991", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -227,7 +238,7 @@ def test_category_tags_invalid_tag_group_id_exits_2(
 ) -> None:
     """category-tags rejects an invalid --tag-group-id value."""
     rc, _, err = _run(
-        ["category-tags", "--category-id", "32991", "--tag-group-id", "invalid"],
+        ["category-tags", "32991", "--tag-group-id", "invalid"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -253,7 +264,6 @@ def test_category_related_tags_happy_path(
     rc, stdout, _ = _run(
         [
             "category-related-tags",
-            "--category-id",
             "32991",
             "--tag-names",
             "usa",
@@ -275,7 +285,6 @@ def test_category_related_tags_invalid_order_by_exits_2(
     rc, _, err = _run(
         [
             "category-related-tags",
-            "--category-id",
             "32991",
             "--tag-names",
             "usa",
@@ -299,7 +308,7 @@ def test_category_related_tags_missing_tag_names_exits_2(
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
         main(
-            ["category-related-tags", "--category-id", "32991"],
+            ["category-related-tags", "32991"],
             stdout=io.StringIO(),
             stderr=io.StringIO(),
         )
@@ -409,12 +418,29 @@ def test_related_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["related-tags", "--tag-names", "usa", "--limit", "3"],
+        ["related-tags", "usa", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
     assert rc == EXIT_OK
     assert '"tags"' in stdout
+
+
+def test_related_tags_missing_positional_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """related-tags exits 2 when the required TAGS positional is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            ["related-tags", "--limit", "3"],
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert exc_info.value.code == EXIT_USAGE
 
 
 def test_related_tags_invalid_order_by_exits_2(
@@ -423,7 +449,7 @@ def test_related_tags_invalid_order_by_exits_2(
 ) -> None:
     """related-tags rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["related-tags", "--tag-names", "usa", "--order-by", "bad_field"],
+        ["related-tags", "usa", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -444,7 +470,7 @@ def test_tags_series_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["tags-series", "--tag-names", "usa;annual", "--limit", "3"],
+        ["tags-series", "usa;annual", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -458,7 +484,7 @@ def test_tags_series_invalid_order_by_exits_2(
 ) -> None:
     """tags-series rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["tags-series", "--order-by", "bad_field"],
+        ["tags-series", "usa", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -534,7 +560,7 @@ def test_source_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["source", "--source-id", "1"],
+        ["source", "1"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -555,7 +581,7 @@ def test_source_releases_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["source-releases", "--source-id", "1", "--limit", "3"],
+        ["source-releases", "1", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -569,9 +595,35 @@ def test_source_releases_invalid_order_by_exits_2(
 ) -> None:
     """source-releases rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["source-releases", "--source-id", "1", "--order-by", "bad_field"],
+        ["source-releases", "1", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
     assert rc == EXIT_USAGE
     assert "unsupported value" in err or "bad_field" in err
+
+
+def test_source_missing_positional_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Source exits 2 when the required positional source-id is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(["source"], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE
+
+
+def test_source_releases_missing_positional_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """source-releases exits 2 when the required positional source-id is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(["source-releases"], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE

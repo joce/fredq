@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Final
 
 import pytest
 
-from fredq.cli import main
+from fredq.cli import build_parser, main
 from fredq.commands import COMMANDS, CommandSpec
 
 if TYPE_CHECKING:
@@ -80,12 +80,25 @@ def test_series_search_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-search", "--search-text", "inflation", "--limit", "3"],
+        ["series-search", "inflation", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
     assert rc == EXIT_OK
     assert '"seriess"' in stdout
+
+
+def test_series_search_missing_positional_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """series-search exits 2 when the required positional search text is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(["series-search"], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE
 
 
 def test_series_search_invalid_search_type_exits_2(
@@ -94,7 +107,7 @@ def test_series_search_invalid_search_type_exits_2(
 ) -> None:
     """series-search rejects an invalid --search-type value."""
     rc, _, err = _run(
-        ["series-search", "--search-text", "cpi", "--search-type", "bad"],
+        ["series-search", "cpi", "--search-type", "bad"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -108,7 +121,7 @@ def test_series_search_invalid_filter_variable_exits_2(
 ) -> None:
     """series-search rejects an invalid --filter-variable value."""
     rc, _, err = _run(
-        ["series-search", "--search-text", "cpi", "--filter-variable", "bogus"],
+        ["series-search", "cpi", "--filter-variable", "bogus"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -122,7 +135,7 @@ def test_series_search_invalid_order_by_exits_2(
 ) -> None:
     """series-search rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["series-search", "--search-text", "cpi", "--order-by", "invalid_field"],
+        ["series-search", "cpi", "--order-by", "invalid_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -146,7 +159,7 @@ def test_series_search_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-search-tags", "--series-search-text", "monetary", "--limit", "3"],
+        ["series-search-tags", "monetary", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -162,7 +175,6 @@ def test_series_search_tags_invalid_tag_group_id_exits_2(
     rc, _, err = _run(
         [
             "series-search-tags",
-            "--series-search-text",
             "monetary",
             "--tag-group-id",
             "invalid",
@@ -192,7 +204,6 @@ def test_series_search_related_tags_happy_path(
     rc, stdout, _ = _run(
         [
             "series-search-related-tags",
-            "--series-search-text",
             "monetary",
             "--tag-names",
             "usa",
@@ -224,7 +235,6 @@ def test_series_search_related_tags_semicolon_separator(
     rc, _, _ = _run(
         [
             "series-search-related-tags",
-            "--series-search-text",
             "cpi",
             "--tag-names",
             "usa;annual",
@@ -248,7 +258,7 @@ def test_series_categories_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-categories", "--series-id", "GNPCA"],
+        ["series-categories", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -269,7 +279,7 @@ def test_series_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-tags", "--series-id", "GNPCA"],
+        ["series-tags", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -283,7 +293,7 @@ def test_series_tags_invalid_order_by_exits_2(
 ) -> None:
     """series-tags rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["series-tags", "--series-id", "GNPCA", "--order-by", "bad_field"],
+        ["series-tags", "GNPCA", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -304,7 +314,7 @@ def test_series_release_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-release", "--series-id", "GNPCA"],
+        ["series-release", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -365,7 +375,7 @@ def test_series_vintagedates_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-vintagedates", "--series-id", "GNPCA", "--limit", "5"],
+        ["series-vintagedates", "GNPCA", "--limit", "5"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -377,13 +387,20 @@ def test_series_vintagedates_missing_series_id_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """series-vintagedates exits 2 when --series-id is omitted."""
+    """series-vintagedates exits 2 when positional series_id is omitted."""
     monkeypatch.setenv("FRED_API_KEY", "secret")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
         main(["series-vintagedates"], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
+
+
+def test_series_requires_positional_id() -> None:
+    """Series exits 2 when positional series_id is omitted."""
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["series"])
+    assert exc.value.code == EXIT_USAGE
 
 
 # ---------------------------------------------------------------------------
@@ -527,7 +544,7 @@ def test_release_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release", "--release-id", "53"],
+        ["release", "53"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -548,7 +565,7 @@ def test_release_dates_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-dates", "--release-id", "53", "--limit", "3"],
+        ["release-dates", "53", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -574,7 +591,6 @@ def test_release_dates_include_no_data_flag(
     rc, _, _ = _run(
         [
             "release-dates",
-            "--release-id",
             "53",
             "--include-release-dates-with-no-data",
         ],
@@ -597,7 +613,7 @@ def test_release_series_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-series", "--release-id", "53", "--limit", "3"],
+        ["release-series", "53", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -611,7 +627,7 @@ def test_release_series_invalid_order_by_exits_2(
 ) -> None:
     """release-series rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["release-series", "--release-id", "53", "--order-by", "bad_field"],
+        ["release-series", "53", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -632,7 +648,7 @@ def test_release_sources_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-sources", "--release-id", "53"],
+        ["release-sources", "53"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -653,7 +669,7 @@ def test_release_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-tags", "--release-id", "53", "--limit", "3"],
+        ["release-tags", "53", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -667,7 +683,7 @@ def test_release_tags_invalid_tag_group_id_exits_2(
 ) -> None:
     """release-tags rejects an invalid --tag-group-id value."""
     rc, _, err = _run(
-        ["release-tags", "--release-id", "53", "--tag-group-id", "invalid"],
+        ["release-tags", "53", "--tag-group-id", "invalid"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -693,7 +709,6 @@ def test_release_related_tags_happy_path(
     rc, stdout, _ = _run(
         [
             "release-related-tags",
-            "--release-id",
             "53",
             "--tag-names",
             "usa",
@@ -715,7 +730,6 @@ def test_release_related_tags_invalid_order_by_exits_2(
     rc, _, err = _run(
         [
             "release-related-tags",
-            "--release-id",
             "53",
             "--tag-names",
             "usa",
@@ -742,12 +756,50 @@ def test_release_tables_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-tables", "--release-id", "53"],
+        ["release-tables", "53"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
     assert rc == EXIT_OK
     assert '"elements"' in stdout
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "release",
+        "release-dates",
+        "release-series",
+        "release-sources",
+        "release-tags",
+        "release-tables",
+    ],
+)
+def test_release_missing_positional_exits_2(
+    command: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Release commands exit 2 when the required positional release-id is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main([command], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE
+
+
+def test_release_related_tags_missing_positional_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-related-tags exits 2 when the required positional ID is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(["release-related-tags"], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE
 
 
 # ---------------------------------------------------------------------------
@@ -763,7 +815,7 @@ def test_category_id_negative_exits_2(
 ) -> None:
     """Negative category_id values exit 2 (category_id must be >= 0)."""
     rc, _, err = _run(
-        ["category", "--category-id", "-5"],
+        ["category", "--", "-5"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -774,16 +826,16 @@ def test_category_id_negative_exits_2(
 @pytest.mark.parametrize(
     ("args", "description"),
     [
-        (["source", "--source-id", "0"], "source --source-id 0"),
-        (["source", "--source-id", "-1"], "source --source-id -1"),
-        (["release", "--release-id", "0"], "release --release-id 0"),
-        (["release", "--release-id", "-3"], "release --release-id -3"),
+        (["source", "--", "0"], "source 0"),
+        (["source", "--", "-1"], "source -1"),
+        (["release", "--", "0"], "release 0"),
+        (["release", "--", "-3"], "release -3"),
         (
-            ["release-tables", "--release-id", "53", "--element-id", "0"],
+            ["release-tables", "53", "--element-id", "0"],
             "release-tables --element-id 0",
         ),
         (
-            ["release-tables", "--release-id", "53", "--element-id", "-1"],
+            ["release-tables", "53", "--element-id", "-1"],
             "release-tables --element-id -1",
         ),
     ],
@@ -817,7 +869,7 @@ def test_category_id_zero_accepted(
         text=body,
     )
     rc, _out, _ = _run(
-        ["category", "--category-id", "0"],
+        ["category", "0"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -828,17 +880,17 @@ def test_category_id_zero_accepted(
     ("args", "url_suffix", "body"),
     [
         (
-            ["category", "--category-id", "1"],
+            ["category", "1"],
             "/fred/category?category_id=1",
             '{"categories": [{"id": 1}]}',
         ),
         (
-            ["source", "--source-id", "1"],
+            ["source", "1"],
             "/fred/source?source_id=1",
             '{"sources": [{"id": 1}]}',
         ),
         (
-            ["release", "--release-id", "1"],
+            ["release", "1"],
             "/fred/release?release_id=1",
             '{"releases": [{"id": 1}]}',
         ),
@@ -878,7 +930,7 @@ def test_release_tables_include_observation_values_flag(
         text=body,
     )
     rc, _, _ = _run(
-        ["release-tables", "--release-id", "53", "--include-observation-values"],
+        ["release-tables", "53", "--include-observation-values"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -900,7 +952,7 @@ def test_release_tables_element_id_integer_param(
         text=body,
     )
     rc, _, _ = _run(
-        ["release-tables", "--release-id", "53", "--element-id", "12886"],
+        ["release-tables", "53", "--element-id", "12886"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -913,9 +965,9 @@ def test_release_tables_element_id_integer_param(
 
 
 _FILTER_COMMANDS: Final[list[tuple[str, list[str]]]] = [
-    ("series-search", ["--search-text", "gdp"]),
-    ("category-series", ["--category-id", "32991"]),
-    ("release-series", ["--release-id", "53"]),
+    ("series-search", ["gdp"]),
+    ("category-series", ["32991"]),
+    ("release-series", ["53"]),
 ]
 
 
@@ -956,29 +1008,29 @@ def test_filter_value_without_filter_variable_exits_2(
 _FILTER_COMMANDS_WITH_URLS: Final[list[tuple[str, list[str], str]]] = [
     (
         "series-search",
-        ["--search-text", "gdp"],
+        ["gdp"],
         "/fred/series/search?search_text=gdp&filter_variable=frequency&filter_value=Annual",
     ),
     (
         "category-series",
-        ["--category-id", "32991"],
+        ["32991"],
         "/fred/category/series?category_id=32991&filter_variable=frequency&filter_value=Annual",
     ),
     (
         "release-series",
-        ["--release-id", "53"],
+        ["53"],
         "/fred/release/series?release_id=53&filter_variable=frequency&filter_value=Annual",
     ),
 ]
 
 _FILTER_COMMANDS_BASE_URLS: Final[list[tuple[str, list[str], str]]] = [
-    ("series-search", ["--search-text", "gdp"], "/fred/series/search?search_text=gdp"),
+    ("series-search", ["gdp"], "/fred/series/search?search_text=gdp"),
     (
         "category-series",
-        ["--category-id", "32991"],
+        ["32991"],
         "/fred/category/series?category_id=32991",
     ),
-    ("release-series", ["--release-id", "53"], "/fred/release/series?release_id=53"),
+    ("release-series", ["53"], "/fred/release/series?release_id=53"),
 ]
 
 
@@ -1050,14 +1102,17 @@ def test_tags_series_no_tags_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """tags-series with no --tag-names or --exclude-tag-names exits 2."""
-    rc, _, err = _run(
-        ["tags-series", "--limit", "3"],
-        monkeypatch=monkeypatch,
-        tmp_path=tmp_path,
-    )
-    assert rc == EXIT_USAGE
-    assert "--tag-names" in err or "--exclude-tag-names" in err
+    """tags-series with no positional TAGS arg exits 2."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            ["tags-series", "--limit", "3"],
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert exc_info.value.code == EXIT_USAGE
 
 
 def test_tags_series_with_tag_names_exits_0(
@@ -1065,7 +1120,7 @@ def test_tags_series_with_tag_names_exits_0(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """tags-series with --tag-names exits 0."""
+    """tags-series with positional TAGS exits 0."""
     body = '{"seriess": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -1073,7 +1128,7 @@ def test_tags_series_with_tag_names_exits_0(
         text=body,
     )
     rc, _, _ = _run(
-        ["tags-series", "--tag-names", "usa"],
+        ["tags-series", "usa"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -1085,18 +1140,22 @@ def test_tags_series_with_exclude_only_exits_2(
     tmp_path: Path,
 ) -> None:
     """The tags-series command with only --exclude-tag-names exits 2."""
-    rc, _, _ = _run(
-        ["tags-series", "--exclude-tag-names", "monthly"],
-        monkeypatch=monkeypatch,
-        tmp_path=tmp_path,
-    )
-    assert rc == EXIT_USAGE
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            ["tags-series", "--exclude-tag-names", "monthly"],
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert exc_info.value.code == EXIT_USAGE
 
 
 _EXCLUDE_TAG_COMMANDS: Final[list[tuple[str, list[str]]]] = [
-    ("release-series", ["--release-id", "53"]),
-    ("category-series", ["--category-id", "32991"]),
-    ("series-search", ["--search-text", "gdp"]),
+    ("release-series", ["53"]),
+    ("category-series", ["32991"]),
+    ("series-search", ["gdp"]),
 ]
 
 
@@ -1118,23 +1177,25 @@ def test_exclude_tag_names_without_tag_names_exits_2(
 
 
 # ---------------------------------------------------------------------------
-# Item 3 — tags-series: at_least_one_of enforces --tag-names independently
+# Item 3 — tags-series: tag-names is a required positional argument
 # ---------------------------------------------------------------------------
 
 
-def test_tags_series_exclude_only_error_comes_from_at_least_one_of(
+def test_tags_series_exclude_only_missing_positional_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """tags-series --exclude-tag-names without --tag-names exits 2.
+    """tags-series --exclude-tag-names without the positional TAGS exits 2.
 
-    Rejection comes from the at_least_one_of rule (not requires_partner,
-    which is redundant and will be removed). The error must mention --tag-names.
+    Rejection comes from the missing required positional argument.
     """
-    rc, _, err = _run(
-        ["tags-series", "--exclude-tag-names", "usa", "--limit", "3"],
-        monkeypatch=monkeypatch,
-        tmp_path=tmp_path,
-    )
-    assert rc == EXIT_USAGE
-    assert "--tag-names" in err
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            ["tags-series", "--exclude-tag-names", "usa", "--limit", "3"],
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert exc_info.value.code == EXIT_USAGE

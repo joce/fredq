@@ -66,6 +66,7 @@ _SERIES_ID_PARAM: Final[ParamSpec] = ParamSpec(
     cli_name="series-id",
     kind=ParamKind.STRING,
     help="FRED series identifier (e.g. GNPCA, DGS10, CPIAUCSL).",
+    positional=True,
     required=True,
     metavar="ID",
 )
@@ -274,6 +275,7 @@ _CATEGORY_ID_PARAM: Final[ParamSpec] = ParamSpec(
         "FRED category identifier (e.g. 32991 for Money & Banking)."
         " The root category (ID 0) is the top of the FRED hierarchy."
     ),
+    positional=True,
     required=True,
     metavar="ID",
     min_value=0,
@@ -294,6 +296,7 @@ _SOURCE_ID_PARAM: Final[ParamSpec] = ParamSpec(
     cli_name="source-id",
     kind=ParamKind.INTEGER,
     help="FRED source identifier (e.g. 1 for Board of Governors, 3 for St. Louis Fed).",
+    positional=True,
     required=True,
     metavar="ID",
     min_value=1,
@@ -304,6 +307,7 @@ _RELEASE_ID_PARAM: Final[ParamSpec] = ParamSpec(
     cli_name="release-id",
     kind=ParamKind.INTEGER,
     help="FRED release identifier (e.g. 53 for GDP, 10 for CPI).",
+    positional=True,
     required=True,
     metavar="ID",
     min_value=1,
@@ -337,6 +341,17 @@ _TAG_NAMES_REQUIRED_PARAM: Final[ParamSpec] = ParamSpec(
     metavar="TAGS",
 )
 
+_TAG_NAMES_POSITIONAL_PARAM: Final[ParamSpec] = ParamSpec(
+    name="tag_names",
+    cli_name="tag-names",
+    kind=ParamKind.CSV,
+    help="Semicolon-separated list of tag names (e.g. 'usa;monthly').",
+    positional=True,
+    required=True,
+    csv_separator=";",
+    metavar="TAGS",
+)
+
 
 # v1 starts with two endpoints to prove the pattern; remaining ~29 added
 # incrementally. See AGENTS.md "Architecture" + docs/v2-geofred.md.
@@ -351,8 +366,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         params=(_SERIES_ID_PARAM, _REALTIME_START_PARAM, _REALTIME_END_PARAM),
         examples=(
-            "fredq series --series-id GNPCA",
-            "fredq series --series-id DGS10 --realtime-start 2024-01-01",
+            "fredq series GNPCA",
+            "fredq series DGS10 --realtime-start 2024-01-01",
         ),
     ),
     CommandSpec(
@@ -419,11 +434,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ),
         ),
         examples=(
-            "fredq series-observations --series-id GNPCA",
-            (
-                "fredq series-observations --series-id CPIAUCSL "
-                "--units pch --frequency m"
-            ),
+            "fredq series-observations GNPCA",
+            "fredq series-observations CPIAUCSL --units pch --frequency m",
         ),
         notes=(
             (
@@ -448,6 +460,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 cli_name="search-text",
                 kind=ParamKind.STRING,
                 help="Search string to match against series titles and notes.",
+                positional=True,
                 required=True,
                 metavar="TEXT",
             ),
@@ -474,8 +487,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _EXCLUDE_TAG_NAMES_PARAM,
         ),
         examples=(
-            "fredq series-search --search-text 'consumer price index' --limit 5",
-            ("fredq series-search --search-text UNRATE --search-type series_id"),
+            'fredq series-search "consumer price index" --limit 5',
+            "fredq series-search UNRATE --search-type series_id",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
@@ -496,6 +509,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 cli_name="series-search-text",
                 kind=ParamKind.STRING,
                 help="Full-text search string used to select the series set.",
+                positional=True,
                 required=True,
                 metavar="TEXT",
             ),
@@ -510,11 +524,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq series-search-tags --series-search-text monetary --limit 5",
-            (
-                "fredq series-search-tags --series-search-text inflation "
-                "--tag-group-id geo"
-            ),
+            "fredq series-search-tags monetary --limit 5",
+            "fredq series-search-tags inflation --tag-group-id geo",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
@@ -533,6 +544,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 cli_name="series-search-text",
                 kind=ParamKind.STRING,
                 help="Full-text search string used to select the series set.",
+                positional=True,
                 required=True,
                 metavar="TEXT",
             ),
@@ -548,13 +560,10 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
+            "fredq series-search-related-tags monetary --tag-names usa",
             (
-                "fredq series-search-related-tags "
-                "--series-search-text monetary --tag-names usa"
-            ),
-            (
-                "fredq series-search-related-tags "
-                "--series-search-text inflation --tag-names 'usa;annual' --limit 5"
+                "fredq series-search-related-tags inflation "
+                "--tag-names 'usa;annual' --limit 5"
             ),
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
@@ -578,11 +587,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq series-vintagedates --series-id GNPCA",
-            (
-                "fredq series-vintagedates --series-id CPIAUCSL "
-                "--limit 5 --sort-order desc"
-            ),
+            "fredq series-vintagedates GNPCA",
+            "fredq series-vintagedates CPIAUCSL --limit 5 --sort-order desc",
         ),
     ),
     CommandSpec(
@@ -599,8 +605,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq series-categories --series-id GNPCA",
-            "fredq series-categories --series-id CPIAUCSL",
+            "fredq series-categories GNPCA",
+            "fredq series-categories CPIAUCSL",
         ),
     ),
     CommandSpec(
@@ -619,8 +625,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq series-tags --series-id GNPCA",
-            "fredq series-tags --series-id FEDFUNDS --order-by popularity",
+            "fredq series-tags GNPCA",
+            "fredq series-tags FEDFUNDS --order-by popularity",
         ),
     ),
     CommandSpec(
@@ -637,8 +643,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq series-release --series-id GNPCA",
-            "fredq series-release --series-id CPIAUCSL",
+            "fredq series-release GNPCA",
+            "fredq series-release CPIAUCSL",
         ),
     ),
     CommandSpec(
@@ -708,8 +714,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         params=(_CATEGORY_ID_PARAM,),
         examples=(
-            "fredq category --category-id 0",
-            "fredq category --category-id 32991",
+            "fredq category 0",
+            "fredq category 32991",
         ),
         notes=("The root category (ID 0) is the top of the FRED hierarchy.",),
     ),
@@ -727,8 +733,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq category-children --category-id 0",
-            "fredq category-children --category-id 32991",
+            "fredq category-children 0",
+            "fredq category-children 32991",
         ),
     ),
     CommandSpec(
@@ -746,8 +752,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq category-related --category-id 32991",
-            "fredq category-related --category-id 106",
+            "fredq category-related 32991",
+            "fredq category-related 106",
         ),
     ),
     CommandSpec(
@@ -772,11 +778,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _EXCLUDE_TAG_NAMES_PARAM,
         ),
         examples=(
-            "fredq category-series --category-id 32991 --limit 5",
-            (
-                "fredq category-series --category-id 106 "
-                "--tag-names 'usa;annual' --limit 10"
-            ),
+            "fredq category-series 32991 --limit 5",
+            "fredq category-series 106 --tag-names 'usa;annual' --limit 10",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
@@ -803,8 +806,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq category-tags --category-id 32991 --limit 10",
-            "fredq category-tags --category-id 106 --tag-group-id geo",
+            "fredq category-tags 32991 --limit 10",
+            "fredq category-tags 106 --tag-group-id geo",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
@@ -831,11 +834,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq category-related-tags --category-id 32991 --tag-names usa",
-            (
-                "fredq category-related-tags --category-id 32991 "
-                "--tag-names 'usa;annual' --limit 5"
-            ),
+            "fredq category-related-tags 32991 --tag-names usa",
+            "fredq category-related-tags 32991 --tag-names 'usa;annual' --limit 5",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
@@ -906,8 +906,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq release --release-id 53",
-            "fredq release --release-id 10",
+            "fredq release 53",
+            "fredq release 10",
         ),
     ),
     CommandSpec(
@@ -928,8 +928,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _INCLUDE_RELEASE_DATES_WITH_NO_DATA_PARAM,
         ),
         examples=(
-            "fredq release-dates --release-id 53 --limit 5",
-            "fredq release-dates --release-id 10 --sort-order desc",
+            "fredq release-dates 53 --limit 5",
+            "fredq release-dates 10 --sort-order desc",
         ),
     ),
     CommandSpec(
@@ -954,11 +954,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _EXCLUDE_TAG_NAMES_PARAM,
         ),
         examples=(
-            "fredq release-series --release-id 53 --limit 5",
-            (
-                "fredq release-series --release-id 175 "
-                "--tag-names 'usa;annual' --limit 10"
-            ),
+            "fredq release-series 53 --limit 5",
+            "fredq release-series 175 --tag-names 'usa;annual' --limit 10",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
@@ -978,8 +975,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq release-sources --release-id 53",
-            "fredq release-sources --release-id 10",
+            "fredq release-sources 53",
+            "fredq release-sources 10",
         ),
     ),
     CommandSpec(
@@ -1003,8 +1000,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq release-tags --release-id 53 --limit 10",
-            "fredq release-tags --release-id 175 --tag-group-id geo",
+            "fredq release-tags 53 --limit 10",
+            "fredq release-tags 175 --tag-group-id geo",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
@@ -1031,11 +1028,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq release-related-tags --release-id 53 --tag-names usa",
-            (
-                "fredq release-related-tags --release-id 175 "
-                "--tag-names 'usa;annual' --limit 5"
-            ),
+            "fredq release-related-tags 53 --tag-names usa",
+            "fredq release-related-tags 175 --tag-names 'usa;annual' --limit 5",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
@@ -1082,8 +1076,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ),
         ),
         examples=(
-            "fredq release-tables --release-id 53",
-            ("fredq release-tables --release-id 53 --include-observation-values"),
+            "fredq release-tables 53",
+            "fredq release-tables 53 --include-observation-values",
         ),
         notes=("The response is a hierarchical JSON tree, not a flat array.",),
     ),
@@ -1099,7 +1093,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "tag names. Supports tag exclusion, sorting, and pagination."
         ),
         params=(
-            _TAG_NAMES_PARAM,
+            _TAG_NAMES_POSITIONAL_PARAM,
             _EXCLUDE_TAG_NAMES_PARAM,
             _REALTIME_START_PARAM,
             _REALTIME_END_PARAM,
@@ -1109,14 +1103,13 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq tags-series --tag-names usa --limit 5",
-            "fredq tags-series --tag-names 'usa;annual' --limit 3",
+            "fredq tags-series usa --limit 5",
+            "fredq tags-series 'usa;annual' --limit 3",
         ),
         notes=(
             "Tag lists use semicolons as separators (e.g. 'usa;annual').",
-            "--tag-names is required; --exclude-tag-names may optionally accompany it.",
+            "--exclude-tag-names may optionally accompany the required TAGS argument.",
         ),
-        at_least_one_of=(frozenset({"tag_names"}),),
     ),
     CommandSpec(
         name="tags",
@@ -1153,7 +1146,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "search."
         ),
         params=(
-            _TAG_NAMES_REQUIRED_PARAM,
+            _TAG_NAMES_POSITIONAL_PARAM,
             _REALTIME_START_PARAM,
             _REALTIME_END_PARAM,
             _TAG_GROUP_ID_PARAM,
@@ -1165,8 +1158,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq related-tags --tag-names usa --limit 10",
-            "fredq related-tags --tag-names 'usa;annual' --limit 5",
+            "fredq related-tags usa --limit 10",
+            "fredq related-tags 'usa;annual' --limit 5",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
@@ -1207,8 +1200,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq source --source-id 1",
-            "fredq source --source-id 18",
+            "fredq source 1",
+            "fredq source 18",
         ),
     ),
     CommandSpec(
@@ -1229,8 +1222,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq source-releases --source-id 1 --limit 5",
-            "fredq source-releases --source-id 3 --order-by name",
+            "fredq source-releases 1 --limit 5",
+            "fredq source-releases 3 --order-by name",
         ),
     ),
 )
@@ -1251,18 +1244,6 @@ _GEOFRED_REGION_TYPES: Final[tuple[str, ...]] = (
     "censusdivision",
 )
 
-_SERIES_GROUP_PARAM: Final[ParamSpec] = ParamSpec(
-    name="series_group",
-    cli_name="series-group",
-    kind=ParamKind.STRING,
-    help=(
-        "GeoFRED series group ID (e.g. 882). "
-        "Discover via 'fredq geofred series-group --series-id <id>'."
-    ),
-    required=True,
-    metavar="ID",
-)
-
 _REGION_TYPE_PARAM: Final[ParamSpec] = ParamSpec(
     name="region_type",
     cli_name="region-type",
@@ -1274,19 +1255,6 @@ _REGION_TYPE_PARAM: Final[ParamSpec] = ParamSpec(
     required=True,
     allowed_values=_GEOFRED_REGION_TYPES,
     metavar="REGION",
-)
-
-_SHAPE_PARAM: Final[ParamSpec] = ParamSpec(
-    name="shape",
-    cli_name="shape",
-    kind=ParamKind.STRING,
-    help=(
-        "Region polygon set: bea, msa, frb, necta, state, country, county, "
-        "censusregion, censusdivision."
-    ),
-    required=True,
-    allowed_values=_GEOFRED_REGION_TYPES,
-    metavar="SHAPE",
 )
 
 _DATE_PARAM: Final[ParamSpec] = ParamSpec(
@@ -1339,7 +1307,7 @@ _UNITS_DISPLAY_PARAM: Final[ParamSpec] = ParamSpec(
     kind=ParamKind.STRING,
     help=(
         "Units display name (e.g. 'Dollars', 'Percent', 'Index 2017=100'). "
-        "Get from 'fredq geofred series-group --series-id <id>'."
+        "Get from 'fredq geofred series-group <id>'."
     ),
     required=True,
     metavar="UNITS",
@@ -1377,7 +1345,7 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "and observation range needed to call geofred regional-data."
         ),
         params=(_SERIES_ID_PARAM,),
-        examples=("fredq geofred series-group --series-id WIPCPI",),
+        examples=("fredq geofred series-group WIPCPI",),
     ),
     CommandSpec(
         name="series-data",
@@ -1395,8 +1363,8 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _START_DATE_PARAM,
         ),
         examples=(
-            "fredq geofred series-data --series-id WIPCPI",
-            ("fredq geofred series-data --series-id WIPCPI --start-date 2020-01-01"),
+            "fredq geofred series-data WIPCPI",
+            ("fredq geofred series-data WIPCPI --start-date 2020-01-01"),
         ),
     ),
     CommandSpec(
@@ -1410,7 +1378,18 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "FIPS code, and observation value."
         ),
         params=(
-            _SERIES_GROUP_PARAM,
+            ParamSpec(
+                name="series_group",
+                cli_name="series-group",
+                kind=ParamKind.STRING,
+                help=(
+                    "GeoFRED series group ID (e.g. 882). "
+                    "Discover via 'fredq geofred series-group <id>'."
+                ),
+                positional=True,
+                required=True,
+                metavar="ID",
+            ),
             _REGION_TYPE_PARAM,
             _DATE_REQUIRED_PARAM,
             _SEASON_PARAM,
@@ -1421,15 +1400,15 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         examples=(
             (
-                "fredq geofred regional-data --series-group 882 "
+                "fredq geofred regional-data 882 "
                 "--region-type state --date 2020-01-01 "
                 "--season NSA --frequency a --units Dollars"
             ),
         ),
         notes=(
             (
-                "Run 'fredq geofred series-group --series-id <id>' first to "
-                "discover the correct --series-group, --season, and --units "
+                "Run 'fredq geofred series-group <id>' first to "
+                "discover the correct series-group ID, --season, and --units "
                 "values."
             ),
             (
@@ -1449,8 +1428,22 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "Download the polygon boundary file for the specified region type "
             "and write it to --out. The response is GeoJSON."
         ),
-        params=(_SHAPE_PARAM,),
-        examples=("fredq geofred shapes --shape state --out states.geojson",),
+        params=(
+            ParamSpec(
+                name="shape",
+                cli_name="shape",
+                kind=ParamKind.STRING,
+                help=(
+                    "Region polygon set: bea, msa, frb, necta, state, country, county, "
+                    "censusregion, censusdivision."
+                ),
+                positional=True,
+                required=True,
+                allowed_values=_GEOFRED_REGION_TYPES,
+                metavar="SHAPE",
+            ),
+        ),
+        examples=("fredq geofred shapes state --out states.geojson",),
         notes=(
             "Output is GeoJSON. The msa shape is ~1.6 MB.",
             (

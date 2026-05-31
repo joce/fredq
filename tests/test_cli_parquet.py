@@ -77,7 +77,6 @@ def test_parquet_round_trip(
     rc = main(
         [
             "series-observations",
-            "--series-id",
             "CPIAUCSL",
             "--units",
             "pch",
@@ -118,7 +117,6 @@ def test_parquet_requires_out(
     rc = main(
         [
             "series-observations",
-            "--series-id",
             "CPIAUCSL",
             "--format",
             "parquet",
@@ -144,7 +142,6 @@ def test_out_without_parquet_errors(
     rc = main(
         [
             "series-observations",
-            "--series-id",
             "CPIAUCSL",
             "--out",
             str(tmp_path / "x.parquet"),
@@ -170,7 +167,6 @@ def test_parquet_on_unsupported_command_errors(
     rc = main(
         [
             "series",
-            "--series-id",
             "GNPCA",
             "--format",
             "parquet",

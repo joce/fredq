@@ -249,18 +249,18 @@ def _build_parser_impl() -> tuple[argparse.ArgumentParser, _GroupParsers]:
         ),
         epilog=(
             "Discovering IDs (start here — these commands need no ID):\n"
-            '  fredq series-search --search-text "unemployment"   '
+            '  fredq series-search "unemployment"                  '
             "find series IDs by keyword\n"
             "  fredq releases                                      list release IDs\n"
             "  fredq sources                                       list source IDs\n"
             "  fredq tags                                          list tag names\n"
-            "  fredq category-children --category-id 0             "
+            "  fredq category-children 0                           "
             "root categories (0 = root; drill down)\n"
             "\n"
             "Then use an ID with the matching command, e.g.:\n"
-            "  fredq series-observations --series-id DGS10\n"
-            "  fredq category-series --category-id 106\n"
-            "  fredq release-series --release-id 10\n"
+            "  fredq series-observations DGS10\n"
+            "  fredq category-series 106\n"
+            "  fredq release-series 10\n"
             "\n"
             "Every command has its own --help with parameters and examples."
         ),
