@@ -165,9 +165,8 @@ def test_fredq_nonexistent_command_still_exits_2() -> None:
 def test_all_commands_have_a_group() -> None:
     """Every command now belongs to a named group (no flat top-level commands)."""
     flat = [c for c in COMMANDS if c.group is None]
-    assert (
-        flat == []
-    ), f"Expected all commands to have a group, found flat: {[c.name for c in flat]}"
+    msg = f"Expected all commands to have a group, found flat: {[c.name for c in flat]}"
+    assert flat == [], msg
 
 
 def test_command_spec_output_to_file_synthetic_true() -> None:

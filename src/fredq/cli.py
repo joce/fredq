@@ -31,7 +31,26 @@ _HELP_MAX_POSITION: Final[int] = 32
 # Commands that support Parquet output. The default JSON path stays in
 # effect everywhere else.
 _PARQUET_COMMANDS: Final[frozenset[str]] = frozenset({"series-observations"})
-_PARQUET_COMMANDS_HELP: Final[str] = ", ".join(sorted(_PARQUET_COMMANDS))
+
+
+def _grouped_display(name: str) -> str:
+    """Render a command's user-facing invocation (``group leaf``) for messages.
+
+    Falls back to the routing ``name`` for ungrouped commands.
+
+    Returns:
+        str: The grouped ``"group leaf"`` form, or the bare name if ungrouped.
+    """
+
+    spec = COMMANDS_BY_NAME.get(name)
+    if spec is not None and spec.group is not None:
+        return f"{spec.group} {spec.leaf or spec.name}"
+    return name
+
+
+_PARQUET_COMMANDS_HELP: Final[str] = ", ".join(
+    sorted(_grouped_display(name) for name in _PARQUET_COMMANDS)
+)
 
 
 class _FredClientProtocol(Protocol):

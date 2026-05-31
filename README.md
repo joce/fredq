@@ -305,16 +305,17 @@ FIPS code. `geofred shapes` returns Highcharts-format GeoJSON whose coordinates
 are in a Lambert Conformal Conic projection (not WGS84); reproject before mixing
 with lat/lon basemaps. See `fredq geofred --help` for the full subcommand list.
 
-Each endpoint has its own adaptive help:
+A bare group prints its list of subcommands; each leaf command has its own
+adaptive help:
 
 ```powershell
-uv run fredq series --help
-uv run fredq series observations --help
+uv run fredq series --help              # group: lists the series subcommands
+uv run fredq series observations --help # leaf: full endpoint help
 uv run fredq series search --help
 uv run fredq release calendar --help
 ```
 
-Endpoint help is the primary documentation surface. It shows the FRED target
+Leaf-command help is the primary documentation surface. It shows the FRED target
 endpoint, accepted parameters, allowed value sets, defaults, and examples.
 
 ## Dates, Booleans, and Tag Lists
