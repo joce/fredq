@@ -337,6 +337,17 @@ _TAG_NAMES_REQUIRED_PARAM: Final[ParamSpec] = ParamSpec(
     metavar="TAGS",
 )
 
+_TAG_NAMES_POSITIONAL_PARAM: Final[ParamSpec] = ParamSpec(
+    name="tag_names",
+    cli_name="tag-names",
+    kind=ParamKind.CSV,
+    help="Semicolon-separated list of tag names (e.g. 'usa;monthly').",
+    positional=True,
+    required=True,
+    csv_separator=";",
+    metavar="TAGS",
+)
+
 
 # v1 starts with two endpoints to prove the pattern; remaining ~29 added
 # incrementally. See AGENTS.md "Architecture" + docs/v2-geofred.md.
