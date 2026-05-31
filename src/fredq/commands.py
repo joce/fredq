@@ -306,6 +306,7 @@ _RELEASE_ID_PARAM: Final[ParamSpec] = ParamSpec(
     cli_name="release-id",
     kind=ParamKind.INTEGER,
     help="FRED release identifier (e.g. 53 for GDP, 10 for CPI).",
+    positional=True,
     required=True,
     metavar="ID",
     min_value=1,
@@ -913,8 +914,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq release --release-id 53",
-            "fredq release --release-id 10",
+            "fredq release 53",
+            "fredq release 10",
         ),
     ),
     CommandSpec(
@@ -935,8 +936,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _INCLUDE_RELEASE_DATES_WITH_NO_DATA_PARAM,
         ),
         examples=(
-            "fredq release-dates --release-id 53 --limit 5",
-            "fredq release-dates --release-id 10 --sort-order desc",
+            "fredq release-dates 53 --limit 5",
+            "fredq release-dates 10 --sort-order desc",
         ),
     ),
     CommandSpec(
@@ -961,11 +962,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _EXCLUDE_TAG_NAMES_PARAM,
         ),
         examples=(
-            "fredq release-series --release-id 53 --limit 5",
-            (
-                "fredq release-series --release-id 175 "
-                "--tag-names 'usa;annual' --limit 10"
-            ),
+            "fredq release-series 53 --limit 5",
+            "fredq release-series 175 --tag-names 'usa;annual' --limit 10",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
@@ -985,8 +983,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq release-sources --release-id 53",
-            "fredq release-sources --release-id 10",
+            "fredq release-sources 53",
+            "fredq release-sources 10",
         ),
     ),
     CommandSpec(
@@ -1010,8 +1008,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq release-tags --release-id 53 --limit 10",
-            "fredq release-tags --release-id 175 --tag-group-id geo",
+            "fredq release-tags 53 --limit 10",
+            "fredq release-tags 175 --tag-group-id geo",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
@@ -1038,11 +1036,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq release-related-tags --release-id 53 --tag-names usa",
-            (
-                "fredq release-related-tags --release-id 175 "
-                "--tag-names 'usa;annual' --limit 5"
-            ),
+            "fredq release-related-tags 53 --tag-names usa",
+            "fredq release-related-tags 175 --tag-names 'usa;annual' --limit 5",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
@@ -1089,8 +1084,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ),
         ),
         examples=(
-            "fredq release-tables --release-id 53",
-            ("fredq release-tables --release-id 53 --include-observation-values"),
+            "fredq release-tables 53",
+            "fredq release-tables 53 --include-observation-values",
         ),
         notes=("The response is a hierarchical JSON tree, not a flat array.",),
     ),

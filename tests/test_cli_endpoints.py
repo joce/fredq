@@ -534,7 +534,7 @@ def test_release_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release", "--release-id", "53"],
+        ["release", "53"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -555,7 +555,7 @@ def test_release_dates_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-dates", "--release-id", "53", "--limit", "3"],
+        ["release-dates", "53", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -581,7 +581,6 @@ def test_release_dates_include_no_data_flag(
     rc, _, _ = _run(
         [
             "release-dates",
-            "--release-id",
             "53",
             "--include-release-dates-with-no-data",
         ],
@@ -604,7 +603,7 @@ def test_release_series_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-series", "--release-id", "53", "--limit", "3"],
+        ["release-series", "53", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -618,7 +617,7 @@ def test_release_series_invalid_order_by_exits_2(
 ) -> None:
     """release-series rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["release-series", "--release-id", "53", "--order-by", "bad_field"],
+        ["release-series", "53", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -639,7 +638,7 @@ def test_release_sources_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-sources", "--release-id", "53"],
+        ["release-sources", "53"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -660,7 +659,7 @@ def test_release_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-tags", "--release-id", "53", "--limit", "3"],
+        ["release-tags", "53", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -674,7 +673,7 @@ def test_release_tags_invalid_tag_group_id_exits_2(
 ) -> None:
     """release-tags rejects an invalid --tag-group-id value."""
     rc, _, err = _run(
-        ["release-tags", "--release-id", "53", "--tag-group-id", "invalid"],
+        ["release-tags", "53", "--tag-group-id", "invalid"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -700,7 +699,6 @@ def test_release_related_tags_happy_path(
     rc, stdout, _ = _run(
         [
             "release-related-tags",
-            "--release-id",
             "53",
             "--tag-names",
             "usa",
@@ -722,7 +720,6 @@ def test_release_related_tags_invalid_order_by_exits_2(
     rc, _, err = _run(
         [
             "release-related-tags",
-            "--release-id",
             "53",
             "--tag-names",
             "usa",
@@ -749,12 +746,50 @@ def test_release_tables_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["release-tables", "--release-id", "53"],
+        ["release-tables", "53"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
     assert rc == EXIT_OK
     assert '"elements"' in stdout
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "release",
+        "release-dates",
+        "release-series",
+        "release-sources",
+        "release-tags",
+        "release-tables",
+    ],
+)
+def test_release_missing_positional_exits_2(
+    command: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Release commands exit 2 when the required positional release-id is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main([command], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE
+
+
+def test_release_related_tags_missing_positional_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """release-related-tags exits 2 when the required positional ID is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(["release-related-tags"], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE
 
 
 # ---------------------------------------------------------------------------
@@ -783,14 +818,14 @@ def test_category_id_negative_exits_2(
     [
         (["source", "--source-id", "0"], "source --source-id 0"),
         (["source", "--source-id", "-1"], "source --source-id -1"),
-        (["release", "--release-id", "0"], "release --release-id 0"),
-        (["release", "--release-id", "-3"], "release --release-id -3"),
+        (["release", "--", "0"], "release 0"),
+        (["release", "--", "-3"], "release -3"),
         (
-            ["release-tables", "--release-id", "53", "--element-id", "0"],
+            ["release-tables", "53", "--element-id", "0"],
             "release-tables --element-id 0",
         ),
         (
-            ["release-tables", "--release-id", "53", "--element-id", "-1"],
+            ["release-tables", "53", "--element-id", "-1"],
             "release-tables --element-id -1",
         ),
     ],
@@ -845,7 +880,7 @@ def test_category_id_zero_accepted(
             '{"sources": [{"id": 1}]}',
         ),
         (
-            ["release", "--release-id", "1"],
+            ["release", "1"],
             "/fred/release?release_id=1",
             '{"releases": [{"id": 1}]}',
         ),
@@ -885,7 +920,7 @@ def test_release_tables_include_observation_values_flag(
         text=body,
     )
     rc, _, _ = _run(
-        ["release-tables", "--release-id", "53", "--include-observation-values"],
+        ["release-tables", "53", "--include-observation-values"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -907,7 +942,7 @@ def test_release_tables_element_id_integer_param(
         text=body,
     )
     rc, _, _ = _run(
-        ["release-tables", "--release-id", "53", "--element-id", "12886"],
+        ["release-tables", "53", "--element-id", "12886"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -922,7 +957,7 @@ def test_release_tables_element_id_integer_param(
 _FILTER_COMMANDS: Final[list[tuple[str, list[str]]]] = [
     ("series-search", ["--search-text", "gdp"]),
     ("category-series", ["32991"]),
-    ("release-series", ["--release-id", "53"]),
+    ("release-series", ["53"]),
 ]
 
 
@@ -973,7 +1008,7 @@ _FILTER_COMMANDS_WITH_URLS: Final[list[tuple[str, list[str], str]]] = [
     ),
     (
         "release-series",
-        ["--release-id", "53"],
+        ["53"],
         "/fred/release/series?release_id=53&filter_variable=frequency&filter_value=Annual",
     ),
 ]
@@ -985,7 +1020,7 @@ _FILTER_COMMANDS_BASE_URLS: Final[list[tuple[str, list[str], str]]] = [
         ["32991"],
         "/fred/category/series?category_id=32991",
     ),
-    ("release-series", ["--release-id", "53"], "/fred/release/series?release_id=53"),
+    ("release-series", ["53"], "/fred/release/series?release_id=53"),
 ]
 
 
@@ -1101,7 +1136,7 @@ def test_tags_series_with_exclude_only_exits_2(
 
 
 _EXCLUDE_TAG_COMMANDS: Final[list[tuple[str, list[str]]]] = [
-    ("release-series", ["--release-id", "53"]),
+    ("release-series", ["53"]),
     ("category-series", ["32991"]),
     ("series-search", ["--search-text", "gdp"]),
 ]
