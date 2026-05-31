@@ -324,18 +324,18 @@ def test_category_related_tags_missing_tag_names_exits_2(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("command", ["related-tags"])
+@pytest.mark.parametrize("command", ["related"])
 def test_tags_required_param_omission_exits_2(
     command: str,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """related-tags exits 2 when the required tag-names param is omitted."""
+    """Tag related exits 2 when the required tag-names param is omitted."""
     monkeypatch.setenv("FRED_API_KEY", "secret")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
-        main([command], stdout=io.StringIO(), stderr=io.StringIO())
+        main(["tag", command], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
 
 
@@ -344,7 +344,7 @@ def test_tags_happy_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Tags returns raw FRED JSON body."""
+    """Tag list returns raw FRED JSON body."""
     body = '{"tags": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -352,7 +352,7 @@ def test_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["tags", "--limit", "3"],
+        ["tag", "list", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -364,9 +364,9 @@ def test_tags_invalid_tag_group_id_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Tags rejects an invalid --tag-group-id value."""
+    """Tag list rejects an invalid --tag-group-id value."""
     rc, _, err = _run(
-        ["tags", "--tag-group-id", "invalid"],
+        ["tag", "list", "--tag-group-id", "invalid"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -378,9 +378,9 @@ def test_tags_invalid_order_by_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Tags rejects an invalid --order-by value."""
+    """Tag list rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["tags", "--order-by", "bad_field"],
+        ["tag", "list", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -393,7 +393,7 @@ def test_tags_tag_names_semicolon_url_encoded(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Tags sends tag_names with URL-encoded semicolons."""
+    """Tag list sends tag_names with URL-encoded semicolons."""
     body = '{"tags": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -401,7 +401,7 @@ def test_tags_tag_names_semicolon_url_encoded(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["tags", "--tag-names", "usa;annual"],
+        ["tag", "list", "--tag-names", "usa;annual"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -414,7 +414,7 @@ def test_related_tags_happy_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """related-tags returns raw FRED JSON body."""
+    """Tag related returns raw FRED JSON body."""
     body = '{"tags": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -422,7 +422,7 @@ def test_related_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["related-tags", "usa", "--limit", "3"],
+        ["tag", "related", "usa", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -434,13 +434,13 @@ def test_related_tags_missing_positional_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """related-tags exits 2 when the required TAGS positional is omitted."""
+    """Tag related exits 2 when the required TAGS positional is omitted."""
     monkeypatch.setenv("FRED_API_KEY", "secret")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
         main(
-            ["related-tags", "--limit", "3"],
+            ["tag", "related", "--limit", "3"],
             stdout=io.StringIO(),
             stderr=io.StringIO(),
         )
@@ -451,9 +451,9 @@ def test_related_tags_invalid_order_by_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """related-tags rejects an invalid --order-by value."""
+    """Tag related rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["related-tags", "usa", "--order-by", "bad_field"],
+        ["tag", "related", "usa", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -466,7 +466,7 @@ def test_tags_series_happy_path(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """tags-series returns raw FRED JSON body."""
+    """Tag series returns raw FRED JSON body."""
     body = '{"seriess": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -474,7 +474,7 @@ def test_tags_series_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["tags-series", "usa;annual", "--limit", "3"],
+        ["tag", "series", "usa;annual", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -486,9 +486,9 @@ def test_tags_series_invalid_order_by_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """tags-series rejects an invalid --order-by value."""
+    """Tag series rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["tags-series", "usa", "--order-by", "bad_field"],
+        ["tag", "series", "usa", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
