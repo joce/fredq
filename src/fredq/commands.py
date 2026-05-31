@@ -275,6 +275,7 @@ _CATEGORY_ID_PARAM: Final[ParamSpec] = ParamSpec(
         "FRED category identifier (e.g. 32991 for Money & Banking)."
         " The root category (ID 0) is the top of the FRED hierarchy."
     ),
+    positional=True,
     required=True,
     metavar="ID",
     min_value=0,
@@ -720,8 +721,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         params=(_CATEGORY_ID_PARAM,),
         examples=(
-            "fredq category --category-id 0",
-            "fredq category --category-id 32991",
+            "fredq category 0",
+            "fredq category 32991",
         ),
         notes=("The root category (ID 0) is the top of the FRED hierarchy.",),
     ),
@@ -739,8 +740,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq category-children --category-id 0",
-            "fredq category-children --category-id 32991",
+            "fredq category-children 0",
+            "fredq category-children 32991",
         ),
     ),
     CommandSpec(
@@ -758,8 +759,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq category-related --category-id 32991",
-            "fredq category-related --category-id 106",
+            "fredq category-related 32991",
+            "fredq category-related 106",
         ),
     ),
     CommandSpec(
@@ -784,11 +785,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _EXCLUDE_TAG_NAMES_PARAM,
         ),
         examples=(
-            "fredq category-series --category-id 32991 --limit 5",
-            (
-                "fredq category-series --category-id 106 "
-                "--tag-names 'usa;annual' --limit 10"
-            ),
+            "fredq category-series 32991 --limit 5",
+            "fredq category-series 106 --tag-names 'usa;annual' --limit 10",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
@@ -815,8 +813,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq category-tags --category-id 32991 --limit 10",
-            "fredq category-tags --category-id 106 --tag-group-id geo",
+            "fredq category-tags 32991 --limit 10",
+            "fredq category-tags 106 --tag-group-id geo",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
@@ -843,11 +841,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq category-related-tags --category-id 32991 --tag-names usa",
-            (
-                "fredq category-related-tags --category-id 32991 "
-                "--tag-names 'usa;annual' --limit 5"
-            ),
+            "fredq category-related-tags 32991 --tag-names usa",
+            "fredq category-related-tags 32991 --tag-names 'usa;annual' --limit 5",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),

@@ -770,7 +770,7 @@ def test_category_id_negative_exits_2(
 ) -> None:
     """Negative category_id values exit 2 (category_id must be >= 0)."""
     rc, _, err = _run(
-        ["category", "--category-id", "-5"],
+        ["category", "--", "-5"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -824,7 +824,7 @@ def test_category_id_zero_accepted(
         text=body,
     )
     rc, _out, _ = _run(
-        ["category", "--category-id", "0"],
+        ["category", "0"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -835,7 +835,7 @@ def test_category_id_zero_accepted(
     ("args", "url_suffix", "body"),
     [
         (
-            ["category", "--category-id", "1"],
+            ["category", "1"],
             "/fred/category?category_id=1",
             '{"categories": [{"id": 1}]}',
         ),
@@ -921,7 +921,7 @@ def test_release_tables_element_id_integer_param(
 
 _FILTER_COMMANDS: Final[list[tuple[str, list[str]]]] = [
     ("series-search", ["--search-text", "gdp"]),
-    ("category-series", ["--category-id", "32991"]),
+    ("category-series", ["32991"]),
     ("release-series", ["--release-id", "53"]),
 ]
 
@@ -968,7 +968,7 @@ _FILTER_COMMANDS_WITH_URLS: Final[list[tuple[str, list[str], str]]] = [
     ),
     (
         "category-series",
-        ["--category-id", "32991"],
+        ["32991"],
         "/fred/category/series?category_id=32991&filter_variable=frequency&filter_value=Annual",
     ),
     (
@@ -982,7 +982,7 @@ _FILTER_COMMANDS_BASE_URLS: Final[list[tuple[str, list[str], str]]] = [
     ("series-search", ["--search-text", "gdp"], "/fred/series/search?search_text=gdp"),
     (
         "category-series",
-        ["--category-id", "32991"],
+        ["32991"],
         "/fred/category/series?category_id=32991",
     ),
     ("release-series", ["--release-id", "53"], "/fred/release/series?release_id=53"),
@@ -1102,7 +1102,7 @@ def test_tags_series_with_exclude_only_exits_2(
 
 _EXCLUDE_TAG_COMMANDS: Final[list[tuple[str, list[str]]]] = [
     ("release-series", ["--release-id", "53"]),
-    ("category-series", ["--category-id", "32991"]),
+    ("category-series", ["32991"]),
     ("series-search", ["--search-text", "gdp"]),
 ]
 
