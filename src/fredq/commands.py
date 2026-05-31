@@ -1099,7 +1099,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "tag names. Supports tag exclusion, sorting, and pagination."
         ),
         params=(
-            _TAG_NAMES_PARAM,
+            _TAG_NAMES_POSITIONAL_PARAM,
             _EXCLUDE_TAG_NAMES_PARAM,
             _REALTIME_START_PARAM,
             _REALTIME_END_PARAM,
@@ -1109,14 +1109,13 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq tags-series --tag-names usa --limit 5",
-            "fredq tags-series --tag-names 'usa;annual' --limit 3",
+            "fredq tags-series usa --limit 5",
+            "fredq tags-series 'usa;annual' --limit 3",
         ),
         notes=(
             "Tag lists use semicolons as separators (e.g. 'usa;annual').",
-            "--tag-names is required; --exclude-tag-names may optionally accompany it.",
+            "--exclude-tag-names may optionally accompany the required TAGS argument.",
         ),
-        at_least_one_of=(frozenset({"tag_names"}),),
     ),
     CommandSpec(
         name="tags",
@@ -1153,7 +1152,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "search."
         ),
         params=(
-            _TAG_NAMES_REQUIRED_PARAM,
+            _TAG_NAMES_POSITIONAL_PARAM,
             _REALTIME_START_PARAM,
             _REALTIME_END_PARAM,
             _TAG_GROUP_ID_PARAM,
@@ -1165,8 +1164,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq related-tags --tag-names usa --limit 10",
-            "fredq related-tags --tag-names 'usa;annual' --limit 5",
+            "fredq related-tags usa --limit 10",
+            "fredq related-tags 'usa;annual' --limit 5",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),

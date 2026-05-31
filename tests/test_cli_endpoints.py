@@ -1102,14 +1102,17 @@ def test_tags_series_no_tags_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """tags-series with no --tag-names or --exclude-tag-names exits 2."""
-    rc, _, err = _run(
-        ["tags-series", "--limit", "3"],
-        monkeypatch=monkeypatch,
-        tmp_path=tmp_path,
-    )
-    assert rc == EXIT_USAGE
-    assert "--tag-names" in err or "--exclude-tag-names" in err
+    """tags-series with no positional TAGS arg exits 2."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            ["tags-series", "--limit", "3"],
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert exc_info.value.code == EXIT_USAGE
 
 
 def test_tags_series_with_tag_names_exits_0(
@@ -1117,7 +1120,7 @@ def test_tags_series_with_tag_names_exits_0(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """tags-series with --tag-names exits 0."""
+    """tags-series with positional TAGS exits 0."""
     body = '{"seriess": [], "count": 0}'
     httpx_mock.add_response(
         method="GET",
@@ -1125,7 +1128,7 @@ def test_tags_series_with_tag_names_exits_0(
         text=body,
     )
     rc, _, _ = _run(
-        ["tags-series", "--tag-names", "usa"],
+        ["tags-series", "usa"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -1137,12 +1140,16 @@ def test_tags_series_with_exclude_only_exits_2(
     tmp_path: Path,
 ) -> None:
     """The tags-series command with only --exclude-tag-names exits 2."""
-    rc, _, _ = _run(
-        ["tags-series", "--exclude-tag-names", "monthly"],
-        monkeypatch=monkeypatch,
-        tmp_path=tmp_path,
-    )
-    assert rc == EXIT_USAGE
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            ["tags-series", "--exclude-tag-names", "monthly"],
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert exc_info.value.code == EXIT_USAGE
 
 
 _EXCLUDE_TAG_COMMANDS: Final[list[tuple[str, list[str]]]] = [
@@ -1174,19 +1181,21 @@ def test_exclude_tag_names_without_tag_names_exits_2(
 # ---------------------------------------------------------------------------
 
 
-def test_tags_series_exclude_only_error_comes_from_at_least_one_of(
+def test_tags_series_exclude_only_missing_positional_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """tags-series --exclude-tag-names without --tag-names exits 2.
+    """tags-series --exclude-tag-names without the positional TAGS exits 2.
 
-    Rejection comes from the at_least_one_of rule (not requires_partner,
-    which is redundant and will be removed). The error must mention --tag-names.
+    Rejection comes from the missing required positional argument.
     """
-    rc, _, err = _run(
-        ["tags-series", "--exclude-tag-names", "usa", "--limit", "3"],
-        monkeypatch=monkeypatch,
-        tmp_path=tmp_path,
-    )
-    assert rc == EXIT_USAGE
-    assert "--tag-names" in err
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            ["tags-series", "--exclude-tag-names", "usa", "--limit", "3"],
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert exc_info.value.code == EXIT_USAGE

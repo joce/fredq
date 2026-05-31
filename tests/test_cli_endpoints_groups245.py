@@ -418,12 +418,29 @@ def test_related_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["related-tags", "--tag-names", "usa", "--limit", "3"],
+        ["related-tags", "usa", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
     assert rc == EXIT_OK
     assert '"tags"' in stdout
+
+
+def test_related_tags_missing_positional_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """related-tags exits 2 when the required TAGS positional is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(
+            ["related-tags", "--limit", "3"],
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert exc_info.value.code == EXIT_USAGE
 
 
 def test_related_tags_invalid_order_by_exits_2(
@@ -432,7 +449,7 @@ def test_related_tags_invalid_order_by_exits_2(
 ) -> None:
     """related-tags rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["related-tags", "--tag-names", "usa", "--order-by", "bad_field"],
+        ["related-tags", "usa", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -453,7 +470,7 @@ def test_tags_series_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["tags-series", "--tag-names", "usa;annual", "--limit", "3"],
+        ["tags-series", "usa;annual", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -467,7 +484,7 @@ def test_tags_series_invalid_order_by_exits_2(
 ) -> None:
     """tags-series rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["tags-series", "--order-by", "bad_field"],
+        ["tags-series", "usa", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
