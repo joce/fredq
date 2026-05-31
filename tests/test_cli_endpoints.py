@@ -818,7 +818,7 @@ def test_category_id_negative_exits_2(
 ) -> None:
     """Negative category_id values exit 2 (category_id must be >= 0)."""
     rc, _, err = _run(
-        ["category", "--", "-5"],
+        ["category", "show", "--", "-5"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -872,7 +872,7 @@ def test_category_id_zero_accepted(
         text=body,
     )
     rc, _out, _ = _run(
-        ["category", "0"],
+        ["category", "show", "0"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -883,7 +883,7 @@ def test_category_id_zero_accepted(
     ("args", "url_suffix", "body"),
     [
         (
-            ["category", "1"],
+            ["category", "show", "1"],
             "/fred/category?category_id=1",
             '{"categories": [{"id": 1}]}',
         ),
@@ -969,7 +969,7 @@ def test_release_tables_element_id_integer_param(
 
 _FILTER_COMMANDS: Final[list[tuple[list[str], list[str]]]] = [
     (["series", "search"], ["gdp"]),
-    (["category-series"], ["32991"]),
+    (["category", "series"], ["32991"]),
     (["release-series"], ["53"]),
 ]
 
@@ -1015,7 +1015,7 @@ _FILTER_COMMANDS_WITH_URLS: Final[list[tuple[list[str], list[str], str]]] = [
         "/fred/series/search?search_text=gdp&filter_variable=frequency&filter_value=Annual",
     ),
     (
-        ["category-series"],
+        ["category", "series"],
         ["32991"],
         "/fred/category/series?category_id=32991&filter_variable=frequency&filter_value=Annual",
     ),
@@ -1029,7 +1029,7 @@ _FILTER_COMMANDS_WITH_URLS: Final[list[tuple[list[str], list[str], str]]] = [
 _FILTER_COMMANDS_BASE_URLS: Final[list[tuple[list[str], list[str], str]]] = [
     (["series", "search"], ["gdp"], "/fred/series/search?search_text=gdp"),
     (
-        ["category-series"],
+        ["category", "series"],
         ["32991"],
         "/fred/category/series?category_id=32991",
     ),
@@ -1157,7 +1157,7 @@ def test_tags_series_with_exclude_only_exits_2(
 
 _EXCLUDE_TAG_COMMANDS: Final[list[tuple[list[str], list[str]]]] = [
     (["release-series"], ["53"]),
-    (["category-series"], ["32991"]),
+    (["category", "series"], ["32991"]),
     (["series", "search"], ["gdp"]),
 ]
 
