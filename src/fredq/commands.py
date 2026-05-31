@@ -435,10 +435,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         examples=(
             "fredq series-observations GNPCA",
-            (
-                "fredq series-observations CPIAUCSL "
-                "--units pch --frequency m"
-            ),
+            "fredq series-observations CPIAUCSL --units pch --frequency m",
         ),
         notes=(
             (
@@ -591,10 +588,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         examples=(
             "fredq series-vintagedates GNPCA",
-            (
-                "fredq series-vintagedates CPIAUCSL "
-                "--limit 5 --sort-order desc"
-            ),
+            "fredq series-vintagedates CPIAUCSL --limit 5 --sort-order desc",
         ),
     ),
     CommandSpec(
