@@ -67,8 +67,8 @@ When adding or editing a CLI command:
 - When a parameter has a default, test both omission and explicit override if the default affects the request sent to FRED.
 - Ask before making architectural changes that affect the CLI grammar or auth behavior.
 
-## Issue-fix workflow
-Use this process for bug/issue-fix work (features follow brainstorm → plan → build instead).
+## Development workflow
+Use this process for all development work — bug fixes and features alike. For features, brainstorm and plan first, then follow the implement → review → dogfood loop below.
 
 Model / effort split:
 - **Implementation** — `claude-sonnet-4-6`, effort `high` (`medium` ok for tiny localized edits). TDD: write/adjust a focused failing test first, then the smallest fix. No unrelated refactors.
