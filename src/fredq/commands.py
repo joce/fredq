@@ -46,6 +46,9 @@ class CommandSpec:
     # Non-None: command lives under a nested subcommand group (e.g. "geofred").
     # None (default): top-level flat command — existing behavior unchanged.
     group: str | None = None
+    # Non-None: the subcommand token shown inside the group (display only).
+    # Routing always uses the globally-unique `name`. None -> use `name`.
+    leaf: str | None = None
     # When True, the CLI registers --out as a required argument and writes the
     # raw response body to that file instead of stdout.
     output_to_file: bool = False
@@ -1460,4 +1463,13 @@ COMMANDS: Final[tuple[CommandSpec, ...]] = _CORE_COMMANDS + _GEOFRED_COMMANDS
 
 COMMANDS_BY_NAME: Final[dict[str, CommandSpec]] = {
     command.name: command for command in COMMANDS
+}
+
+GROUP_HELP: Final[dict[str, str]] = {
+    "series": "Series data, metadata, search, and tags.",
+    "category": "Browse the FRED category tree.",
+    "release": "Economic data releases, their series, dates, and tables.",
+    "source": "Data sources and the releases they publish.",
+    "tag": "FRED tags and the series/tags related to them.",
+    "geofred": "GeoFRED Maps API commands.",
 }

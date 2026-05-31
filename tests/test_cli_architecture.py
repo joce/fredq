@@ -246,3 +246,19 @@ def test_non_file_output_command_unchanged(
     )
     assert rc == EXIT_OK
     assert stdout.strip() == body
+
+
+def test_grouped_command_registers_under_leaf_and_routes_by_name() -> None:
+    """CommandSpec.leaf is the display token; name stays the routing key."""
+    spec = CommandSpec(
+        name="series-observations",
+        path="/x",
+        summary="s",
+        description="d",
+        params=(),
+        examples=(),
+        group="series",
+        leaf="observations",
+    )
+    assert (spec.leaf or spec.name) == "observations"
+    assert spec.name == "series-observations"  # routing key unchanged

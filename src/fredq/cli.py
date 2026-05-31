@@ -16,7 +16,7 @@ from typing_extensions import override
 from fredq import __version__
 from fredq.auth import resolve_api_key
 from fredq.client import FredClient
-from fredq.commands import COMMANDS, COMMANDS_BY_NAME, CommandSpec
+from fredq.commands import COMMANDS, COMMANDS_BY_NAME, GROUP_HELP, CommandSpec
 from fredq.exceptions import FredqError
 from fredq.params import ParamKind, ParamSpec, coerce_param, parse_boolean
 
@@ -298,7 +298,7 @@ def _build_parser_impl() -> tuple[argparse.ArgumentParser, _GroupParsers]:
             if command.group not in group_subparsers_map:
                 group_parser = subparsers.add_parser(
                     command.group,
-                    help="GeoFRED Maps API commands.",
+                    help=GROUP_HELP.get(command.group, command.group),
                     formatter_class=_HelpFormatter,
                 )
                 _add_global_options(group_parser)
@@ -310,7 +310,7 @@ def _build_parser_impl() -> tuple[argparse.ArgumentParser, _GroupParsers]:
             group_sub: argparse.ArgumentParser = group_subparsers_map[
                 command.group
             ].add_parser(
-                command.name,
+                command.leaf or command.name,
                 help=command.summary,
                 description=command.description,
                 epilog=_epilog_for_command(command),
