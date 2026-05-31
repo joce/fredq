@@ -181,4 +181,7 @@ def test_parquet_on_unsupported_command_errors(
 
     captured = capsys.readouterr()
     assert rc == EXIT_USAGE
-    assert "series-observations" in captured.err
+    # Error must name the user-facing grouped invocation, not the internal
+    # routing name (which is no longer a valid command).
+    assert "series observations" in captured.err
+    assert "series-observations" not in captured.err
