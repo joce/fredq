@@ -55,6 +55,8 @@
     "caplog",
     "capsys",
     "datetimes",
+    "dogfood",
+    "dogfooding",
     "Highcharts",
     "intraday",
     "kwarg",
@@ -65,7 +67,8 @@
     "Legault",
     "reproject",
     "stlouisfed",
-    "vintagedates"
+    "vintagedates",
+    "xhigh"
   ],
   "patterns": [
     {

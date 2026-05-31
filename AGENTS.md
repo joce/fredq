@@ -67,6 +67,26 @@ When adding or editing a CLI command:
 - When a parameter has a default, test both omission and explicit override if the default affects the request sent to FRED.
 - Ask before making architectural changes that affect the CLI grammar or auth behavior.
 
+## Issue-fix workflow
+Use this process for bug/issue-fix work (features follow brainstorm → plan → build instead).
+
+Model / effort split:
+- **Implementation** — `claude-sonnet-4-6`, effort `high` (`medium` ok for tiny localized edits). TDD: write/adjust a focused failing test first, then the smallest fix. No unrelated refactors.
+- **Review** — `claude-opus-4-8`, effort `xhigh`. Senior-reviewer pass: correctness bugs, regressions, missing tests, CLI-contract breaks, cache/identity issues, help-text drift. Fix real findings before dogfooding.
+- **Dogfood / test runner** — `claude-haiku-4-5`, effort `medium`. Run targeted tests + CLI probes, report exact evidence; don't redesign unless a failure proves the design wrong.
+- **Escalation** — `claude-opus-4-8`, effort `max`. Only for stuck cases, architectural ambiguity, repeated failed reviews, or broad cross-module changes. Not the default.
+
+Steps:
+1. Create a new branch before implementation.
+2. Read `AGENTS.md`, `CLAUDE.md`, the issue/PR context, and the touched modules/tests.
+3. Implement with TDD: focused tests first, minimal change, no unrelated refactors.
+4. Run an `xhigh` review pass; fix real issues before moving on.
+5. Dogfood with focused tests + CLI probes (`uv run python`, never bare `python`). For command/parameter changes verify `fredq <command> --help` and representative live forms.
+6. Full verification before "ready": `uv run tox` and `npm run spell`.
+7. Commit, push, open a PR.
+8. Wait for CI + review comments (check ~every minute, up to 10 min). Prioritize actionable human comments; treat ordinary Codecov patch-coverage advisories as non-blocking unless they flag a concrete behavioral gap.
+9. Merge only after actionable comments are handled/rebutted and CI passes. Prefer fast-forward merge; clean up local + remote branches after.
+
 ## FRED API state probes
 - When checking the current FRED API surface, use a varied set of series, releases, and categories so behavior is not inferred from one path only.
 - Baseline probe targets:
