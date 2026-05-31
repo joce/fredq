@@ -47,18 +47,18 @@ def _run(
 
 
 @pytest.mark.parametrize(
-    "command",
+    "args",
     [
-        "category",
-        "category-children",
-        "category-related",
-        "category-series",
-        "category-tags",
-        "category-related-tags",
+        ["category", "show"],
+        ["category", "children"],
+        ["category", "related"],
+        ["category", "series"],
+        ["category", "tags"],
+        ["category", "related-tags"],
     ],
 )
 def test_category_required_param_omission_exits_2(
-    command: str,
+    args: list[str],
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -67,7 +67,7 @@ def test_category_required_param_omission_exits_2(
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
-        main([command], stdout=io.StringIO(), stderr=io.StringIO())
+        main(args, stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
 
 
@@ -75,12 +75,12 @@ def test_category_missing_positional_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Category exits 2 when the required positional category-id is omitted."""
+    """'category show' exits 2 when the required positional category-id is omitted."""
     monkeypatch.setenv("FRED_API_KEY", "secret")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
-        main(["category"], stdout=io.StringIO(), stderr=io.StringIO())
+        main(["category", "show"], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
 
 
@@ -102,7 +102,7 @@ def test_category_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category", "0"],
+        ["category", "show", "0"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -123,7 +123,7 @@ def test_category_children_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category-children", "0"],
+        ["category", "children", "0"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -144,7 +144,7 @@ def test_category_related_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category-related", "32991"],
+        ["category", "related", "32991"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -165,7 +165,7 @@ def test_category_series_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category-series", "32991", "--limit", "3"],
+        ["category", "series", "32991", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -180,7 +180,8 @@ def test_category_series_invalid_filter_variable_exits_2(
     """category-series rejects an invalid --filter-variable value."""
     rc, _, err = _run(
         [
-            "category-series",
+            "category",
+            "series",
             "32991",
             "--filter-variable",
             "bogus",
@@ -199,7 +200,8 @@ def test_category_series_invalid_order_by_exits_2(
     """category-series rejects an invalid --order-by value."""
     rc, _, err = _run(
         [
-            "category-series",
+            "category",
+            "series",
             "32991",
             "--order-by",
             "bad_field",
@@ -224,7 +226,7 @@ def test_category_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["category-tags", "32991", "--limit", "3"],
+        ["category", "tags", "32991", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -238,7 +240,7 @@ def test_category_tags_invalid_tag_group_id_exits_2(
 ) -> None:
     """category-tags rejects an invalid --tag-group-id value."""
     rc, _, err = _run(
-        ["category-tags", "32991", "--tag-group-id", "invalid"],
+        ["category", "tags", "32991", "--tag-group-id", "invalid"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -263,7 +265,8 @@ def test_category_related_tags_happy_path(
     )
     rc, stdout, _ = _run(
         [
-            "category-related-tags",
+            "category",
+            "related-tags",
             "32991",
             "--tag-names",
             "usa",
@@ -284,7 +287,8 @@ def test_category_related_tags_invalid_order_by_exits_2(
     """category-related-tags rejects an invalid --order-by value."""
     rc, _, err = _run(
         [
-            "category-related-tags",
+            "category",
+            "related-tags",
             "32991",
             "--tag-names",
             "usa",
@@ -308,7 +312,7 @@ def test_category_related_tags_missing_tag_names_exits_2(
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
         main(
-            ["category-related-tags", "32991"],
+            ["category", "related-tags", "32991"],
             stdout=io.StringIO(),
             stderr=io.StringIO(),
         )

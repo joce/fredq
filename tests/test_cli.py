@@ -241,7 +241,7 @@ def test_no_key_file_flag_skips_file_fallback(
     out = io.StringIO()
     err = io.StringIO()
     rc = main(
-        ["--no-key-file", "category", "0"],
+        ["category", "--no-key-file", "show", "0"],
         stdout=out,
         stderr=err,
     )
