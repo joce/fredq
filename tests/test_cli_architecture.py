@@ -278,3 +278,31 @@ def test_grouped_command_registers_under_leaf_and_routes_by_name() -> None:
     )
     assert (spec.leaf or spec.name) == "observations"
     assert spec.name == "series-observations"  # routing key unchanged
+
+
+def test_root_epilog_uses_grouped_command_tokens(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Root --help epilog uses noun-verb grouped form (no flat legacy tokens)."""
+    with pytest.raises(SystemExit):
+        main(["--help"])
+    out = capsys.readouterr().out
+    # Grouped discovery examples must appear in the epilog.
+    assert "series search" in out
+    assert "release list" in out
+    assert "source list" in out
+    assert "tag list" in out
+    assert "category children 0" in out
+    # Grouped follow-up examples.
+    assert "series observations" in out
+    assert "category series" in out
+    assert "release series" in out
+    # Old flat tokens must NOT appear in the epilog.
+    assert "series-search" not in out
+    assert "releases\n" not in out  # flat 'releases' command token
+    assert "sources\n" not in out
+    assert "tags\n" not in out
+    assert "category-children" not in out
+    assert "series-observations" not in out
+    assert "category-series" not in out
+    assert "release-series" not in out
