@@ -250,6 +250,20 @@ def test_non_file_output_command_unchanged(
     assert stdout.strip() == body
 
 
+@pytest.mark.parametrize(
+    "group", ["series", "category", "release", "source", "tag", "geofred"]
+)
+def test_bare_group_prints_help_exits_2(
+    group: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Invoking a group name alone (no subcommand) prints group help and exits 2."""
+    rc, stdout, _ = _run([group], monkeypatch=monkeypatch, tmp_path=tmp_path)
+    assert rc == EXIT_USAGE
+    assert group in stdout  # group help/usage mentions the group name
+
+
 def test_grouped_command_registers_under_leaf_and_routes_by_name() -> None:
     """CommandSpec.leaf is the display token; name stays the routing key."""
     spec = CommandSpec(
