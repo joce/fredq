@@ -463,6 +463,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 cli_name="search-text",
                 kind=ParamKind.STRING,
                 help="Search string to match against series titles and notes.",
+                positional=True,
                 required=True,
                 metavar="TEXT",
             ),
@@ -489,8 +490,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _EXCLUDE_TAG_NAMES_PARAM,
         ),
         examples=(
-            "fredq series-search --search-text 'consumer price index' --limit 5",
-            ("fredq series-search --search-text UNRATE --search-type series_id"),
+            'fredq series-search "consumer price index" --limit 5',
+            "fredq series-search UNRATE --search-type series_id",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
@@ -511,6 +512,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 cli_name="series-search-text",
                 kind=ParamKind.STRING,
                 help="Full-text search string used to select the series set.",
+                positional=True,
                 required=True,
                 metavar="TEXT",
             ),
@@ -525,11 +527,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq series-search-tags --series-search-text monetary --limit 5",
-            (
-                "fredq series-search-tags --series-search-text inflation "
-                "--tag-group-id geo"
-            ),
+            "fredq series-search-tags monetary --limit 5",
+            "fredq series-search-tags inflation --tag-group-id geo",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
@@ -548,6 +547,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 cli_name="series-search-text",
                 kind=ParamKind.STRING,
                 help="Full-text search string used to select the series set.",
+                positional=True,
                 required=True,
                 metavar="TEXT",
             ),
@@ -563,13 +563,10 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
+            "fredq series-search-related-tags monetary --tag-names usa",
             (
-                "fredq series-search-related-tags "
-                "--series-search-text monetary --tag-names usa"
-            ),
-            (
-                "fredq series-search-related-tags "
-                "--series-search-text inflation --tag-names 'usa;annual' --limit 5"
+                "fredq series-search-related-tags inflation "
+                "--tag-names 'usa;annual' --limit 5"
             ),
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),

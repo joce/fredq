@@ -80,12 +80,25 @@ def test_series_search_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-search", "--search-text", "inflation", "--limit", "3"],
+        ["series-search", "inflation", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
     assert rc == EXIT_OK
     assert '"seriess"' in stdout
+
+
+def test_series_search_missing_positional_exits_2(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """series-search exits 2 when the required positional search text is omitted."""
+    monkeypatch.setenv("FRED_API_KEY", "secret")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    with pytest.raises(SystemExit) as exc_info:
+        main(["series-search"], stdout=io.StringIO(), stderr=io.StringIO())
+    assert exc_info.value.code == EXIT_USAGE
 
 
 def test_series_search_invalid_search_type_exits_2(
@@ -94,7 +107,7 @@ def test_series_search_invalid_search_type_exits_2(
 ) -> None:
     """series-search rejects an invalid --search-type value."""
     rc, _, err = _run(
-        ["series-search", "--search-text", "cpi", "--search-type", "bad"],
+        ["series-search", "cpi", "--search-type", "bad"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -108,7 +121,7 @@ def test_series_search_invalid_filter_variable_exits_2(
 ) -> None:
     """series-search rejects an invalid --filter-variable value."""
     rc, _, err = _run(
-        ["series-search", "--search-text", "cpi", "--filter-variable", "bogus"],
+        ["series-search", "cpi", "--filter-variable", "bogus"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -122,7 +135,7 @@ def test_series_search_invalid_order_by_exits_2(
 ) -> None:
     """series-search rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["series-search", "--search-text", "cpi", "--order-by", "invalid_field"],
+        ["series-search", "cpi", "--order-by", "invalid_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -146,7 +159,7 @@ def test_series_search_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-search-tags", "--series-search-text", "monetary", "--limit", "3"],
+        ["series-search-tags", "monetary", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -162,7 +175,6 @@ def test_series_search_tags_invalid_tag_group_id_exits_2(
     rc, _, err = _run(
         [
             "series-search-tags",
-            "--series-search-text",
             "monetary",
             "--tag-group-id",
             "invalid",
@@ -192,7 +204,6 @@ def test_series_search_related_tags_happy_path(
     rc, stdout, _ = _run(
         [
             "series-search-related-tags",
-            "--series-search-text",
             "monetary",
             "--tag-names",
             "usa",
@@ -224,7 +235,6 @@ def test_series_search_related_tags_semicolon_separator(
     rc, _, _ = _run(
         [
             "series-search-related-tags",
-            "--series-search-text",
             "cpi",
             "--tag-names",
             "usa;annual",
@@ -955,7 +965,7 @@ def test_release_tables_element_id_integer_param(
 
 
 _FILTER_COMMANDS: Final[list[tuple[str, list[str]]]] = [
-    ("series-search", ["--search-text", "gdp"]),
+    ("series-search", ["gdp"]),
     ("category-series", ["32991"]),
     ("release-series", ["53"]),
 ]
@@ -998,7 +1008,7 @@ def test_filter_value_without_filter_variable_exits_2(
 _FILTER_COMMANDS_WITH_URLS: Final[list[tuple[str, list[str], str]]] = [
     (
         "series-search",
-        ["--search-text", "gdp"],
+        ["gdp"],
         "/fred/series/search?search_text=gdp&filter_variable=frequency&filter_value=Annual",
     ),
     (
@@ -1014,7 +1024,7 @@ _FILTER_COMMANDS_WITH_URLS: Final[list[tuple[str, list[str], str]]] = [
 ]
 
 _FILTER_COMMANDS_BASE_URLS: Final[list[tuple[str, list[str], str]]] = [
-    ("series-search", ["--search-text", "gdp"], "/fred/series/search?search_text=gdp"),
+    ("series-search", ["gdp"], "/fred/series/search?search_text=gdp"),
     (
         "category-series",
         ["32991"],
@@ -1138,7 +1148,7 @@ def test_tags_series_with_exclude_only_exits_2(
 _EXCLUDE_TAG_COMMANDS: Final[list[tuple[str, list[str]]]] = [
     ("release-series", ["53"]),
     ("category-series", ["32991"]),
-    ("series-search", ["--search-text", "gdp"]),
+    ("series-search", ["gdp"]),
 ]
 
 
