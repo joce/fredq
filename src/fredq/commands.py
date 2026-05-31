@@ -1138,35 +1138,10 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
     # Group 4 — Tags (3 endpoints)
     # ------------------------------------------------------------------
     CommandSpec(
-        name="tags-series",
-        path="/fred/tags/series",
-        summary="List series matching a set of FRED tags.",
-        description=(
-            "Return series records that are tagged with all of the specified "
-            "tag names. Supports tag exclusion, sorting, and pagination."
-        ),
-        params=(
-            _TAG_NAMES_POSITIONAL_PARAM,
-            _EXCLUDE_TAG_NAMES_PARAM,
-            _REALTIME_START_PARAM,
-            _REALTIME_END_PARAM,
-            _LIMIT_PARAM,
-            _OFFSET_PARAM,
-            _order_by_param(_ORDER_BY_TAGS_SERIES),
-            _SORT_ORDER_PARAM,
-        ),
-        examples=(
-            "fredq tags-series usa --limit 5",
-            "fredq tags-series 'usa;annual' --limit 3",
-        ),
-        notes=(
-            "Tag lists use semicolons as separators (e.g. 'usa;annual').",
-            "--exclude-tag-names may optionally accompany the required TAGS argument.",
-        ),
-    ),
-    CommandSpec(
         name="tags",
         path="/fred/tags",
+        group="tag",
+        leaf="list",
         summary="List all FRED tags.",
         description=(
             "Return the full catalog of FRED tags. Each record includes the "
@@ -1184,14 +1159,45 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq tags --limit 10",
-            "fredq tags --tag-group-id geo --order-by name --sort-order asc",
+            "fredq tag list --limit 10",
+            "fredq tag list --tag-group-id geo --order-by name --sort-order asc",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
     CommandSpec(
+        name="tags-series",
+        path="/fred/tags/series",
+        group="tag",
+        leaf="series",
+        summary="List series matching a set of FRED tags.",
+        description=(
+            "Return series records that are tagged with all of the specified "
+            "tag names. Supports tag exclusion, sorting, and pagination."
+        ),
+        params=(
+            _TAG_NAMES_POSITIONAL_PARAM,
+            _EXCLUDE_TAG_NAMES_PARAM,
+            _REALTIME_START_PARAM,
+            _REALTIME_END_PARAM,
+            _LIMIT_PARAM,
+            _OFFSET_PARAM,
+            _order_by_param(_ORDER_BY_TAGS_SERIES),
+            _SORT_ORDER_PARAM,
+        ),
+        examples=(
+            "fredq tag series usa --limit 5",
+            "fredq tag series 'usa;annual' --limit 3",
+        ),
+        notes=(
+            "Tag lists use semicolons as separators (e.g. 'usa;annual').",
+            "--exclude-tag-names may optionally accompany the required TAGS argument.",
+        ),
+    ),
+    CommandSpec(
         name="related-tags",
         path="/fred/related_tags",
+        group="tag",
+        leaf="related",
         summary="List tags related to an existing tag filter.",
         description=(
             "Return tags that appear alongside the specified tag names across "
@@ -1211,8 +1217,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq related-tags usa --limit 10",
-            "fredq related-tags 'usa;annual' --limit 5",
+            "fredq tag related usa --limit 10",
+            "fredq tag related 'usa;annual' --limit 5",
         ),
         notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
     ),
