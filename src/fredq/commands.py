@@ -1222,6 +1222,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
     CommandSpec(
         name="sources",
         path="/fred/sources",
+        group="source",
+        leaf="list",
         summary="List all FRED data sources.",
         description=(
             "Return the full catalog of FRED sources. Each record includes "
@@ -1236,13 +1238,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq sources --limit 10",
-            "fredq sources --order-by name --sort-order asc",
+            "fredq source list --limit 10",
+            "fredq source list --order-by name --sort-order asc",
         ),
     ),
     CommandSpec(
         name="source",
         path="/fred/source",
+        group="source",
+        leaf="show",
         summary="Show metadata for one FRED source.",
         description=(
             "Return the source record for the given source ID, including name and link."
@@ -1253,13 +1257,15 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq source 1",
-            "fredq source 18",
+            "fredq source show 1",
+            "fredq source show 18",
         ),
     ),
     CommandSpec(
         name="source-releases",
         path="/fred/source/releases",
+        group="source",
+        leaf="releases",
         summary="List releases published by one FRED source.",
         description=(
             "Return the release records published or maintained by the specified "
@@ -1275,8 +1281,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq source-releases 1 --limit 5",
-            "fredq source-releases 3 --order-by name",
+            "fredq source releases 1 --limit 5",
+            "fredq source releases 3 --order-by name",
         ),
     ),
 )

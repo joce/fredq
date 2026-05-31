@@ -501,18 +501,18 @@ def test_tags_series_invalid_order_by_exits_2(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("command", ["source", "source-releases"])
+@pytest.mark.parametrize("args", [["source", "show"], ["source", "releases"]])
 def test_sources_required_param_omission_exits_2(
-    command: str,
+    args: list[str],
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Source and source-releases exit 2 when the required source-id is omitted."""
+    """Source show and source releases exit 2 when the required source-id is omitted."""
     monkeypatch.setenv("FRED_API_KEY", "secret")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
-        main([command], stdout=io.StringIO(), stderr=io.StringIO())
+        main(args, stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
 
 
@@ -529,7 +529,7 @@ def test_sources_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["sources", "--limit", "3"],
+        ["source", "list", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -543,7 +543,7 @@ def test_sources_invalid_order_by_exits_2(
 ) -> None:
     """Sources rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["sources", "--order-by", "bad_field"],
+        ["source", "list", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -564,7 +564,7 @@ def test_source_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["source", "1"],
+        ["source", "show", "1"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -585,7 +585,7 @@ def test_source_releases_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["source-releases", "1", "--limit", "3"],
+        ["source", "releases", "1", "--limit", "3"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -599,7 +599,7 @@ def test_source_releases_invalid_order_by_exits_2(
 ) -> None:
     """source-releases rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["source-releases", "1", "--order-by", "bad_field"],
+        ["source", "releases", "1", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -616,7 +616,7 @@ def test_source_missing_positional_exits_2(
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
-        main(["source"], stdout=io.StringIO(), stderr=io.StringIO())
+        main(["source", "show"], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
 
 
@@ -624,10 +624,10 @@ def test_source_releases_missing_positional_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """source-releases exits 2 when the required positional source-id is omitted."""
+    """Source releases exits 2 when the required positional source-id is omitted."""
     monkeypatch.setenv("FRED_API_KEY", "secret")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
-        main(["source-releases"], stdout=io.StringIO(), stderr=io.StringIO())
+        main(["source", "releases"], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
