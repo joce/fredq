@@ -60,7 +60,7 @@ def test_geofred_series_group_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["geofred", "series-group", "--series-id", "WIPCPI"],
+        ["geofred", "series-group", "WIPCPI"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -69,7 +69,7 @@ def test_geofred_series_group_happy_path(
 
 
 def test_geofred_series_group_missing_series_id_exits_2() -> None:
-    """Geofred series-group exits 2 when --series-id is omitted."""
+    """Geofred series-group exits 2 when positional series_id is omitted."""
     with pytest.raises(SystemExit) as exc_info:
         main(["geofred", "series-group"], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
@@ -99,7 +99,6 @@ def test_geofred_series_data_happy_path(
         [
             "geofred",
             "series-data",
-            "--series-id",
             "WIPCPI",
             "--start-date",
             "2020-01-01",
@@ -112,7 +111,7 @@ def test_geofred_series_data_happy_path(
 
 
 def test_geofred_series_data_missing_series_id_exits_2() -> None:
-    """Geofred series-data exits 2 when --series-id is omitted."""
+    """Geofred series-data exits 2 when positional series_id is omitted."""
     with pytest.raises(SystemExit) as exc_info:
         main(["geofred", "series-data"], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE

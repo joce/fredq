@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Final
 
 import pytest
 
-from fredq.cli import main
+from fredq.cli import build_parser, main
 from fredq.commands import COMMANDS, CommandSpec
 
 if TYPE_CHECKING:
@@ -248,7 +248,7 @@ def test_series_categories_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-categories", "--series-id", "GNPCA"],
+        ["series-categories", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -269,7 +269,7 @@ def test_series_tags_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-tags", "--series-id", "GNPCA"],
+        ["series-tags", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -283,7 +283,7 @@ def test_series_tags_invalid_order_by_exits_2(
 ) -> None:
     """series-tags rejects an invalid --order-by value."""
     rc, _, err = _run(
-        ["series-tags", "--series-id", "GNPCA", "--order-by", "bad_field"],
+        ["series-tags", "GNPCA", "--order-by", "bad_field"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -304,7 +304,7 @@ def test_series_release_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-release", "--series-id", "GNPCA"],
+        ["series-release", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -365,7 +365,7 @@ def test_series_vintagedates_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series-vintagedates", "--series-id", "GNPCA", "--limit", "5"],
+        ["series-vintagedates", "GNPCA", "--limit", "5"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -377,13 +377,20 @@ def test_series_vintagedates_missing_series_id_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """series-vintagedates exits 2 when --series-id is omitted."""
+    """series-vintagedates exits 2 when positional series_id is omitted."""
     monkeypatch.setenv("FRED_API_KEY", "secret")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     with pytest.raises(SystemExit) as exc_info:
         main(["series-vintagedates"], stdout=io.StringIO(), stderr=io.StringIO())
     assert exc_info.value.code == EXIT_USAGE
+
+
+def test_series_requires_positional_id() -> None:
+    """Series exits 2 when positional series_id is omitted."""
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["series"])
+    assert exc.value.code == EXIT_USAGE
 
 
 # ---------------------------------------------------------------------------

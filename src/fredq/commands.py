@@ -66,6 +66,7 @@ _SERIES_ID_PARAM: Final[ParamSpec] = ParamSpec(
     cli_name="series-id",
     kind=ParamKind.STRING,
     help="FRED series identifier (e.g. GNPCA, DGS10, CPIAUCSL).",
+    positional=True,
     required=True,
     metavar="ID",
 )
@@ -362,8 +363,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         params=(_SERIES_ID_PARAM, _REALTIME_START_PARAM, _REALTIME_END_PARAM),
         examples=(
-            "fredq series --series-id GNPCA",
-            "fredq series --series-id DGS10 --realtime-start 2024-01-01",
+            "fredq series GNPCA",
+            "fredq series DGS10 --realtime-start 2024-01-01",
         ),
     ),
     CommandSpec(
@@ -430,9 +431,9 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             ),
         ),
         examples=(
-            "fredq series-observations --series-id GNPCA",
+            "fredq series-observations GNPCA",
             (
-                "fredq series-observations --series-id CPIAUCSL "
+                "fredq series-observations CPIAUCSL "
                 "--units pch --frequency m"
             ),
         ),
@@ -589,9 +590,9 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq series-vintagedates --series-id GNPCA",
+            "fredq series-vintagedates GNPCA",
             (
-                "fredq series-vintagedates --series-id CPIAUCSL "
+                "fredq series-vintagedates CPIAUCSL "
                 "--limit 5 --sort-order desc"
             ),
         ),
@@ -610,8 +611,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq series-categories --series-id GNPCA",
-            "fredq series-categories --series-id CPIAUCSL",
+            "fredq series-categories GNPCA",
+            "fredq series-categories CPIAUCSL",
         ),
     ),
     CommandSpec(
@@ -630,8 +631,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _SORT_ORDER_PARAM,
         ),
         examples=(
-            "fredq series-tags --series-id GNPCA",
-            "fredq series-tags --series-id FEDFUNDS --order-by popularity",
+            "fredq series-tags GNPCA",
+            "fredq series-tags FEDFUNDS --order-by popularity",
         ),
     ),
     CommandSpec(
@@ -648,8 +649,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _REALTIME_END_PARAM,
         ),
         examples=(
-            "fredq series-release --series-id GNPCA",
-            "fredq series-release --series-id CPIAUCSL",
+            "fredq series-release GNPCA",
+            "fredq series-release CPIAUCSL",
         ),
     ),
     CommandSpec(
@@ -1268,7 +1269,7 @@ _SERIES_GROUP_PARAM: Final[ParamSpec] = ParamSpec(
     kind=ParamKind.STRING,
     help=(
         "GeoFRED series group ID (e.g. 882). "
-        "Discover via 'fredq geofred series-group --series-id <id>'."
+        "Discover via 'fredq geofred series-group <id>'."
     ),
     required=True,
     metavar="ID",
@@ -1350,7 +1351,7 @@ _UNITS_DISPLAY_PARAM: Final[ParamSpec] = ParamSpec(
     kind=ParamKind.STRING,
     help=(
         "Units display name (e.g. 'Dollars', 'Percent', 'Index 2017=100'). "
-        "Get from 'fredq geofred series-group --series-id <id>'."
+        "Get from 'fredq geofred series-group <id>'."
     ),
     required=True,
     metavar="UNITS",
@@ -1388,7 +1389,7 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "and observation range needed to call geofred regional-data."
         ),
         params=(_SERIES_ID_PARAM,),
-        examples=("fredq geofred series-group --series-id WIPCPI",),
+        examples=("fredq geofred series-group WIPCPI",),
     ),
     CommandSpec(
         name="series-data",
@@ -1406,8 +1407,8 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             _START_DATE_PARAM,
         ),
         examples=(
-            "fredq geofred series-data --series-id WIPCPI",
-            ("fredq geofred series-data --series-id WIPCPI --start-date 2020-01-01"),
+            "fredq geofred series-data WIPCPI",
+            ("fredq geofred series-data WIPCPI --start-date 2020-01-01"),
         ),
     ),
     CommandSpec(
@@ -1439,7 +1440,7 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         notes=(
             (
-                "Run 'fredq geofred series-group --series-id <id>' first to "
+                "Run 'fredq geofred series-group <id>' first to "
                 "discover the correct --series-group, --season, and --units "
                 "values."
             ),

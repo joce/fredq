@@ -89,7 +89,7 @@ def test_flat_command_still_resolves_after_group_support(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series", "--series-id", "GNPCA"],
+        ["series", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -240,7 +240,7 @@ def test_non_file_output_command_unchanged(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["series", "--series-id", "GNPCA"],
+        ["series", "GNPCA"],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )

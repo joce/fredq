@@ -76,7 +76,7 @@ def test_main_series_command_prints_raw_body(
         text='{"seriess": [{"id": "GNPCA"}]}',
     )
 
-    rc = main(["series", "--series-id", "GNPCA"])
+    rc = main(["series", "GNPCA"])
 
     captured = capsys.readouterr()
     assert rc == EXIT_OK
@@ -95,7 +95,7 @@ def test_main_missing_key_errors_cleanly(
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
 
-    rc = main(["series", "--series-id", "GNPCA"])
+    rc = main(["series", "GNPCA"])
 
     captured = capsys.readouterr()
     assert rc == EXIT_USAGE
@@ -131,7 +131,7 @@ def test_main_non_ascii_body_does_not_crash(
 
     out = io.StringIO()
     err = io.StringIO()
-    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+    rc = main(["series", "GNPCA"], stdout=out, stderr=err)
 
     assert rc == EXIT_OK
     assert "é" in out.getvalue()
@@ -153,7 +153,7 @@ def test_invalid_frequency_rejected(
     out = io.StringIO()
     err = io.StringIO()
     rc = main(
-        ["series-observations", "--series-id", "GNPCA", "--frequency", "xyz"],
+        ["series-observations", "GNPCA", "--frequency", "xyz"],
         stdout=out,
         stderr=err,
     )
@@ -184,7 +184,7 @@ def test_valid_frequency_end_of_period_accepted(
     out = io.StringIO()
     err = io.StringIO()
     rc = main(
-        ["series-observations", "--series-id", "GNPCA", "--frequency", "q-e"],
+        ["series-observations", "GNPCA", "--frequency", "q-e"],
         stdout=out,
         stderr=err,
     )
@@ -214,7 +214,7 @@ def test_valid_frequency_smooth_seasonal_accepted(
     out = io.StringIO()
     err = io.StringIO()
     rc = main(
-        ["series-observations", "--series-id", "GNPCA", "--frequency", "m-ss"],
+        ["series-observations", "GNPCA", "--frequency", "m-ss"],
         stdout=out,
         stderr=err,
     )
@@ -241,7 +241,7 @@ def test_no_key_file_flag_skips_file_fallback(
     out = io.StringIO()
     err = io.StringIO()
     rc = main(
-        ["--no-key-file", "series", "--series-id", "GNPCA"],
+        ["--no-key-file", "series", "GNPCA"],
         stdout=out,
         stderr=err,
     )
@@ -267,7 +267,7 @@ def test_fredq_disable_key_file_env_skips_file_fallback(
     out = io.StringIO()
     err = io.StringIO()
     rc = main(
-        ["series", "--series-id", "GNPCA"],
+        ["series", "GNPCA"],
         stdout=out,
         stderr=err,
     )
@@ -305,7 +305,7 @@ def test_verbose_does_not_include_api_key_in_logs(
         out = io.StringIO()
         err = io.StringIO()
         rc = main(
-            ["--verbose", "series", "--series-id", "GNPCA"],
+            ["--verbose", "series", "GNPCA"],
             stdout=out,
             stderr=err,
         )
@@ -336,7 +336,7 @@ def test_fred_request_error_url_has_no_api_key(
 
     out = io.StringIO()
     err = io.StringIO()
-    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+    rc = main(["series", "GNPCA"], stdout=out, stderr=err)
 
     assert rc == 1
     err_text = err.getvalue()
@@ -369,7 +369,7 @@ def test_fredq_disable_key_file_1_disables(
 
     out = io.StringIO()
     err = io.StringIO()
-    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+    rc = main(["series", "GNPCA"], stdout=out, stderr=err)
 
     assert rc == EXIT_USAGE
     assert "FRED API key" in err.getvalue()
@@ -389,7 +389,7 @@ def test_fredq_disable_key_file_true_disables(
 
     out = io.StringIO()
     err = io.StringIO()
-    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+    rc = main(["series", "GNPCA"], stdout=out, stderr=err)
 
     assert rc == EXIT_USAGE
     assert "FRED API key" in err.getvalue()
@@ -409,7 +409,7 @@ def test_fredq_disable_key_file_yes_mixed_case_disables(
 
     out = io.StringIO()
     err = io.StringIO()
-    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+    rc = main(["series", "GNPCA"], stdout=out, stderr=err)
 
     assert rc == EXIT_USAGE
     assert "FRED API key" in err.getvalue()
@@ -438,7 +438,7 @@ def test_fredq_disable_key_file_0_does_not_disable(
 
     out = io.StringIO()
     err = io.StringIO()
-    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+    rc = main(["series", "GNPCA"], stdout=out, stderr=err)
 
     assert rc == EXIT_OK
 
@@ -466,7 +466,7 @@ def test_fredq_disable_key_file_false_does_not_disable(
 
     out = io.StringIO()
     err = io.StringIO()
-    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+    rc = main(["series", "GNPCA"], stdout=out, stderr=err)
 
     assert rc == EXIT_OK
 
@@ -494,7 +494,7 @@ def test_fredq_disable_key_file_empty_does_not_disable(
 
     out = io.StringIO()
     err = io.StringIO()
-    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+    rc = main(["series", "GNPCA"], stdout=out, stderr=err)
 
     assert rc == EXIT_OK
 
@@ -512,7 +512,7 @@ def test_fredq_disable_key_file_garbage_exits_2(
 
     out = io.StringIO()
     err = io.StringIO()
-    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+    rc = main(["series", "GNPCA"], stdout=out, stderr=err)
 
     assert rc == EXIT_USAGE
     assert "FREDQ_DISABLE_KEY_FILE" in err.getvalue()
@@ -557,7 +557,7 @@ def test_fredq_disable_key_file_garbage_with_empty_api_key_exits_2(
 
     out = io.StringIO()
     err = io.StringIO()
-    rc = main(["series", "--series-id", "GNPCA"], stdout=out, stderr=err)
+    rc = main(["series", "GNPCA"], stdout=out, stderr=err)
 
     assert rc == EXIT_USAGE
     assert "invalid boolean value" in err.getvalue()
@@ -597,7 +597,7 @@ def test_di_fake_client_used_without_http() -> None:
     err = io.StringIO()
 
     rc = main(
-        ["series", "--series-id", "GNPCA"],
+        ["series", "GNPCA"],
         client=fake,
         stdout=out,
         stderr=err,
