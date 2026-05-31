@@ -142,7 +142,6 @@ def test_geofred_regional_data_happy_path(
         [
             "geofred",
             "regional-data",
-            "--series-group",
             "882",
             "--region-type",
             "state",
@@ -162,11 +161,24 @@ def test_geofred_regional_data_happy_path(
     assert '"meta"' in stdout
 
 
-def test_geofred_regional_data_missing_required_param_exits_2() -> None:
-    """Geofred regional-data exits 2 when required params are omitted."""
+def test_geofred_regional_data_missing_series_group_exits_2() -> None:
+    """Geofred regional-data exits 2 when positional series_group is omitted."""
     with pytest.raises(SystemExit) as exc_info:
         main(
-            ["geofred", "regional-data"],
+            [
+                "geofred",
+                "regional-data",
+                "--region-type",
+                "state",
+                "--date",
+                "2020-01-01",
+                "--season",
+                "NSA",
+                "--frequency",
+                "a",
+                "--units",
+                "Dollars",
+            ],
             stdout=io.StringIO(),
             stderr=io.StringIO(),
         )
@@ -182,7 +194,6 @@ def test_geofred_regional_data_invalid_region_type_exits_2(
         [
             "geofred",
             "regional-data",
-            "--series-group",
             "882",
             "--region-type",
             "invalid-region",
@@ -211,7 +222,6 @@ def test_geofred_regional_data_invalid_season_exits_2(
         [
             "geofred",
             "regional-data",
-            "--series-group",
             "882",
             "--region-type",
             "state",
@@ -240,7 +250,6 @@ def test_geofred_regional_data_invalid_aggregation_method_exits_2(
         [
             "geofred",
             "regional-data",
-            "--series-group",
             "882",
             "--region-type",
             "state",
@@ -281,7 +290,7 @@ def test_geofred_shapes_happy_path(
         text=body,
     )
     rc, stdout, _ = _run(
-        ["geofred", "shapes", "--shape", "state", "--out", str(out_path)],
+        ["geofred", "shapes", "state", "--out", str(out_path)],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )
@@ -302,7 +311,7 @@ def test_geofred_shapes_missing_out_exits_2() -> None:
     """Geofred shapes exits 2 when --out is omitted."""
     with pytest.raises(SystemExit) as exc_info:
         main(
-            ["geofred", "shapes", "--shape", "state"],
+            ["geofred", "shapes", "state"],
             stdout=io.StringIO(),
             stderr=io.StringIO(),
         )
@@ -310,7 +319,7 @@ def test_geofred_shapes_missing_out_exits_2() -> None:
 
 
 def test_geofred_shapes_missing_shape_exits_2() -> None:
-    """Geofred shapes exits 2 when --shape is omitted."""
+    """Geofred shapes exits 2 when positional shape is omitted."""
     with pytest.raises(SystemExit) as exc_info:
         main(
             ["geofred", "shapes", "--out", "out.geojson"],
@@ -324,12 +333,11 @@ def test_geofred_shapes_invalid_shape_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Geofred shapes rejects an invalid --shape value."""
+    """Geofred shapes rejects an invalid shape value."""
     rc, _, err = _run(
         [
             "geofred",
             "shapes",
-            "--shape",
             "invalid-shape",
             "--out",
             "out.geojson",
@@ -360,7 +368,7 @@ def test_geofred_shapes_missing_parent_dir_exits_1_with_message(
         text=body,
     )
     rc, _, err = _run(
-        ["geofred", "shapes", "--shape", "state", "--out", str(out_path)],
+        ["geofred", "shapes", "state", "--out", str(out_path)],
         monkeypatch=monkeypatch,
         tmp_path=tmp_path,
     )

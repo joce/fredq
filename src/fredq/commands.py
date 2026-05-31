@@ -1250,18 +1250,6 @@ _GEOFRED_REGION_TYPES: Final[tuple[str, ...]] = (
     "censusdivision",
 )
 
-_SERIES_GROUP_PARAM: Final[ParamSpec] = ParamSpec(
-    name="series_group",
-    cli_name="series-group",
-    kind=ParamKind.STRING,
-    help=(
-        "GeoFRED series group ID (e.g. 882). "
-        "Discover via 'fredq geofred series-group <id>'."
-    ),
-    required=True,
-    metavar="ID",
-)
-
 _REGION_TYPE_PARAM: Final[ParamSpec] = ParamSpec(
     name="region_type",
     cli_name="region-type",
@@ -1273,19 +1261,6 @@ _REGION_TYPE_PARAM: Final[ParamSpec] = ParamSpec(
     required=True,
     allowed_values=_GEOFRED_REGION_TYPES,
     metavar="REGION",
-)
-
-_SHAPE_PARAM: Final[ParamSpec] = ParamSpec(
-    name="shape",
-    cli_name="shape",
-    kind=ParamKind.STRING,
-    help=(
-        "Region polygon set: bea, msa, frb, necta, state, country, county, "
-        "censusregion, censusdivision."
-    ),
-    required=True,
-    allowed_values=_GEOFRED_REGION_TYPES,
-    metavar="SHAPE",
 )
 
 _DATE_PARAM: Final[ParamSpec] = ParamSpec(
@@ -1409,7 +1384,18 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "FIPS code, and observation value."
         ),
         params=(
-            _SERIES_GROUP_PARAM,
+            ParamSpec(
+                name="series_group",
+                cli_name="series-group",
+                kind=ParamKind.STRING,
+                help=(
+                    "GeoFRED series group ID (e.g. 882). "
+                    "Discover via 'fredq geofred series-group <id>'."
+                ),
+                positional=True,
+                required=True,
+                metavar="ID",
+            ),
             _REGION_TYPE_PARAM,
             _DATE_REQUIRED_PARAM,
             _SEASON_PARAM,
@@ -1420,7 +1406,7 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         examples=(
             (
-                "fredq geofred regional-data --series-group 882 "
+                "fredq geofred regional-data 882 "
                 "--region-type state --date 2020-01-01 "
                 "--season NSA --frequency a --units Dollars"
             ),
@@ -1428,7 +1414,7 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         notes=(
             (
                 "Run 'fredq geofred series-group <id>' first to "
-                "discover the correct --series-group, --season, and --units "
+                "discover the correct series-group ID, --season, and --units "
                 "values."
             ),
             (
@@ -1448,8 +1434,22 @@ _GEOFRED_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "Download the polygon boundary file for the specified region type "
             "and write it to --out. The response is GeoJSON."
         ),
-        params=(_SHAPE_PARAM,),
-        examples=("fredq geofred shapes --shape state --out states.geojson",),
+        params=(
+            ParamSpec(
+                name="shape",
+                cli_name="shape",
+                kind=ParamKind.STRING,
+                help=(
+                    "Region polygon set: bea, msa, frb, necta, state, country, county, "
+                    "censusregion, censusdivision."
+                ),
+                positional=True,
+                required=True,
+                allowed_values=_GEOFRED_REGION_TYPES,
+                metavar="SHAPE",
+            ),
+        ),
+        examples=("fredq geofred shapes state --out states.geojson",),
         notes=(
             "Output is GeoJSON. The msa shape is ~1.6 MB.",
             (
