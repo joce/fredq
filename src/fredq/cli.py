@@ -101,7 +101,23 @@ def _epilog_for_command(command: CommandSpec) -> str:
     )
 
 
-def _add_global_options(parser: argparse.ArgumentParser) -> None:
+def _add_global_options(
+    parser: argparse.ArgumentParser, *, suppress_defaults: bool = False
+) -> None:
+    """Register the global options on ``parser``.
+
+    These options live on the root parser and are re-registered on each group
+    parser so they can also appear right after a group token. On the group
+    parsers, ``suppress_defaults=True`` makes absent options use
+    ``argparse.SUPPRESS`` as their default so they do NOT overwrite the value
+    already parsed by the root parser (argparse otherwise resets the namespace
+    attribute to the subparser's default when the option is not repeated).
+    """
+
+    # SUPPRESS-defaulted options leave the namespace attribute untouched when
+    # absent, preserving the root-parsed value.
+    flag_default = argparse.SUPPRESS if suppress_defaults else None
+    bool_default = argparse.SUPPRESS if suppress_defaults else False
     parser.add_argument(
         "--version",
         action="version",
@@ -111,13 +127,14 @@ def _add_global_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--verbose",
         action="store_true",
+        default=bool_default,
         help="Enable debug logging to stderr.",
     )
     parser.add_argument(
         "--api-key",
         dest="api_key",
         metavar="KEY",
-        default=None,
+        default=flag_default,
         help=(
             "FRED API key override. By default fredq reads the key from the "
             "FRED_API_KEY environment variable, or from ~/.fredq/api_key. "
@@ -128,7 +145,7 @@ def _add_global_options(parser: argparse.ArgumentParser) -> None:
         "--no-key-file",
         dest="no_key_file",
         action="store_true",
-        default=False,
+        default=bool_default,
         help=(
             "Skip the ~/.fredq/api_key fallback. Equivalent to setting "
             "FREDQ_DISABLE_KEY_FILE=1."
@@ -320,7 +337,7 @@ def _build_parser_impl() -> tuple[argparse.ArgumentParser, _GroupParsers]:
                     help=GROUP_HELP.get(command.group, command.group),
                     formatter_class=_HelpFormatter,
                 )
-                _add_global_options(group_parser)
+                _add_global_options(group_parser, suppress_defaults=True)
                 group_parsers[command.group] = group_parser
                 group_subparsers_map[command.group] = group_parser.add_subparsers(
                     dest="command_name", metavar="SUBCOMMAND"

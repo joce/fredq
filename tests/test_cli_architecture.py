@@ -12,6 +12,7 @@ import pytest
 from fredq.cli import (
     _set_command_parser,  # pyright: ignore[reportPrivateUsage]
     _write_body_to_file,  # pyright: ignore[reportPrivateUsage]
+    build_parser,
     main,
 )
 from fredq.commands import COMMANDS, CommandSpec
@@ -167,6 +168,37 @@ def test_all_commands_have_a_group() -> None:
     flat = [c for c in COMMANDS if c.group is None]
     msg = f"Expected all commands to have a group, found flat: {[c.name for c in flat]}"
     assert flat == [], msg
+
+
+@pytest.mark.parametrize(
+    ("argv", "attr", "expected"),
+    [
+        # Root globals before the group token must survive into the leaf.
+        (["--api-key", "ROOTKEY", "series", "show", "GNPCA"], "api_key", "ROOTKEY"),
+        (["--no-key-file", "series", "show", "GNPCA"], "no_key_file", True),
+        (["--verbose", "series", "show", "GNPCA"], "verbose", True),
+        (["--api-key", "K", "geofred", "series-group", "WIPCPI"], "api_key", "K"),
+        # Supplied after the group token (before the leaf) — the reason the group
+        # parser re-registers the globals at all.
+        (["series", "--api-key", "MID", "show", "GNPCA"], "api_key", "MID"),
+        # Repeated: the value after the group token wins.
+        (
+            ["--api-key", "ROOT", "series", "--api-key", "MID", "show", "GNPCA"],
+            "api_key",
+            "MID",
+        ),
+        # Absent → defaults are still present on the namespace.
+        (["series", "show", "GNPCA"], "api_key", None),
+        (["series", "show", "GNPCA"], "no_key_file", False),
+        (["series", "show", "GNPCA"], "verbose", False),
+    ],
+)
+def test_root_globals_survive_grouped_commands(
+    argv: list[str], attr: str, expected: object
+) -> None:
+    """Group parsers must not clobber root-level --api-key/--no-key-file/--verbose."""
+    args = build_parser().parse_args(argv)
+    assert getattr(args, attr) == expected
 
 
 def test_command_spec_output_to_file_synthetic_true() -> None:
