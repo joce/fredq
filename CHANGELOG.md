@@ -6,6 +6,40 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0]
+
+Command-line grammar overhaul. **Breaking** — the flat `noun-verb` command names
+and the `--*-id` flags are replaced by noun groups with positional primary args.
+
+### Changed
+
+- **Commands are now noun groups with verb leaves.** e.g. `fredq series-observations`
+  → `fredq series observations`, `fredq releases` → `fredq release list`,
+  `fredq tags-series` → `fredq tag series`. Groups: `series`, `category`,
+  `release`, `source`, `tag`, plus `geofred` (unchanged). A bare group prints its
+  subcommands.
+- **Primary arguments are positional, not flags.** The single primary required
+  argument of each command is now positional and its flag is removed. e.g.
+  `fredq series --series-id GNPCA` → `fredq series show GNPCA`;
+  `fredq series-search --search-text "cpi"` → `fredq series search "cpi"`;
+  `fredq tags-series --tag-names "usa;monthly"` → `fredq tag series "usa;monthly"`.
+  Secondary required args stay flags (e.g. `--tag-names` on `* related-tags`).
+- `releases-dates` and `release-dates` split into two clear commands:
+  `release calendar` (all releases, `/fred/releases/dates`) and
+  `release dates ID` (one release, `/fred/release/dates`).
+- Version is now derived from the git tag via `hatch-vcs` (no hardcoded
+  `__version__`).
+
+### Fixed
+
+- Root global options (`--api-key`, `--no-key-file`, `--verbose`) supplied before
+  a command are no longer silently dropped by the group parsers.
+
+### Internal
+
+- Tag-driven release flow with a `twine check` gate; CHANGELOG + RELEASING docs;
+  Dependabot (uv + GitHub Actions) with grouped minor/patch updates.
+
 ## [0.1.0]
 
 Initial release.
@@ -29,5 +63,6 @@ Initial release.
   with the key redacted from all errors and logs.
 - Exit-code contract: `0` success, `1` FRED request failure, `2` usage error.
 
-[Unreleased]: https://github.com/joce/fredq/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/joce/fredq/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/joce/fredq/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/joce/fredq/releases/tag/v0.1.0
