@@ -478,7 +478,7 @@ def _handle_parquet_output(
     """Convert ``body`` to Parquet and write to ``args.out_path``.
 
     Imports the parquet writer lazily so the JSON path never pays the
-    pyarrow import cost.
+    polars import cost.
     """
 
     from fredq.parquet_writer import (  # noqa: PLC0415 - lazy import.
