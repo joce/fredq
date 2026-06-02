@@ -63,7 +63,7 @@ When adding or editing a CLI command:
 
 ## Output formats
 - **Default**: raw FRED JSON to stdout, exactly as returned.
-- **Parquet**: opt-in via `--format parquet --out PATH`, `series-observations` only. Parses the response into a typed table (`date`, `value`, realtime bounds) with the response envelope stored as schema metadata. Other endpoints reject `--format parquet` with a usage error.
+- **Parquet**: opt-in via `--format parquet --out PATH`, `series-observations` only. Parses the response into a typed table (`date`, `value`, realtime bounds) with the response envelope stored as schema metadata. Parquet output is written with **polars** (a core dependency); other endpoints reject `--format parquet` with a usage error.
 - Other endpoints stay JSON-only.
 
 ## Workflow

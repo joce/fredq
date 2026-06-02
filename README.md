@@ -40,14 +40,6 @@ uv tool install fredq
 pip install fredq
 ```
 
-For Parquet output, include the `parquet` extra:
-
-```powershell
-uv tool install "fredq[parquet]"
-# or
-pip install "fredq[parquet]"
-```
-
 Then run:
 
 ```powershell
@@ -168,13 +160,8 @@ uv run fredq geofred series-data WIPCPI --start-date 2022-01-01
 ## Parquet Output
 
 `series observations` can write a typed Parquet table instead of raw JSON.
-Install with the `parquet` extra to pull in `pyarrow`:
-
-```powershell
-uv sync --extra parquet
-```
-
-Then pass `--format parquet --out PATH`:
+Parquet output is included in a plain install — no extra required. Pass
+`--format parquet --out PATH`:
 
 ```powershell
 uv run fredq series observations CPIAUCSL --units pch --frequency m \
