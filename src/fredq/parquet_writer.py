@@ -5,8 +5,8 @@ response bodies to stdout exactly as returned. The exception applies
 only when the user opts in via ``--format parquet --out PATH`` on a
 parquet-capable command.
 
-PyArrow is imported lazily so the JSON path does not pay the import
-cost or require the optional ``pyarrow`` dependency.
+Polars is the Parquet engine; this module is imported lazily by the CLI
+so the JSON path never loads it.
 """
 
 from __future__ import annotations
@@ -17,16 +17,13 @@ from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING, Any, Final
 
+import polars as pl
+
 from fredq import __version__
 from fredq.exceptions import FredqError
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-_MISSING_PYARROW_MESSAGE: Final[str] = (
-    "--format parquet requires the parquet extra: "
-    "pip install 'fredq[parquet]' (or uv sync --extra parquet)"
-)
 
 # FRED encodes missing observations as ".".
 _MISSING_VALUE_SENTINEL: Final[str] = "."
@@ -61,8 +58,8 @@ def write_observations_parquet(
     """Parse a FRED ``series/observations`` body and write a Parquet table.
 
     The helpers below raise :class:`ParquetWriterError` for any user-visible
-    failure mode: missing pyarrow, undecodable JSON, missing observations
-    array, or filesystem errors during write.
+    failure mode: undecodable JSON, missing observations array, or filesystem
+    errors during write.
 
     Args:
         observations_json_text: Raw JSON body from FRED.
@@ -75,38 +72,20 @@ def write_observations_parquet(
             ``rows``, ``bytes``).
     """
 
-    pa, pq = _import_pyarrow()
     envelope = _parse_envelope(observations_json_text)
     _check_output_type(envelope)
     observations = _extract_observations(envelope)
-    table = _build_table(observations, envelope, context, pa)
-    _write_table(pq, table, out_path)
+    frame = _build_frame(observations)
+    metadata = _build_metadata(envelope, context)
+    _write_frame(frame, out_path, metadata)
     return {
         "format": "parquet",
         "out": str(out_path),
         "fredq_command": "series-observations",
         "fredq_series_id": context.series_id,
-        "rows": table.num_rows,
+        "rows": frame.height,
         "bytes": out_path.stat().st_size,
     }
-
-
-def _import_pyarrow() -> tuple[Any, Any]:
-    """Lazily import pyarrow + pyarrow.parquet.
-
-    Returns:
-        tuple[Any, Any]: ``(pyarrow_module, pyarrow_parquet_module)``.
-
-    Raises:
-        ParquetWriterError: If pyarrow is not installed.
-    """
-
-    try:
-        import pyarrow as pa  # noqa: PLC0415 - lazy import keeps JSON path free.
-        import pyarrow.parquet as pq  # noqa: PLC0415
-    except ImportError as exc:
-        raise ParquetWriterError(_MISSING_PYARROW_MESSAGE) from exc
-    return pa, pq
 
 
 _EXPECTED_OUTPUT_TYPE: Final[int] = 1
@@ -180,12 +159,7 @@ def _parse_value(raw: object) -> float:
         return math.nan
 
 
-def _build_table(
-    observations: list[dict[str, Any]],
-    envelope: dict[str, Any],
-    context: ObservationsContext,
-    pa: Any,  # noqa: ANN401
-) -> Any:  # noqa: ANN401
+def _build_frame(observations: list[dict[str, Any]]) -> pl.DataFrame:
     dates: list[date | None] = []
     values: list[float] = []
     realtime_starts: list[date | None] = []
@@ -195,23 +169,20 @@ def _build_table(
         values.append(_parse_value(obs.get("value")))
         realtime_starts.append(_parse_date(obs.get("realtime_start")))
         realtime_ends.append(_parse_date(obs.get("realtime_end")))
-
-    schema = pa.schema(
-        [
-            pa.field("date", pa.date32()),
-            pa.field("value", pa.float64()),
-            pa.field("realtime_start", pa.date32()),
-            pa.field("realtime_end", pa.date32()),
-        ],
-        metadata=_build_metadata(envelope, context),
+    return pl.DataFrame(
+        {
+            "date": dates,
+            "value": values,
+            "realtime_start": realtime_starts,
+            "realtime_end": realtime_ends,
+        },
+        schema={
+            "date": pl.Date,
+            "value": pl.Float64,
+            "realtime_start": pl.Date,
+            "realtime_end": pl.Date,
+        },
     )
-    arrays = [
-        pa.array(dates, type=pa.date32()),
-        pa.array(values, type=pa.float64()),
-        pa.array(realtime_starts, type=pa.date32()),
-        pa.array(realtime_ends, type=pa.date32()),
-    ]
-    return pa.Table.from_arrays(arrays, schema=schema)
 
 
 _ENVELOPE_METADATA_KEYS: Final[tuple[str, ...]] = (
@@ -230,7 +201,7 @@ _ENVELOPE_METADATA_KEYS: Final[tuple[str, ...]] = (
 
 def _build_metadata(
     envelope: dict[str, Any], context: ObservationsContext
-) -> dict[bytes, bytes]:
+) -> dict[str, str]:
     # Key naming: use "fredq_" prefix for tool-owned fields to match sister
     # tools (yoghurt uses "yoghurt_command", "yoghurt_version" etc.).
     payload: dict[str, str] = {
@@ -253,17 +224,13 @@ def _build_metadata(
         "request.realtime_end": context.realtime_end,
     }
     payload.update({k: v for k, v in request_fields.items() if v is not None})
-    return {k.encode("utf-8"): v.encode("utf-8") for k, v in payload.items()}
+    return payload
 
 
-def _write_table(
-    pq: Any,  # noqa: ANN401
-    table: Any,  # noqa: ANN401
-    out_path: Path,
-) -> None:
+def _write_frame(frame: pl.DataFrame, out_path: Path, metadata: dict[str, str]) -> None:
     try:
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        pq.write_table(table, out_path, compression="snappy")
+        frame.write_parquet(out_path, compression="snappy", metadata=metadata)
     except OSError as exc:
         message = f"failed to write Parquet file {out_path}: {exc}"
         raise ParquetWriterError(message) from exc

@@ -7,7 +7,7 @@ import math
 from datetime import date
 from typing import TYPE_CHECKING
 
-import pyarrow.parquet as pq
+import polars as pl
 import pytest
 
 from fredq.parquet_writer import (
@@ -71,10 +71,11 @@ def test_write_round_trip(tmp_path: Path) -> None:
     assert descriptor["rows"] == expected_rows
     assert descriptor["bytes"] == out_path.stat().st_size
 
-    table = pq.read_table(out_path)
-    assert table.column_names == ["date", "value", "realtime_start", "realtime_end"]
+    df = pl.read_parquet(out_path)
+    assert df.columns == ["date", "value", "realtime_start", "realtime_end"]
+    assert df.dtypes == [pl.Date, pl.Float64, pl.Date, pl.Date]
 
-    rows = table.to_pylist()
+    rows = df.to_dicts()
     expected_first_value = 2.5
     assert rows[0]["date"] == date(2024, 1, 1)
     assert rows[0]["value"] == expected_first_value
@@ -106,8 +107,7 @@ def test_envelope_metadata_recorded(tmp_path: Path) -> None:
 
     write_observations_parquet(body, out_path, context)
 
-    schema = pq.read_schema(out_path)
-    metadata = {k.decode(): v.decode() for k, v in (schema.metadata or {}).items()}
+    metadata = pl.read_parquet_metadata(out_path)
     assert metadata["fredq_command"] == "series-observations"
     assert metadata["fredq_series_id"] == "CPIAUCSL"
     assert metadata["envelope.units"] == "pch"
@@ -158,9 +158,9 @@ def test_empty_observations_writes_zero_row_table(tmp_path: Path) -> None:
     descriptor = write_observations_parquet(body, out_path, ObservationsContext("X"))
 
     assert descriptor["rows"] == 0
-    table = pq.read_table(out_path)
-    assert table.num_rows == 0
-    assert table.column_names == ["date", "value", "realtime_start", "realtime_end"]
+    df = pl.read_parquet(out_path)
+    assert df.height == 0
+    assert df.columns == ["date", "value", "realtime_start", "realtime_end"]
 
 
 def test_all_dot_values_column_is_all_nan(tmp_path: Path) -> None:
@@ -185,12 +185,12 @@ def test_all_dot_values_column_is_all_nan(tmp_path: Path) -> None:
     out_path = tmp_path / "dots.parquet"
     write_observations_parquet(body, out_path, ObservationsContext("X"))
 
-    rows = pq.read_table(out_path).to_pylist()
+    rows = pl.read_parquet(out_path).to_dicts()
     assert all(math.isnan(row["value"]) for row in rows)
 
 
 def test_oserror_on_write_raises_parquet_writer_error(tmp_path: Path) -> None:
-    """An OSError during pq.write_table raises ParquetWriterError (not OSError)."""
+    """An OSError during write raises ParquetWriterError (not OSError)."""
 
     from unittest.mock import patch  # noqa: PLC0415
 
@@ -207,7 +207,7 @@ def test_oserror_on_write_raises_parquet_writer_error(tmp_path: Path) -> None:
     out_path = tmp_path / "obs.parquet"
 
     with (
-        patch("pyarrow.parquet.write_table", side_effect=OSError("disk full")),
+        patch("polars.DataFrame.write_parquet", side_effect=OSError("disk full")),
         pytest.raises(ParquetWriterError, match="failed to write"),
     ):
         write_observations_parquet(body, out_path, ObservationsContext("X"))
@@ -248,8 +248,7 @@ def test_non_scalar_envelope_value_does_not_crash(tmp_path: Path) -> None:
         json.dumps(body_dict), out_path, ObservationsContext("X")
     )
 
-    schema = pq.read_schema(out_path)
-    metadata = {k.decode(): v.decode() for k, v in (schema.metadata or {}).items()}
+    metadata = pl.read_parquet_metadata(out_path)
     # The nested dict key should NOT appear in metadata.
     assert "envelope.observation_start" not in metadata
     # Scalar keys should still be present.
@@ -287,6 +286,6 @@ def test_unparseable_dates_become_null(tmp_path: Path) -> None:
     out_path = tmp_path / "obs.parquet"
     write_observations_parquet(body, out_path, ObservationsContext("X"))
 
-    rows = pq.read_table(out_path).to_pylist()
+    rows = pl.read_parquet(out_path).to_dicts()
     assert rows[0]["date"] == date(2024, 1, 1)
     assert rows[0]["realtime_start"] is None
