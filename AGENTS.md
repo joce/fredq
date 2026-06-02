@@ -97,7 +97,7 @@ Steps:
 6. Full verification before "ready": `uv run tox` and `npm run spell`.
 7. Commit, push, open a PR.
 8. Wait for CI + review comments (check ~every minute, up to 10 min). Prioritize actionable human comments; treat ordinary Codecov patch-coverage advisories as non-blocking unless they flag a concrete behavioral gap.
-9. Merge only after actionable comments are handled/rebutted and CI passes. Prefer fast-forward merge; clean up local + remote branches after.
+9. Merge only after actionable comments are handled/rebutted and CI passes. Squash and merge (`gh pr merge --squash --delete-branch`); clean up local + remote branches after.
 
 ## FRED API state probes
 - When checking the current FRED API surface, use a varied set of series, releases, and categories so behavior is not inferred from one path only.
