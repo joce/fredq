@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0]
+
 ### Changed
 
 - Parquet output is now written with **polars** instead of pyarrow, and polars
@@ -78,7 +80,8 @@ Initial release.
   with the key redacted from all errors and logs.
 - Exit-code contract: `0` success, `1` FRED request failure, `2` usage error.
 
-[Unreleased]: https://github.com/joce/fredq/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/joce/fredq/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/joce/fredq/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/joce/fredq/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/joce/fredq/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/joce/fredq/releases/tag/v0.1.0
