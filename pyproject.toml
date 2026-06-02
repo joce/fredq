@@ -37,9 +37,6 @@ dependencies = [
     "typing-extensions>=4.13",
 ]
 
-[project.optional-dependencies]
-parquet = ["pyarrow>=15,<25"]
-
 [project.scripts]
 fredq = "fredq.cli:main"
 
@@ -59,7 +56,6 @@ dev = [
     "black>=25.9,<27.0",
     "coverage>=7.10,<8.0",
     "isort>=7,<9",
-    "pyarrow>=15,<25",
     "pylint>=4.0,<5.0",
     "pyright>=1.1.409,<2.0",
     "pytest>=9.0,<10.0",
@@ -88,30 +84,7 @@ typeCheckingMode = "strict"
 
 [[tool.pyright.executionEnvironments]]
 root = "src/fredq/parquet_writer.py"
-reportUnknownArgumentType = false
-reportUnknownMemberType = false
 reportUnknownVariableType = false
-reportUnknownLambdaType = false
-reportUnknownParameterType = false
-reportMissingTypeStubs = false
-
-[[tool.pyright.executionEnvironments]]
-root = "tests/test_parquet_writer.py"
-reportUnknownArgumentType = false
-reportUnknownMemberType = false
-reportUnknownVariableType = false
-reportUnknownLambdaType = false
-reportUnknownParameterType = false
-reportMissingTypeStubs = false
-
-[[tool.pyright.executionEnvironments]]
-root = "tests/test_cli_parquet.py"
-reportUnknownArgumentType = false
-reportUnknownMemberType = false
-reportUnknownVariableType = false
-reportUnknownLambdaType = false
-reportUnknownParameterType = false
-reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
 pythonpath = "src"
