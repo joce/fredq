@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Final
 
-import pyarrow.parquet as pq
+import polars as pl
 
 from fredq.cli import main
 
@@ -98,10 +98,10 @@ def test_parquet_round_trip(
     assert descriptor["fredq_command"] == "series-observations"
     assert descriptor["fredq_series_id"] == "CPIAUCSL"
 
-    table = pq.read_table(out_path)
+    df = pl.read_parquet(out_path)
     expected_rows = 2
-    assert table.num_rows == expected_rows
-    assert table.column_names == ["date", "value", "realtime_start", "realtime_end"]
+    assert df.height == expected_rows
+    assert df.columns == ["date", "value", "realtime_start", "realtime_end"]
 
 
 def test_parquet_requires_out(
