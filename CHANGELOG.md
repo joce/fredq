@@ -6,6 +6,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- Parquet output is now written with **polars** instead of pyarrow, and polars
+  is a core dependency. The `parquet` optional extra is removed — parquet works
+  with a plain install. **Breaking:** `pip install "fredq[parquet]"` no longer
+  resolves (use `pip install fredq`).
+
 ## [0.2.1]
 
 Maintenance release. No user-facing changes.
