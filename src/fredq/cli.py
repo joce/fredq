@@ -122,9 +122,7 @@ def _build_root_epilog() -> str:
         lines.append(f"  {cmd}{pad}{desc}")
     lines.extend(("", "Then use an ID with the matching command, e.g.:"))
     lines.extend(f"  {cmd}" for cmd in _FOLLOWUP_EXAMPLES)
-    lines.extend(
-        ("", "Every command has its own --help with parameters and examples.")
-    )
+    lines.extend(("", "Every command has its own --help with parameters and examples."))
     return "\n".join(lines)
 
 
