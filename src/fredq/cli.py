@@ -86,6 +86,48 @@ class _HelpFormatter(
         return f"{help_text} (default: %(default)s)"
 
 
+# Gap (in spaces) between a command and its explanation in the epilog table.
+_EPILOG_GAP: Final[int] = 5
+
+# (command, explanation) rows for the root --help "Discovering IDs" table.
+_DISCOVERY_ROWS: Final[tuple[tuple[str, str], ...]] = (
+    ('fredq series search "unemployment"', "find series IDs by keyword"),
+    ("fredq release list", "list release IDs"),
+    ("fredq source list", "list source IDs"),
+    ("fredq tag list", "list tag names"),
+    ("fredq category children 0", "root categories (0 = root; drill down)"),
+)
+
+# Follow-up "use an ID" examples in the root --help epilog.
+_FOLLOWUP_EXAMPLES: Final[tuple[str, ...]] = (
+    "fredq series observations DGS10",
+    "fredq category series 106",
+    "fredq release series 10",
+)
+
+
+def _build_root_epilog() -> str:
+    """Render the root ``--help`` epilog.
+
+    Commands are padded to a fixed gap before their explanation.
+
+    Returns:
+        str: The fully rendered epilog text.
+    """
+
+    width = max(len(cmd) for cmd, _ in _DISCOVERY_ROWS)
+    lines = ["Discovering IDs (start here — these commands need no ID):"]
+    for cmd, desc in _DISCOVERY_ROWS:
+        pad = " " * (width - len(cmd) + _EPILOG_GAP)
+        lines.append(f"  {cmd}{pad}{desc}")
+    lines.extend(("", "Then use an ID with the matching command, e.g.:"))
+    lines.extend(f"  {cmd}" for cmd in _FOLLOWUP_EXAMPLES)
+    lines.extend(
+        ("", "Every command has its own --help with parameters and examples.")
+    )
+    return "\n".join(lines)
+
+
 def _examples_text(examples: tuple[str, ...]) -> str:
     return "\n".join(f"  {example}" for example in examples)
 
@@ -283,23 +325,7 @@ def _build_parser_impl() -> tuple[argparse.ArgumentParser, _GroupParsers]:
             "Expose FRED (Federal Reserve Economic Data) endpoints to the "
             "command line and print raw JSON response bodies."
         ),
-        epilog=(
-            "Discovering IDs (start here — these commands need no ID):\n"
-            '  fredq series search "unemployment"                  '
-            "find series IDs by keyword\n"
-            "  fredq release list                                  list release IDs\n"
-            "  fredq source list                                   list source IDs\n"
-            "  fredq tag list                                      list tag names\n"
-            "  fredq category children 0                          "
-            "root categories (0 = root; drill down)\n"
-            "\n"
-            "Then use an ID with the matching command, e.g.:\n"
-            "  fredq series observations DGS10\n"
-            "  fredq category series 106\n"
-            "  fredq release series 10\n"
-            "\n"
-            "Every command has its own --help with parameters and examples."
-        ),
+        epilog=_build_root_epilog(),
         formatter_class=_HelpFormatter,
     )
     _add_global_options(parser)
@@ -335,6 +361,7 @@ def _build_parser_impl() -> tuple[argparse.ArgumentParser, _GroupParsers]:
                 group_parser = subparsers.add_parser(
                     command.group,
                     help=GROUP_HELP.get(command.group, command.group),
+                    description=GROUP_HELP.get(command.group, command.group),
                     formatter_class=_HelpFormatter,
                 )
                 _add_global_options(group_parser, suppress_defaults=True)
