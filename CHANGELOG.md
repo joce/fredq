@@ -6,6 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.1]
+
+### Changed
+
+- Root `--help` is easier to scan: wider spacing between command names and
+  summaries, and each command group (`series`, `category`, `release`, `source`,
+  `tag`, `geofred`) now shows a description in its own `--help`.
+
+### Internal
+
+- Bumped development dependencies (tox 4.55.1, pyright 1.1.410, ruff 0.15.16)
+  and GitHub Actions (astral-sh/setup-uv 8.2.0).
+
 ## [0.3.0]
 
 ### Changed
@@ -80,7 +93,8 @@ Initial release.
   with the key redacted from all errors and logs.
 - Exit-code contract: `0` success, `1` FRED request failure, `2` usage error.
 
-[Unreleased]: https://github.com/joce/fredq/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/joce/fredq/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/joce/fredq/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/joce/fredq/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/joce/fredq/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/joce/fredq/compare/v0.1.0...v0.2.0
