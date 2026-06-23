@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 from typing import TYPE_CHECKING, Any, Final, Literal
 
 import httpx
+import regex
 from typing_extensions import override
 
 from fredq import __version__
@@ -26,7 +26,7 @@ FRED_BASE_URL: Final[str] = "https://api.stlouisfed.org"
 
 _API_KEY_PATTERN: Final[str] = "api_key="
 _API_KEY_REDACTED: Final[str] = "api_key=[REDACTED]"
-_API_KEY_RE: Final[re.Pattern[str]] = re.compile(r"api_key=[^&\s\"']+")
+_API_KEY_RE: Final[regex.Pattern[str]] = regex.compile(r"api_key=[^&\s\"']+")
 
 # Module-level guard: install the redact filter at most once so that creating
 # multiple FredClient instances does not stack duplicate filters on handlers.
