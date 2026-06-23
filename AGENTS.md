@@ -44,6 +44,7 @@ Each `CommandSpec.name` is globally unique and unchanged (routing key). The `lea
 - Print FRED response bodies to stdout exactly as returned; do not model, reshape, pretty-print, or interpret endpoint JSON.
 - Keep FRED endpoint knowledge in metadata and validation only; do not create response classes.
 - Use `uv run python` for Python scripts; never use bare `python` or `python3`.
+- Use `regex` instead of standard library `re` for regular expressions.
 - Never log or print the FRED API key.
 - Keep runtime dependencies narrow; do not add TUI, ORM, web framework, or rich formatting libraries.
 
