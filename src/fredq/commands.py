@@ -55,7 +55,7 @@ class CommandSpec:
 
     @property
     def fred_url(self) -> str:
-        """Return the full FRED URL for this endpoint."""
+        """Full FRED URL for this endpoint."""
 
         return f"{FRED_BASE_URL}{self.path}"
 
