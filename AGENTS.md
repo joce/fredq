@@ -4,7 +4,7 @@
 fredq exposes FRED (Federal Reserve Economic Data) HTTP endpoints as an LLM-friendly CLI that prints the raw JSON FRED returns.
 
 ## Stack
-Python 3.10+, uv, httpx, argparse, pytest, pytest-httpx, ruff, pyright, tox, hatchling.
+Python 3.10+, uv, httpx2, argparse, pytest, ruff, pyright, tox, hatchling.
 
 ## Commands
 - Install/sync: `uv sync --all-groups`

@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING, Any, Final, Literal
 
-import httpx
+import httpx2 as httpx
 import regex
 from typing_extensions import override
 
@@ -38,7 +38,7 @@ class _ApiKeyRedactFilter(logging.Filter):
 
     Attached to *handlers* (not loggers) so that every record that reaches
     a handler — regardless of which child logger emitted it — is scrubbed.
-    This survives httpx splitting its logging across child loggers in future
+    This survives httpx2 splitting its logging across child loggers in future
     versions.
     """
 
@@ -68,8 +68,8 @@ def _install_api_key_redact_filter() -> None:
 
     Filters on *handlers* apply to every record that reaches the handler,
     regardless of which logger originally emitted it.  This is more robust
-    than filtering the logger itself because it survives httpx adding child
-    loggers (e.g. ``httpx.client``) in future releases.
+    than filtering the logger itself because it survives httpx2 adding child
+    loggers (e.g. ``httpx2.client``) in future releases.
 
     The function is idempotent: the module-level ``_redact_filter_installed``
     flag prevents duplicate filters when multiple ``FredClient`` instances
@@ -82,11 +82,11 @@ def _install_api_key_redact_filter() -> None:
 
     flt = _ApiKeyRedactFilter()
 
-    # Attach to all handlers on the root logger and the httpx / httpcore
+    # Attach to all handlers on the root logger and the HTTP stack loggers.
     # loggers.  New handlers added after this call will not have the filter,
     # but that is acceptable: the important case is the logging.basicConfig
     # StreamHandler that is the common default.
-    for logger_name in ("", "httpx", "httpcore"):
+    for logger_name in ("", "httpx2", "httpcore2"):
         logger = logging.getLogger(logger_name) if logger_name else logging.root
         for handler in logger.handlers:
             handler.addFilter(flt)
@@ -97,28 +97,28 @@ def _install_api_key_redact_filter() -> None:
     _redact_filter_installed = True
 
 
-# Design note — why httpx event_hooks were NOT used for URL scrubbing
+# Design note — why httpx2 event_hooks were NOT used for URL scrubbing
 # -----------------------------------------------------------------------
-# httpx supports ``event_hooks={"request": [callback]}`` which fires a
-# callback with the live ``httpx.Request`` object just before the request
-# is sent.  The appeal is intercepting the request before httpx logs the
+# httpx2 supports ``event_hooks={"request": [callback]}`` which fires a
+# callback with the live ``httpx2.Request`` object just before the request
+# is sent.  The appeal is intercepting the request before httpx2 logs the
 # URL.  However, this approach has a fundamental problem:
 #
-#   * The ``request.url`` on the ``Request`` object is what httpx actually
+#   * The ``request.url`` on the ``Request`` object is what httpx2 actually
 #     uses for the HTTP call.  Mutating it to strip the ``api_key`` param
 #     would also strip it from the real request, breaking authentication.
 #
 #   * We cannot replace the URL with a redacted copy for logging purposes
-#     without also affecting the in-flight request.  httpx has no separate
+#     without also affecting the in-flight request.  httpx2 has no separate
 #     "URL for display" field.
 #
-#   * Logging a custom message from the hook and then suppressing httpx's
-#     own log lines would require patching httpx internals that are not
+#   * Logging a custom message from the hook and then suppressing httpx2's
+#     own log lines would require patching httpx2 internals that are not
 #     part of its public API.
 #
 # The logging filter on handlers (``_ApiKeyRedactFilter``) is the correct
 # defense: it intercepts records after they are fully formatted but before
-# they are written to any sink, and it is robust to httpx's logger hierarchy
+# they are written to any sink, and it is robust to httpx2's logger hierarchy
 # because it is attached to the logger objects themselves as a fall-through.
 #
 # Future maintainers: please do not re-introduce an event_hooks scrubber;
@@ -152,7 +152,7 @@ class FredClient:
 
         Args:
             api_key: FRED API key used to authenticate every request.
-            timeout: Optional custom httpx timeout configuration.
+            timeout: Optional custom httpx2 timeout configuration.
             base_url: Override the FRED base URL (useful for tests and for the
                 future GeoFRED Maps endpoints).
         """

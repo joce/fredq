@@ -13,7 +13,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pytest
-    from pytest_httpx import HTTPXMock
+
+    from tests.conftest import HTTPXMock
 
 EXIT_OK: Final[int] = 0
 EXIT_USAGE: Final[int] = 2

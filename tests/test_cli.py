@@ -12,9 +12,8 @@ from fredq.cli import build_parser, main
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from pytest_httpx import HTTPXMock
-
     from fredq.types import ParamValue
+    from tests.conftest import HTTPXMock
 
 EXIT_USAGE: Final[int] = 2
 EXIT_OK: Final[int] = 0
