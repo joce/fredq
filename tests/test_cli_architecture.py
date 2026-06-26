@@ -21,7 +21,7 @@ from fredq.params import ParamKind, ParamSpec
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from pytest_httpx import HTTPXMock
+    from tests.conftest import HTTPXMock
 
 EXIT_USAGE: Final[int] = 2
 EXIT_OK: Final[int] = 0

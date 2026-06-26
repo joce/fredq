@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-import httpx
+import httpx2 as httpx
 import pytest
 from typing_extensions import override
 
@@ -20,9 +20,17 @@ from fredq.exceptions import (
 )
 
 if TYPE_CHECKING:
-    from pytest_httpx import HTTPXMock
+    from tests.conftest import HTTPXMock
 
 REQUEST_ATTEMPTS = 3
+
+
+def test_client_uses_httpx2_backend() -> None:
+    """The runtime HTTP client comes from the httpx2 package."""
+
+    import fredq.client as client_module  # noqa: PLC0415
+
+    assert client_module.httpx.__name__ == "httpx2"
 
 
 @pytest.mark.asyncio
@@ -125,7 +133,7 @@ async def test_get_retries_retryable_status_codes(httpx_mock: HTTPXMock) -> None
 
 @pytest.mark.asyncio
 async def test_transport_error_raises_fred_unavailable(httpx_mock: HTTPXMock) -> None:
-    """TransportError exhausted → FredUnavailableError (not a raw httpx error)."""
+    """TransportError exhausted → FredUnavailableError (not a raw httpx2 error)."""
 
     url = (
         "https://api.stlouisfed.org/fred/series?"
@@ -208,7 +216,7 @@ def test_redact_filter_scrubs_child_logger_message() -> None:
     handler = _CapturingHandler()
     handler.addFilter(_ApiKeyRedactFilter())
 
-    child_logger = logging.getLogger("httpx.client")
+    child_logger = logging.getLogger("httpx2.client")
     child_logger.addHandler(handler)
     child_logger.setLevel(logging.DEBUG)
     child_logger.propagate = False
@@ -245,7 +253,7 @@ def test_redact_filter_scrubs_exception_text() -> None:
     record.exc_text = (
         "Traceback (most recent call last):\n"
         "  ...\n"
-        "httpx.HTTPStatusError: 400 for https://api.stlouisfed.org/fred/series?"
+        "httpx2.HTTPStatusError: 400 for https://api.stlouisfed.org/fred/series?"
         "series_id=GNPCA&api_key=topsecret&file_type=json"
     )
 
@@ -260,7 +268,7 @@ def test_redact_filter_passes_through_records_without_api_key() -> None:
 
     flt = _ApiKeyRedactFilter()
     record = logging.LogRecord(
-        name="httpx",
+        name="httpx2",
         level=logging.DEBUG,
         pathname="",
         lineno=0,

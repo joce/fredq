@@ -84,7 +84,7 @@ the file fallback entirely (for hermetic runs), set `FREDQ_DISABLE_KEY_FILE=1`
 or pass `--no-key-file`.
 
 fredq never prints, logs, or echoes the API key. The key is also redacted
-from URLs in error messages and from any httpx debug logs emitted under
+from URLs in error messages and from any httpx2 debug logs emitted under
 `--verbose`.
 
 ## Quick Start
