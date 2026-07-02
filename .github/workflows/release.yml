@@ -1,0 +1,72 @@
+name: Create Release
+
+# Turns a pushed vX.Y.Z tag into a published GitHub Release, whose
+# `release: published` event triggers publish.yml (build + upload to PyPI).
+#
+# IMPORTANT: the release is created with a Personal Access Token
+# (secrets.RELEASE_PAT), NOT the default GITHUB_TOKEN. A release created with
+# GITHUB_TOKEN does not fire the `release` event, so publish.yml would never
+# run. The PAT needs `contents: write` on this repository.
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release (e.g. v0.3.3)"
+        required: true
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Extract release notes from CHANGELOG
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          VERSION="${TAG#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" {flag=1; next}
+            flag && /^## \[/ {exit}
+            flag {print}
+          ' CHANGELOG.md > notes.md
+          # Trim leading/trailing blank lines.
+          sed -i -e '/./,$!d' notes.md
+          if [ ! -s notes.md ]; then
+            echo "::error::No CHANGELOG.md section found for [$VERSION]" >&2
+            exit 1
+          fi
+          echo "----- release notes -----"
+          cat notes.md
+
+      - name: Create GitHub Release
+        env:
+          # PAT (not GITHUB_TOKEN) so the resulting release event triggers publish.yml.
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; nothing to do."
+            exit 0
+          fi
+          gh release create "$TAG" \
+            --repo "${{ github.repository }}" \
+            --title "$TAG" \
+            --notes-file notes.md

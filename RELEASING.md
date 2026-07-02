@@ -1,12 +1,24 @@
 # Releasing fredq
 
 fredq publishes to [PyPI](https://pypi.org/project/fredq/) from GitHub Actions
-(`.github/workflows/publish.yml`) using **Trusted Publishing** (OIDC) — no API
-tokens. The workflow runs when a **GitHub Release is published**; a bare
-`git push` of a tag does *not* trigger it.
+using **Trusted Publishing** (OIDC) — no API tokens. Two workflows chain off a
+pushed tag:
 
-> Trusted publisher and the `pypi` environment (with required-reviewer approval)
-> are already configured. No per-release infrastructure setup is needed.
+1. `release.yml` — on a pushed `vX.Y.Z` tag, creates a **GitHub Release** with
+   notes pulled from the matching `CHANGELOG.md` section.
+2. `publish.yml` — on that **Release being published**, builds the sdist +
+   wheel, runs `twine check`, and uploads to PyPI.
+
+> **Why a tag alone wasn't enough (and the PAT requirement).** A git tag and a
+> GitHub Release are different objects: `publish.yml` listens for the `release`
+> event, which a bare `git push` of a tag does not emit. `release.yml` bridges
+> that gap. It must create the release with a **Personal Access Token**
+> (`secrets.RELEASE_PAT`, needs `contents: write`), **not** the default
+> `GITHUB_TOKEN` — releases created by `GITHUB_TOKEN` do not fire the `release`
+> event, so `publish.yml` would never run.
+
+> Trusted publisher, the `pypi` environment (with required-reviewer approval),
+> and `RELEASE_PAT` are configured once. No per-release infrastructure setup.
 
 ## Cutting a release
 
@@ -18,13 +30,15 @@ a `X.Y.(Z+1).devN` version automatically.
 1. Move the `## [Unreleased]` notes in `CHANGELOG.md` under a new `## [X.Y.Z]`
    heading and update the compare links at the bottom. Commit and push to `main`.
    Wait for CI to go green.
-2. Create the release — this creates the `vX.Y.Z` tag *and* triggers publishing:
+2. Tag and push — this is the only manual trigger; the release is created for you:
 
    ```bash
-   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file path/to/notes.md
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
    ```
 
-   Write real notes (overview + highlights), not a one-liner.
+   (If a tag was already pushed before `release.yml` existed, run the workflow
+   manually instead: Actions → *Create Release* → *Run workflow* → enter the tag.)
 3. The `publish` job pauses on the `pypi` environment. **Approve the deployment**:
    the run page shows *"Review pending deployments"* → tick `pypi` → *Approve and
    deploy*. After approval it uploads to PyPI.
