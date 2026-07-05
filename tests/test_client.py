@@ -301,3 +301,55 @@ def test_both_reserved_keys_rejected_together() -> None:
             await client.aclose()
 
     asyncio.run(_run())
+
+
+@pytest.mark.asyncio
+async def test_request_error_carries_response_body(httpx_mock: HTTPXMock) -> None:
+    """HTTP errors keep FRED's error body so it can serve as evidence."""
+
+    error_body = '{"error_code": 400, "error_message": "Bad Request."}'
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            "https://api.stlouisfed.org/fred/series?"
+            "series_id=NOPE&api_key=secret&file_type=json"
+        ),
+        status_code=400,
+        text=error_body,
+    )
+    client = FredClient(api_key="secret")
+
+    try:
+        with pytest.raises(FredRequestError) as exc_info:
+            await client.get("/fred/series", {"series_id": "NOPE"})
+    finally:
+        await client.aclose()
+
+    assert exc_info.value.body == error_body
+
+
+@pytest.mark.asyncio
+async def test_request_error_body_scrubs_api_key(httpx_mock: HTTPXMock) -> None:
+    """A body that echoes an api_key parameter is scrubbed before storage."""
+
+    httpx_mock.add_response(
+        method="GET",
+        url=(
+            "https://api.stlouisfed.org/fred/series?"
+            "series_id=NOPE&api_key=sk-hush&file_type=json"
+        ),
+        status_code=400,
+        text='{"error_message": "bad url api_key=sk-hush here"}',
+    )
+    client = FredClient(api_key="sk-hush")
+
+    try:
+        with pytest.raises(FredRequestError) as exc_info:
+            await client.get("/fred/series", {"series_id": "NOPE"})
+    finally:
+        await client.aclose()
+
+    body = exc_info.value.body
+    assert body is not None
+    assert "sk-hush" not in body
+    assert "api_key=[REDACTED]" in body

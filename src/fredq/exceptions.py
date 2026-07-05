@@ -32,6 +32,7 @@ class FredRequestError(FredqError):
         url: str,
         *,
         reason: str | None = None,
+        body: str | None = None,
     ) -> None:
         """Initialize the request error."""
 
@@ -42,6 +43,9 @@ class FredRequestError(FredqError):
         self.status_code = status_code
         self.url = url
         self.reason = reason
+        # Raw response body (API-key material scrubbed by the client) so
+        # error payload shapes can serve as corpus evidence.
+        self.body = body
 
 
 class FredUnavailableError(FredqError):
