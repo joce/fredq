@@ -2,7 +2,17 @@
 
 from __future__ import annotations
 
-from tools.probe import sanitize, scrub_secrets
+import pytest
+
+from fredq.cli import build_parser
+from fredq.commands import COMMANDS_BY_NAME
+from tools.probe import (
+    FAKE_API_KEY,
+    POLITENESS_DELAY_SECONDS,
+    build_cases,
+    sanitize,
+    scrub_secrets,
+)
 
 
 def test_sanitize_makes_names_filesystem_safe() -> None:
@@ -57,3 +67,53 @@ def test_scrub_secrets_redacts_key_at_end_of_string() -> None:
 
     scrubbed = scrub_secrets("https://x/fred/series?api_key=abc123", api_key="")
     assert scrubbed == "https://x/fred/series?api_key=[REDACTED]"
+
+
+def test_every_case_targets_a_real_command() -> None:
+    """Each case's command is a routing key in COMMANDS_BY_NAME."""
+
+    for case in build_cases():
+        assert case.command in COMMANDS_BY_NAME, case.case
+
+
+def test_case_keys_are_unique() -> None:
+    """command/case pairs are unique (they become corpus file paths)."""
+
+    keys = [f"{c.command}/{c.case}" for c in build_cases()]
+    assert len(keys) == len(set(keys))
+
+
+def test_every_command_is_covered() -> None:
+    """All 35 CommandSpecs appear in the probe plan at least once."""
+
+    covered = {c.command for c in build_cases()}
+    missing = set(COMMANDS_BY_NAME) - covered
+    assert not missing, f"commands never probed: {sorted(missing)}"
+
+
+def test_every_argv_parses_and_routes_to_its_command() -> None:
+    """Every argv parses via the real CLI parser and routes as labeled.
+
+    A typo'd case must die here, in tests, not against live FRED.
+    """
+
+    parser = build_parser()
+    for case in build_cases():
+        try:
+            namespace = parser.parse_args(list(case.argv))
+        except SystemExit:  # argparse exits on bad argv
+            pytest.fail(f"argv failed to parse: {case.command}/{case.case}")
+        assert namespace.command_name == case.command, case.case
+
+
+def test_politeness_delay_is_never_shrunk() -> None:
+    """FRED allows ~120 req/min; the spec pins the floor at 0.5s."""
+
+    floor_seconds = 0.5
+    assert floor_seconds <= POLITENESS_DELAY_SECONDS
+
+
+def test_fake_api_key_is_obviously_fake() -> None:
+    """The committed bad-key probe value can never be a real key."""
+
+    assert FAKE_API_KEY == "f" * 32
