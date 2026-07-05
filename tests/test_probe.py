@@ -2,17 +2,28 @@
 
 from __future__ import annotations
 
+import json
+from typing import TYPE_CHECKING
+
 import pytest
 
 from fredq.cli import build_parser
 from fredq.commands import COMMANDS_BY_NAME
+from fredq.exceptions import FredRequestError
 from tools.probe import (
     FAKE_API_KEY,
     POLITENESS_DELAY_SECONDS,
+    ProbeCase,
     build_cases,
+    run_probe,
     sanitize,
     scrub_secrets,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from fredq.types import ParamValue
 
 
 def test_sanitize_makes_names_filesystem_safe() -> None:
@@ -124,3 +135,96 @@ def test_fake_api_key_is_obviously_fake() -> None:
     """The committed bad-key probe value can never be a real key."""
 
     assert FAKE_API_KEY == "f" * 32
+
+
+class _StubClient:
+    """Stands in for FredClient: canned body or exception, no network."""
+
+    def __init__(self, body: str = "", error: Exception | None = None) -> None:
+        self.body = body
+        self.error = error
+        self.closed = False
+
+    async def get(
+        self,
+        path: str,  # noqa: ARG002
+        params: dict[str, ParamValue],  # noqa: ARG002
+        *,
+        base_url: str | None = None,  # noqa: ARG002
+    ) -> str:
+        if self.error is not None:
+            raise self.error
+        return self.body
+
+    async def aclose(self) -> None:
+        self.closed = True
+
+
+def _one_case() -> list[ProbeCase]:
+    return [ProbeCase("series", "GNPCA", ("series", "show", "GNPCA"))]
+
+
+async def test_run_probe_ok_case_writes_file_and_manifest(tmp_path: Path) -> None:
+    """A JSON 200 lands as an ok manifest entry with a corpus file."""
+
+    stub = _StubClient(body='{"seriess": [{"id": "GNPCA"}]}')
+    await run_probe(
+        _one_case(), tmp_path, api_key="k", client_factory=lambda _key: stub
+    )
+
+    manifest = json.loads((tmp_path / "manifest.json").read_text("utf-8"))
+    entry = manifest["series/GNPCA"]
+    assert entry["status"] == "ok"
+    assert entry["http_status"] == 200  # noqa: PLR2004
+    capture = tmp_path / "series" / "GNPCA.json"
+    assert json.loads(capture.read_text("utf-8")) == {"seriess": [{"id": "GNPCA"}]}
+    assert stub.closed  # _run_command must close the per-case client
+
+
+async def test_run_probe_http_error_keeps_scrubbed_body(tmp_path: Path) -> None:
+    """HTTP errors record status/detail and keep the error body as capture."""
+
+    error = FredRequestError(
+        400,
+        "https://api.stlouisfed.org/fred/series",
+        body='{"error_code": 400, "error_message": "api_key=leaky bad"}',
+    )
+    stub = _StubClient(error=error)
+    await run_probe(
+        _one_case(), tmp_path, api_key="leaky", client_factory=lambda _key: stub
+    )
+
+    manifest = json.loads((tmp_path / "manifest.json").read_text("utf-8"))
+    entry = manifest["series/GNPCA"]
+    assert entry["status"] == "http_error"
+    assert entry["http_status"] == 400  # noqa: PLR2004
+    text = (tmp_path / "series" / "GNPCA.json").read_text("utf-8")
+    assert "leaky" not in text
+    assert "api_key=[REDACTED]" in text
+
+
+async def test_run_probe_non_json_200_is_error_without_file(tmp_path: Path) -> None:
+    """An HTTP-200 body that is not JSON must NOT be recorded as ok."""
+
+    stub = _StubClient(body="<html>corrupt</html>")
+    await run_probe(
+        _one_case(), tmp_path, api_key="k", client_factory=lambda _key: stub
+    )
+
+    manifest = json.loads((tmp_path / "manifest.json").read_text("utf-8"))
+    entry = manifest["series/GNPCA"]
+    assert entry["status"] == "error"
+    assert "file" not in entry
+    assert not (tmp_path / "series" / "GNPCA.json").exists()
+
+
+async def test_run_probe_manifest_meta_counts_entries(tmp_path: Path) -> None:
+    """_meta.case_count equals the number of case entries written."""
+
+    stub = _StubClient(body="{}")
+    await run_probe(
+        _one_case(), tmp_path, api_key="k", client_factory=lambda _key: stub
+    )
+
+    manifest = json.loads((tmp_path / "manifest.json").read_text("utf-8"))
+    assert manifest["_meta"]["case_count"] == 1

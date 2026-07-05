@@ -14,12 +14,25 @@ the result. Never weaken either side.
 
 from __future__ import annotations
 
+import asyncio
+import json
+import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 import regex
+
+from fredq.auth import resolve_api_key
+from fredq.cli import (
+    _collect_params,  # pyright: ignore[reportPrivateUsage]
+    _enforce_cross_param_rules,  # pyright: ignore[reportPrivateUsage]
+    _FredClientProtocol,  # pyright: ignore[reportPrivateUsage]
+    _run_command,  # pyright: ignore[reportPrivateUsage]
+    build_parser,
+)
 
 # Single source of truth for API-key redaction: the client's constants.
 # Duplicating the pattern here once caused a drift risk a review caught —
@@ -27,7 +40,13 @@ import regex
 from fredq.client import (
     _API_KEY_RE,  # pyright: ignore[reportPrivateUsage]
     _API_KEY_REDACTED,  # pyright: ignore[reportPrivateUsage]
+    FredClient,
 )
+from fredq.commands import COMMANDS_BY_NAME
+from fredq.exceptions import FredqError, FredRequestError
+
+if TYPE_CHECKING:
+    import argparse
 
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[1]
 CORPUS_DIR: Final[Path] = REPO_ROOT / "tests" / "fixtures" / "corpus"
@@ -758,3 +777,176 @@ def build_cases() -> list[ProbeCase]:
         + _geofred_cases()
         + _error_cases()
     )
+
+
+ClientFactory = Callable[[str], "_FredClientProtocol"]
+
+
+def _default_client_factory(api_key: str) -> _FredClientProtocol:
+    """Build the real FRED client for one probe case.
+
+    Returns:
+        _FredClientProtocol: A fresh client bound to ``api_key``.
+    """
+
+    return FredClient(api_key)
+
+
+def _raise_rule_error(message: str) -> None:
+    """Raise a ``ValueError`` for a cross-param rule violation.
+
+    Extracted so the ``try`` block in :func:`_execute_case` only ever calls
+    out to functions, never raises directly (TRY301).
+
+    Raises:
+        ValueError: Always; ``message`` becomes the error text.
+    """
+
+    raise ValueError(message)
+
+
+async def _execute_case(
+    parser: argparse.ArgumentParser,
+    case: ProbeCase,
+    api_key: str,
+    client_factory: ClientFactory,
+) -> str:
+    """Parse, validate, and run one case through the CLI pipeline.
+
+    Propagates ``ValueError`` (argument coercion or a cross-param rule
+    failure), ``FredRequestError``, or any other ``FredqError`` to the
+    caller, which records them as manifest entries instead of crashing.
+
+    Returns:
+        str: The response body (empty string if never reached).
+    """
+
+    namespace = parser.parse_args(list(case.argv))
+    command = COMMANDS_BY_NAME[namespace.command_name]
+    params = _collect_params(command, namespace)
+    rule_error = _enforce_cross_param_rules(command, params)
+    if rule_error is not None:
+        _raise_rule_error(rule_error)
+    case_key = namespace.api_key or api_key
+    return await _run_command(client_factory(case_key), command, params)
+
+
+async def _run_case(
+    parser: argparse.ArgumentParser,
+    case: ProbeCase,
+    corpus_dir: Path,
+    api_key: str,
+    client_factory: ClientFactory,
+) -> dict[str, object]:
+    """Execute one case through the CLI parsing pipeline; write its body.
+
+    Returns:
+        dict[str, object]: The manifest entry for this case.
+    """
+
+    entry: dict[str, object] = {
+        "argv": list(case.argv),
+        "status": "ok",
+        "http_status": 200,
+    }
+    body = ""
+    try:
+        body = await _execute_case(parser, case, api_key, client_factory)
+    except FredRequestError as exc:
+        entry["status"] = "http_error"
+        entry["http_status"] = exc.status_code
+        entry["detail"] = scrub_secrets(str(exc), api_key)
+        body = exc.body or ""
+    except (FredqError, ValueError) as exc:
+        # ValueError covers param coercion and cross-param rule violations;
+        # a typo'd probe case becomes a manifest entry, not a crash.
+        entry["status"] = "error"
+        entry["http_status"] = None
+        entry["detail"] = scrub_secrets(str(exc), api_key)
+    if body and entry["status"] == "ok":
+        try:
+            json.loads(body)
+        except ValueError as exc:
+            # An HTTP-200 body that does not parse as JSON is corruption:
+            # record it as an error with NO corpus file, so a manifest "ok"
+            # always means the capture parses (spec §7; yoghurt trap).
+            entry["status"] = "error"
+            entry["detail"] = f"response is not valid JSON: {exc}"
+            return entry
+    if body:
+        relative = f"{case.command}/{sanitize(case.case)}.json"
+        target = corpus_dir / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # write_bytes: no newline translation (CRLF trap), byte-exact bodies.
+        target.write_bytes(scrub_secrets(body, api_key).encode("utf-8"))
+        entry["file"] = relative
+    return entry
+
+
+def _write_manifest(
+    manifest: dict[str, object], case_count: int, corpus_dir: Path
+) -> None:
+    """Attach run metadata and write manifest.json to the corpus dir."""
+
+    manifest["_meta"] = {
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "case_count": case_count,
+    }
+    corpus_dir.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+    with (corpus_dir / "manifest.json").open(
+        "w", encoding="utf-8", newline="\n"
+    ) as handle:
+        handle.write(text)
+
+
+async def run_probe(
+    cases: list[ProbeCase],
+    corpus_dir: Path,
+    *,
+    api_key: str,
+    client_factory: ClientFactory = _default_client_factory,
+    delay_seconds: float = 0.0,
+) -> None:
+    """Run every case sequentially; write the corpus plus manifest.json.
+
+    The manifest is written in a ``finally`` block so hours of politely
+    rate-limited evidence survive a crash on a late case.
+    """
+
+    parser = build_parser()
+    manifest: dict[str, object] = {}
+    try:
+        for index, case in enumerate(cases, start=1):
+            key = f"{case.command}/{case.case}"
+            print(f"[{index}/{len(cases)}] {key}", file=sys.stderr)
+            manifest[key] = await _run_case(
+                parser, case, corpus_dir, api_key, client_factory
+            )
+            if delay_seconds:
+                await asyncio.sleep(delay_seconds)
+    finally:
+        _write_manifest(manifest, len(manifest), corpus_dir)
+
+
+def main() -> int:
+    """Run the full probe against live FRED.
+
+    Returns:
+        int: Process exit code.
+    """
+
+    api_key = resolve_api_key()
+    asyncio.run(
+        run_probe(
+            build_cases(),
+            CORPUS_DIR,
+            api_key=api_key,
+            delay_seconds=POLITENESS_DELAY_SECONDS,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
