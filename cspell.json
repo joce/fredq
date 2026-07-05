@@ -16,6 +16,7 @@
     "Makefile",
     "node_modules",
     "pyproject.toml",
+    "tests/fixtures/corpus/**/*.json",
     "tox.ini",
     "uv.lock"
   ],
@@ -54,9 +55,13 @@
     "basemaps",
     "caplog",
     "capsys",
+    "CPIAUCSL",
     "datetimes",
+    "DEXCAUS",
     "dogfood",
     "dogfooding",
+    "FEDFUNDS",
+    "GNPCA",
     "Highcharts",
     "intraday",
     "kwarg",
@@ -68,7 +73,10 @@
     "reproject",
     "stlouisfed",
     "vintagedates",
-    "xhigh"
+    "WIPCPI",
+    "xhigh",
+    "zzqqxbogustag",
+    "zzxqqzyxnonsense"
   ],
   "patterns": [
     {
