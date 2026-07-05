@@ -6,6 +6,10 @@ Writes raw response bodies to tests/fixtures/corpus/<command>/<case>.json and
 a manifest.json describing every case (argv, status, timestamp). Re-running
 and diffing the corpus is the FRED schema-drift detector.
 
+The runner overwrites captures but never deletes: renaming or removing a
+case orphans its old file. tests/test_corpus.py pins manifest <-> files
+equality in both directions, so orphans fail the gate instead of lingering.
+
 SECRET HYGIENE: every request carries api_key in the query string and the
 corpus is committed to git. All bodies, details, and manifest text pass
 through scrub_secrets() before touching disk; tests/test_corpus.py enforces
@@ -870,6 +874,9 @@ async def _run_case(
             # An HTTP-200 body that does not parse as JSON is corruption:
             # record it as an error with NO corpus file, so a manifest "ok"
             # always means the capture parses (spec §7; yoghurt trap).
+            # http_status deliberately stays 200 here — the HTTP transaction
+            # succeeded; the corruption is in the payload. Only non-HTTP
+            # failures use http_status=None.
             entry["status"] = "error"
             entry["detail"] = f"response is not valid JSON: {exc}"
             return entry

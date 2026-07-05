@@ -214,6 +214,9 @@ async def test_run_probe_non_json_200_is_error_without_file(tmp_path: Path) -> N
     manifest = json.loads((tmp_path / "manifest.json").read_text("utf-8"))
     entry = manifest["series/GNPCA"]
     assert entry["status"] == "error"
+    # The HTTP transaction succeeded; only the payload is corrupt. Contrast
+    # non-HTTP failures, which record http_status=None.
+    assert entry["http_status"] == 200  # noqa: PLR2004
     assert "file" not in entry
     assert not (tmp_path / "series" / "GNPCA.json").exists()
 
