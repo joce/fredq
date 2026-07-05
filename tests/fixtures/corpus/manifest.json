@@ -1,0 +1,1266 @@
+{
+  "_meta": {
+    "case_count": 104,
+    "fetched_at": "2026-07-05T21:29:33.344150+00:00"
+  },
+  "category-children/125_maybe-leaf": {
+    "argv": [
+      "category",
+      "children",
+      "125"
+    ],
+    "file": "category-children/125_maybe-leaf.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category-children/32991": {
+    "argv": [
+      "category",
+      "children",
+      "32991"
+    ],
+    "file": "category-children/32991.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category-children/root": {
+    "argv": [
+      "category",
+      "children",
+      "0"
+    ],
+    "file": "category-children/root.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category-related-tags/125_services-quarterly": {
+    "argv": [
+      "category",
+      "related-tags",
+      "125",
+      "--tag-names",
+      "services;quarterly",
+      "--limit",
+      "10"
+    ],
+    "file": "category-related-tags/125_services-quarterly.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category-related/125_maybe-empty": {
+    "argv": [
+      "category",
+      "related",
+      "125"
+    ],
+    "file": "category-related/125_maybe-empty.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category-related/32073": {
+    "argv": [
+      "category",
+      "related",
+      "32073"
+    ],
+    "file": "category-related/32073.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category-series/125": {
+    "argv": [
+      "category",
+      "series",
+      "125"
+    ],
+    "file": "category-series/125.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category-series/125_page-desc": {
+    "argv": [
+      "category",
+      "series",
+      "125",
+      "--limit",
+      "3",
+      "--offset",
+      "3",
+      "--sort-order",
+      "desc"
+    ],
+    "file": "category-series/125_page-desc.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category-series/32991_filter-monthly": {
+    "argv": [
+      "category",
+      "series",
+      "32991",
+      "--filter-variable",
+      "frequency",
+      "--filter-value",
+      "Monthly",
+      "--limit",
+      "5"
+    ],
+    "file": "category-series/32991_filter-monthly.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category-tags/125": {
+    "argv": [
+      "category",
+      "tags",
+      "125"
+    ],
+    "file": "category-tags/125.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category-tags/125_group-gen": {
+    "argv": [
+      "category",
+      "tags",
+      "125",
+      "--tag-group-id",
+      "gen",
+      "--limit",
+      "10"
+    ],
+    "file": "category-tags/125_group-gen.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category/125": {
+    "argv": [
+      "category",
+      "show",
+      "125"
+    ],
+    "file": "category/125.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category/32991": {
+    "argv": [
+      "category",
+      "show",
+      "32991"
+    ],
+    "file": "category/32991.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "category/ERR_invalid-id": {
+    "argv": [
+      "category",
+      "show",
+      "999999999"
+    ],
+    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/fred/category?category_id=999999999&file_type=json",
+    "file": "category/ERR_invalid-id.json",
+    "http_status": 400,
+    "status": "http_error"
+  },
+  "category/root": {
+    "argv": [
+      "category",
+      "show",
+      "0"
+    ],
+    "file": "category/root.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "regional-data/882_agg-avg": {
+    "argv": [
+      "geofred",
+      "regional-data",
+      "882",
+      "--region-type",
+      "state",
+      "--date",
+      "2020-01-01",
+      "--season",
+      "NSA",
+      "--frequency",
+      "a",
+      "--units",
+      "Dollars",
+      "--start-date",
+      "2019-01-01",
+      "--aggregation-method",
+      "avg"
+    ],
+    "file": "regional-data/882_agg-avg.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "regional-data/882_state-2020": {
+    "argv": [
+      "geofred",
+      "regional-data",
+      "882",
+      "--region-type",
+      "state",
+      "--date",
+      "2020-01-01",
+      "--season",
+      "NSA",
+      "--frequency",
+      "a",
+      "--units",
+      "Dollars"
+    ],
+    "file": "regional-data/882_state-2020.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "regional-data/ERR_invalid-group": {
+    "argv": [
+      "geofred",
+      "regional-data",
+      "999999",
+      "--region-type",
+      "state",
+      "--date",
+      "2020-01-01",
+      "--season",
+      "NSA",
+      "--frequency",
+      "a",
+      "--units",
+      "Dollars"
+    ],
+    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/geofred/regional/data?series_group=999999&region_type=state&date=2020-01-01&season=NSA&frequency=a&units=Dollars&file_type=json",
+    "file": "regional-data/ERR_invalid-group.json",
+    "http_status": 400,
+    "status": "http_error"
+  },
+  "related-tags/monetary_group-geo": {
+    "argv": [
+      "tag",
+      "related",
+      "monetary",
+      "--tag-group-id",
+      "geo",
+      "--limit",
+      "10"
+    ],
+    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/fred/related_tags?tag_names=monetary&tag_group_id=geo&limit=10&file_type=json",
+    "file": "related-tags/monetary_group-geo.json",
+    "http_status": 400,
+    "status": "http_error"
+  },
+  "related-tags/usa": {
+    "argv": [
+      "tag",
+      "related",
+      "usa",
+      "--limit",
+      "10"
+    ],
+    "file": "related-tags/usa.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-dates/53_desc": {
+    "argv": [
+      "release",
+      "dates",
+      "53",
+      "--limit",
+      "10",
+      "--sort-order",
+      "desc"
+    ],
+    "file": "release-dates/53_desc.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-dates/53_nodata": {
+    "argv": [
+      "release",
+      "dates",
+      "53",
+      "--include-release-dates-with-no-data",
+      "--limit",
+      "10"
+    ],
+    "file": "release-dates/53_nodata.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-related-tags/53_usa": {
+    "argv": [
+      "release",
+      "related-tags",
+      "53",
+      "--tag-names",
+      "usa",
+      "--limit",
+      "10"
+    ],
+    "file": "release-related-tags/53_usa.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-series/10_filter-monthly": {
+    "argv": [
+      "release",
+      "series",
+      "10",
+      "--filter-variable",
+      "frequency",
+      "--filter-value",
+      "Monthly",
+      "--limit",
+      "5"
+    ],
+    "file": "release-series/10_filter-monthly.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-series/53": {
+    "argv": [
+      "release",
+      "series",
+      "53",
+      "--limit",
+      "5"
+    ],
+    "file": "release-series/53.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-sources/10": {
+    "argv": [
+      "release",
+      "sources",
+      "10"
+    ],
+    "file": "release-sources/10.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-sources/53": {
+    "argv": [
+      "release",
+      "sources",
+      "53"
+    ],
+    "file": "release-sources/53.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-tables/175_maybe-no-tables": {
+    "argv": [
+      "release",
+      "tables",
+      "175"
+    ],
+    "file": "release-tables/175_maybe-no-tables.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-tables/53": {
+    "argv": [
+      "release",
+      "tables",
+      "53"
+    ],
+    "file": "release-tables/53.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-tables/53_with-values": {
+    "argv": [
+      "release",
+      "tables",
+      "53",
+      "--include-observation-values",
+      "--observation-date",
+      "2023-01-01"
+    ],
+    "file": "release-tables/53_with-values.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-tags/53": {
+    "argv": [
+      "release",
+      "tags",
+      "53",
+      "--limit",
+      "10"
+    ],
+    "file": "release-tags/53.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release/10": {
+    "argv": [
+      "release",
+      "show",
+      "10"
+    ],
+    "file": "release/10.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release/53": {
+    "argv": [
+      "release",
+      "show",
+      "53"
+    ],
+    "file": "release/53.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release/ERR_invalid-id": {
+    "argv": [
+      "release",
+      "show",
+      "999999"
+    ],
+    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/fred/release?release_id=999999&file_type=json",
+    "file": "release/ERR_invalid-id.json",
+    "http_status": 400,
+    "status": "http_error"
+  },
+  "releases-dates/limit50": {
+    "argv": [
+      "release",
+      "calendar",
+      "--limit",
+      "50"
+    ],
+    "file": "releases-dates/limit50.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "releases-dates/nodata": {
+    "argv": [
+      "release",
+      "calendar",
+      "--include-release-dates-with-no-data",
+      "--limit",
+      "20"
+    ],
+    "file": "releases-dates/nodata.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "releases/default": {
+    "argv": [
+      "release",
+      "list"
+    ],
+    "file": "releases/default.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "releases/page-desc": {
+    "argv": [
+      "release",
+      "list",
+      "--limit",
+      "5",
+      "--offset",
+      "2",
+      "--sort-order",
+      "desc"
+    ],
+    "file": "releases/page-desc.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-categories/DGS10": {
+    "argv": [
+      "series",
+      "categories",
+      "DGS10"
+    ],
+    "file": "series-categories/DGS10.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-categories/UNRATE": {
+    "argv": [
+      "series",
+      "categories",
+      "UNRATE"
+    ],
+    "file": "series-categories/UNRATE.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-data/WIPCPI": {
+    "argv": [
+      "geofred",
+      "series-data",
+      "WIPCPI"
+    ],
+    "file": "series-data/WIPCPI.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-data/WIPCPI_2020": {
+    "argv": [
+      "geofred",
+      "series-data",
+      "WIPCPI",
+      "--start-date",
+      "2020-01-01"
+    ],
+    "file": "series-data/WIPCPI_2020.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-data/WIPCPI_single-date": {
+    "argv": [
+      "geofred",
+      "series-data",
+      "WIPCPI",
+      "--date",
+      "2023-01-01"
+    ],
+    "file": "series-data/WIPCPI_single-date.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-group/ERR_invalid-id": {
+    "argv": [
+      "geofred",
+      "series-group",
+      "ZZZNOTREAL"
+    ],
+    "detail": "FRED request rejected with HTTP 500 for https://api.stlouisfed.org/geofred/series/group?series_id=ZZZNOTREAL&file_type=json",
+    "file": "series-group/ERR_invalid-id.json",
+    "http_status": 500,
+    "status": "http_error"
+  },
+  "series-group/WIPCPI": {
+    "argv": [
+      "geofred",
+      "series-group",
+      "WIPCPI"
+    ],
+    "file": "series-group/WIPCPI.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/CPIAUCSL_pch": {
+    "argv": [
+      "series",
+      "observations",
+      "CPIAUCSL",
+      "--units",
+      "pch",
+      "--observation-start",
+      "2020-01-01",
+      "--observation-end",
+      "2022-12-31"
+    ],
+    "file": "series-observations/CPIAUCSL_pch.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/DEXCAUS_holidays": {
+    "argv": [
+      "series",
+      "observations",
+      "DEXCAUS",
+      "--observation-start",
+      "2023-12-20",
+      "--observation-end",
+      "2024-01-05"
+    ],
+    "file": "series-observations/DEXCAUS_holidays.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/DGS10_2024": {
+    "argv": [
+      "series",
+      "observations",
+      "DGS10",
+      "--observation-start",
+      "2024-01-01",
+      "--observation-end",
+      "2024-12-31"
+    ],
+    "file": "series-observations/DGS10_2024.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/DGS10_freq-m": {
+    "argv": [
+      "series",
+      "observations",
+      "DGS10",
+      "--frequency",
+      "m",
+      "--observation-start",
+      "2023-01-01",
+      "--observation-end",
+      "2024-12-31"
+    ],
+    "file": "series-observations/DGS10_freq-m.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/DGS10_future-window": {
+    "argv": [
+      "series",
+      "observations",
+      "DGS10",
+      "--observation-start",
+      "2030-01-01",
+      "--observation-end",
+      "2030-12-31"
+    ],
+    "file": "series-observations/DGS10_future-window.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/ERR_invalid-id": {
+    "argv": [
+      "series",
+      "observations",
+      "ZZZNOTREAL"
+    ],
+    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/fred/series/observations?series_id=ZZZNOTREAL&file_type=json",
+    "file": "series-observations/ERR_invalid-id.json",
+    "http_status": 400,
+    "status": "http_error"
+  },
+  "series-observations/FEDFUNDS_chg": {
+    "argv": [
+      "series",
+      "observations",
+      "FEDFUNDS",
+      "--units",
+      "chg",
+      "--observation-start",
+      "2022-01-01",
+      "--observation-end",
+      "2023-12-31"
+    ],
+    "file": "series-observations/FEDFUNDS_chg.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/GDP_quarterly": {
+    "argv": [
+      "series",
+      "observations",
+      "GDP",
+      "--observation-start",
+      "2015-01-01",
+      "--observation-end",
+      "2024-12-31"
+    ],
+    "file": "series-observations/GDP_quarterly.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/GNPCA": {
+    "argv": [
+      "series",
+      "observations",
+      "GNPCA"
+    ],
+    "file": "series-observations/GNPCA.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/GNPCA_log": {
+    "argv": [
+      "series",
+      "observations",
+      "GNPCA",
+      "--units",
+      "log"
+    ],
+    "file": "series-observations/GNPCA_log.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/TWEXB": {
+    "argv": [
+      "series",
+      "observations",
+      "TWEXB"
+    ],
+    "file": "series-observations/TWEXB.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-observations/UNRATE_vintage-2001": {
+    "argv": [
+      "series",
+      "observations",
+      "UNRATE",
+      "--realtime-start",
+      "2001-01-01",
+      "--realtime-end",
+      "2001-12-31",
+      "--observation-start",
+      "2000-01-01",
+      "--observation-end",
+      "2000-12-31"
+    ],
+    "file": "series-observations/UNRATE_vintage-2001.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-release/DGS10": {
+    "argv": [
+      "series",
+      "release",
+      "DGS10"
+    ],
+    "file": "series-release/DGS10.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-release/GNPCA": {
+    "argv": [
+      "series",
+      "release",
+      "GNPCA"
+    ],
+    "file": "series-release/GNPCA.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-search-related-tags/monetary_usa": {
+    "argv": [
+      "series",
+      "search-related-tags",
+      "monetary",
+      "--tag-names",
+      "usa",
+      "--limit",
+      "10"
+    ],
+    "file": "series-search-related-tags/monetary_usa.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-search-tags/monetary": {
+    "argv": [
+      "series",
+      "search-tags",
+      "monetary"
+    ],
+    "file": "series-search-tags/monetary.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-search-tags/monetary_filtered": {
+    "argv": [
+      "series",
+      "search-tags",
+      "monetary",
+      "--tag-search-text",
+      "quarterly",
+      "--limit",
+      "10"
+    ],
+    "file": "series-search-tags/monetary_filtered.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-search/EMPTY_RESULT": {
+    "argv": [
+      "series",
+      "search",
+      "zzxqqzyxnonsense"
+    ],
+    "file": "series-search/EMPTY_RESULT.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-search/exchange_tags": {
+    "argv": [
+      "series",
+      "search",
+      "exchange rate",
+      "--tag-names",
+      "usa;daily",
+      "--limit",
+      "5"
+    ],
+    "file": "series-search/exchange_tags.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-search/monetary": {
+    "argv": [
+      "series",
+      "search",
+      "monetary"
+    ],
+    "file": "series-search/monetary.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-search/monetary_page2": {
+    "argv": [
+      "series",
+      "search",
+      "monetary",
+      "--limit",
+      "5",
+      "--offset",
+      "5"
+    ],
+    "file": "series-search/monetary_page2.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-search/unemployment_filter-monthly": {
+    "argv": [
+      "series",
+      "search",
+      "unemployment",
+      "--filter-variable",
+      "frequency",
+      "--filter-value",
+      "Monthly",
+      "--limit",
+      "5"
+    ],
+    "file": "series-search/unemployment_filter-monthly.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-tags/DGS10": {
+    "argv": [
+      "series",
+      "tags",
+      "DGS10"
+    ],
+    "file": "series-tags/DGS10.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-tags/GNPCA_by-name": {
+    "argv": [
+      "series",
+      "tags",
+      "GNPCA",
+      "--order-by",
+      "name",
+      "--sort-order",
+      "desc"
+    ],
+    "file": "series-tags/GNPCA_by-name.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-updates/RECENT_WINDOW": {
+    "argv": [
+      "series",
+      "updates",
+      "--start-time",
+      "202607030000",
+      "--end-time",
+      "202607050000",
+      "--limit",
+      "10"
+    ],
+    "file": "series-updates/RECENT_WINDOW.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-updates/default": {
+    "argv": [
+      "series",
+      "updates"
+    ],
+    "file": "series-updates/default.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-updates/filter-macro": {
+    "argv": [
+      "series",
+      "updates",
+      "--filter-value",
+      "macro",
+      "--limit",
+      "10"
+    ],
+    "file": "series-updates/filter-macro.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-updates/limit10": {
+    "argv": [
+      "series",
+      "updates",
+      "--limit",
+      "10"
+    ],
+    "file": "series-updates/limit10.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-vintagedates/ERR_invalid-id": {
+    "argv": [
+      "series",
+      "vintage-dates",
+      "ZZZNOTREAL"
+    ],
+    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/fred/series/vintagedates?series_id=ZZZNOTREAL&file_type=json",
+    "file": "series-vintagedates/ERR_invalid-id.json",
+    "http_status": 400,
+    "status": "http_error"
+  },
+  "series-vintagedates/GNPCA": {
+    "argv": [
+      "series",
+      "vintage-dates",
+      "GNPCA"
+    ],
+    "file": "series-vintagedates/GNPCA.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series-vintagedates/GNPCA_page-desc": {
+    "argv": [
+      "series",
+      "vintage-dates",
+      "GNPCA",
+      "--limit",
+      "10",
+      "--offset",
+      "5",
+      "--sort-order",
+      "desc"
+    ],
+    "file": "series-vintagedates/GNPCA_page-desc.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series/CPIAUCSL": {
+    "argv": [
+      "series",
+      "show",
+      "CPIAUCSL"
+    ],
+    "file": "series/CPIAUCSL.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series/DEXCAUS": {
+    "argv": [
+      "series",
+      "show",
+      "DEXCAUS"
+    ],
+    "file": "series/DEXCAUS.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series/DGS10": {
+    "argv": [
+      "series",
+      "show",
+      "DGS10"
+    ],
+    "file": "series/DGS10.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series/ERR_bad-api-key": {
+    "argv": [
+      "--api-key",
+      "ffffffffffffffffffffffffffffffff",
+      "series",
+      "show",
+      "GNPCA"
+    ],
+    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/fred/series?series_id=GNPCA&file_type=json",
+    "file": "series/ERR_bad-api-key.json",
+    "http_status": 400,
+    "status": "http_error"
+  },
+  "series/ERR_invalid-id": {
+    "argv": [
+      "series",
+      "show",
+      "ZZZNOTREAL"
+    ],
+    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/fred/series?series_id=ZZZNOTREAL&file_type=json",
+    "file": "series/ERR_invalid-id.json",
+    "http_status": 400,
+    "status": "http_error"
+  },
+  "series/FEDFUNDS": {
+    "argv": [
+      "series",
+      "show",
+      "FEDFUNDS"
+    ],
+    "file": "series/FEDFUNDS.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series/GDP": {
+    "argv": [
+      "series",
+      "show",
+      "GDP"
+    ],
+    "file": "series/GDP.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series/GNPCA": {
+    "argv": [
+      "series",
+      "show",
+      "GNPCA"
+    ],
+    "file": "series/GNPCA.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series/MORTGAGE30US": {
+    "argv": [
+      "series",
+      "show",
+      "MORTGAGE30US"
+    ],
+    "file": "series/MORTGAGE30US.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series/TWEXB": {
+    "argv": [
+      "series",
+      "show",
+      "TWEXB"
+    ],
+    "file": "series/TWEXB.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series/UNRATE": {
+    "argv": [
+      "series",
+      "show",
+      "UNRATE"
+    ],
+    "file": "series/UNRATE.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "series/UNRATE_realtime-2000": {
+    "argv": [
+      "series",
+      "show",
+      "UNRATE",
+      "--realtime-start",
+      "2000-01-01",
+      "--realtime-end",
+      "2000-12-31"
+    ],
+    "file": "series/UNRATE_realtime-2000.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "shapes/frb": {
+    "argv": [
+      "geofred",
+      "shapes",
+      "frb",
+      "--out",
+      "output/probe-shape-frb.geojson"
+    ],
+    "file": "shapes/frb.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "shapes/state": {
+    "argv": [
+      "geofred",
+      "shapes",
+      "state",
+      "--out",
+      "output/probe-shape-state.geojson"
+    ],
+    "file": "shapes/state.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "source-releases/1": {
+    "argv": [
+      "source",
+      "releases",
+      "1"
+    ],
+    "file": "source-releases/1.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "source-releases/1_page-desc": {
+    "argv": [
+      "source",
+      "releases",
+      "1",
+      "--limit",
+      "5",
+      "--sort-order",
+      "desc"
+    ],
+    "file": "source-releases/1_page-desc.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "source/1": {
+    "argv": [
+      "source",
+      "show",
+      "1"
+    ],
+    "file": "source/1.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "source/3": {
+    "argv": [
+      "source",
+      "show",
+      "3"
+    ],
+    "file": "source/3.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "source/ERR_invalid-id": {
+    "argv": [
+      "source",
+      "show",
+      "999999"
+    ],
+    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/fred/source?source_id=999999&file_type=json",
+    "file": "source/ERR_invalid-id.json",
+    "http_status": 400,
+    "status": "http_error"
+  },
+  "sources/default": {
+    "argv": [
+      "source",
+      "list"
+    ],
+    "file": "sources/default.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "sources/limit5": {
+    "argv": [
+      "source",
+      "list",
+      "--limit",
+      "5"
+    ],
+    "file": "sources/limit5.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "tags-series/ERR_bogus-tag": {
+    "argv": [
+      "tag",
+      "series",
+      "zzqqxbogustag"
+    ],
+    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/fred/tags/series?tag_names=zzqqxbogustag&file_type=json",
+    "file": "tags-series/ERR_bogus-tag.json",
+    "http_status": 400,
+    "status": "http_error"
+  },
+  "tags-series/usa-quarterly": {
+    "argv": [
+      "tag",
+      "series",
+      "usa;quarterly",
+      "--limit",
+      "10"
+    ],
+    "file": "tags-series/usa-quarterly.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "tags-series/usa_exclude-nsa": {
+    "argv": [
+      "tag",
+      "series",
+      "usa",
+      "--exclude-tag-names",
+      "nsa",
+      "--limit",
+      "10"
+    ],
+    "file": "tags-series/usa_exclude-nsa.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "tags/default": {
+    "argv": [
+      "tag",
+      "list"
+    ],
+    "file": "tags/default.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "tags/group-freq": {
+    "argv": [
+      "tag",
+      "list",
+      "--tag-group-id",
+      "freq"
+    ],
+    "file": "tags/group-freq.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "tags/page-by-name": {
+    "argv": [
+      "tag",
+      "list",
+      "--limit",
+      "10",
+      "--offset",
+      "5",
+      "--order-by",
+      "name",
+      "--sort-order",
+      "desc"
+    ],
+    "file": "tags/page-by-name.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "tags/search-quarterly": {
+    "argv": [
+      "tag",
+      "list",
+      "--search-text",
+      "quarterly",
+      "--limit",
+      "20"
+    ],
+    "file": "tags/search-quarterly.json",
+    "http_status": 200,
+    "status": "ok"
+  }
+}
