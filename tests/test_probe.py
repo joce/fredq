@@ -77,10 +77,17 @@ def test_every_case_targets_a_real_command() -> None:
 
 
 def test_case_keys_are_unique() -> None:
-    """command/case pairs are unique (they become corpus file paths)."""
+    """command/case pairs are unique — raw AND after sanitize().
+
+    Corpus file paths use ``sanitize(case)``, so two distinct raw names
+    that sanitize identically would silently overwrite each other's
+    capture file.
+    """
 
     keys = [f"{c.command}/{c.case}" for c in build_cases()]
     assert len(keys) == len(set(keys))
+    sanitized = [f"{c.command}/{sanitize(c.case)}" for c in build_cases()]
+    assert len(sanitized) == len(set(sanitized))
 
 
 def test_every_command_is_covered() -> None:

@@ -334,6 +334,9 @@ def _series_misc_cases() -> list[ProbeCase]:
         ProbeCase("series-release", "GNPCA", ("series", "release", "GNPCA")),
         ProbeCase("series-updates", "default", ("series", "updates")),
         ProbeCase("series-updates", "limit10", ("series", "updates", "--limit", "10")),
+        # argv is time-relative by design (updates only exist near "now");
+        # its manifest argv drifts on every re-run — corpus diffs must
+        # ignore the start/end-time values for this one case.
         ProbeCase(
             "series-updates",
             "RECENT_WINDOW",
