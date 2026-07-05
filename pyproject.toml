@@ -78,7 +78,7 @@ py_version = "auto"
 skip = ["__pycache__", ".venv", ".uv-cache", ".git", ".pytest_cache", ".tox"]
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "tools"]
 exclude = ["src/fredq/_version.py"]
 typeCheckingMode = "strict"
 
@@ -87,7 +87,7 @@ root = "src/fredq/parquet_writer.py"
 reportUnknownVariableType = false
 
 [tool.pytest.ini_options]
-pythonpath = "src"
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 timeout = 10
 asyncio_mode = "auto"
@@ -210,6 +210,10 @@ preview = true
     "PLC2701",
     "S101",
     "SLF001",
+]
+"tools/*" = [
+    "PLC2701",
+    "T201",
 ]
 
 [tool.ruff.lint.pydocstyle]
