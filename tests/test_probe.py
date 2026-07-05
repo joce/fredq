@@ -38,3 +38,22 @@ def test_scrub_secrets_empty_key_is_safe() -> None:
     """An empty key must not cause replace-everything behavior."""
 
     assert scrub_secrets("plain text", api_key="") == "plain text"
+
+
+def test_scrub_secrets_is_idempotent() -> None:
+    """Re-scrubbing already-scrubbed text is a no-op.
+
+    The manifest and re-run diffs may pass through the scrubber twice; a
+    pattern that re-matched ``[REDACTED]`` would corrupt committed text.
+    """
+
+    text = "https://x/fred/series?api_key=abc123&file_type=json plus key9"
+    once = scrub_secrets(text, api_key="key9")
+    assert scrub_secrets(once, api_key="key9") == once
+
+
+def test_scrub_secrets_redacts_key_at_end_of_string() -> None:
+    """A key with no trailing delimiter (end of URL) is still scrubbed."""
+
+    scrubbed = scrub_secrets("https://x/fred/series?api_key=abc123", api_key="")
+    assert scrubbed == "https://x/fred/series?api_key=[REDACTED]"

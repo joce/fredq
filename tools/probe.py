@@ -20,6 +20,14 @@ from typing import Final
 
 import regex
 
+# Single source of truth for API-key redaction: the client's constants.
+# Duplicating the pattern here once caused a drift risk a review caught —
+# a fix to one copy would silently not propagate to the corpus scrubber.
+from fredq.client import (
+    _API_KEY_RE,  # pyright: ignore[reportPrivateUsage]
+    _API_KEY_REDACTED,  # pyright: ignore[reportPrivateUsage]
+)
+
 REPO_ROOT: Final[Path] = Path(__file__).resolve().parents[1]
 CORPUS_DIR: Final[Path] = REPO_ROOT / "tests" / "fixtures" / "corpus"
 
@@ -31,8 +39,6 @@ POLITENESS_DELAY_SECONDS: Final[float] = 0.6
 # 32 chars like a real FRED key, obviously fake, committed on purpose.
 FAKE_API_KEY: Final[str] = "ffffffffffffffffffffffffffffffff"
 
-_API_KEY_PARAM_RE: Final[regex.Pattern[str]] = regex.compile(r"api_key=[^&\s\"']+")
-_REDACTED: Final[str] = "api_key=[REDACTED]"
 _UNSAFE_NAME_RE: Final[regex.Pattern[str]] = regex.compile(r"[^A-Za-z0-9._-]+")
 
 
@@ -66,7 +72,7 @@ def scrub_secrets(text: str, api_key: str) -> str:
         str: The text with all key material replaced by ``[REDACTED]``.
     """
 
-    scrubbed = _API_KEY_PARAM_RE.sub(_REDACTED, text)
+    scrubbed = _API_KEY_RE.sub(_API_KEY_REDACTED, text)
     if api_key:
         scrubbed = scrubbed.replace(api_key, "[REDACTED]")
     return scrubbed
