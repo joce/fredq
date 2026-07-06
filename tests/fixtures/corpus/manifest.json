@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "case_count": 104,
+    "case_count": 94,
     "fetched_at": "2026-07-05T21:29:33.344150+00:00"
   },
   "category-children/125_maybe-leaf": {
@@ -173,71 +173,6 @@
     "file": "category/root.json",
     "http_status": 200,
     "status": "ok"
-  },
-  "regional-data/882_agg-avg": {
-    "argv": [
-      "geofred",
-      "regional-data",
-      "882",
-      "--region-type",
-      "state",
-      "--date",
-      "2020-01-01",
-      "--season",
-      "NSA",
-      "--frequency",
-      "a",
-      "--units",
-      "Dollars",
-      "--start-date",
-      "2019-01-01",
-      "--aggregation-method",
-      "avg"
-    ],
-    "file": "regional-data/882_agg-avg.json",
-    "http_status": 200,
-    "status": "ok"
-  },
-  "regional-data/882_state-2020": {
-    "argv": [
-      "geofred",
-      "regional-data",
-      "882",
-      "--region-type",
-      "state",
-      "--date",
-      "2020-01-01",
-      "--season",
-      "NSA",
-      "--frequency",
-      "a",
-      "--units",
-      "Dollars"
-    ],
-    "file": "regional-data/882_state-2020.json",
-    "http_status": 200,
-    "status": "ok"
-  },
-  "regional-data/ERR_invalid-group": {
-    "argv": [
-      "geofred",
-      "regional-data",
-      "999999",
-      "--region-type",
-      "state",
-      "--date",
-      "2020-01-01",
-      "--season",
-      "NSA",
-      "--frequency",
-      "a",
-      "--units",
-      "Dollars"
-    ],
-    "detail": "FRED request rejected with HTTP 400 for https://api.stlouisfed.org/geofred/regional/data?series_group=999999&region_type=state&date=2020-01-01&season=NSA&frequency=a&units=Dollars&file_type=json",
-    "file": "regional-data/ERR_invalid-group.json",
-    "http_status": 400,
-    "status": "http_error"
   },
   "related-tags/monetary_group-geo": {
     "argv": [
@@ -495,61 +430,6 @@
       "UNRATE"
     ],
     "file": "series-categories/UNRATE.json",
-    "http_status": 200,
-    "status": "ok"
-  },
-  "series-data/WIPCPI": {
-    "argv": [
-      "geofred",
-      "series-data",
-      "WIPCPI"
-    ],
-    "file": "series-data/WIPCPI.json",
-    "http_status": 200,
-    "status": "ok"
-  },
-  "series-data/WIPCPI_2020": {
-    "argv": [
-      "geofred",
-      "series-data",
-      "WIPCPI",
-      "--start-date",
-      "2020-01-01"
-    ],
-    "file": "series-data/WIPCPI_2020.json",
-    "http_status": 200,
-    "status": "ok"
-  },
-  "series-data/WIPCPI_single-date": {
-    "argv": [
-      "geofred",
-      "series-data",
-      "WIPCPI",
-      "--date",
-      "2023-01-01"
-    ],
-    "file": "series-data/WIPCPI_single-date.json",
-    "http_status": 200,
-    "status": "ok"
-  },
-  "series-group/ERR_invalid-id": {
-    "argv": [
-      "geofred",
-      "series-group",
-      "ZZZNOTREAL"
-    ],
-    "detail": "FRED request rejected with HTTP 500 for https://api.stlouisfed.org/geofred/series/group?series_id=ZZZNOTREAL&file_type=json",
-    "file": "series-group/ERR_invalid-id.json",
-    "http_status": 500,
-    "status": "http_error"
-  },
-  "series-group/WIPCPI": {
-    "argv": [
-      "geofred",
-      "series-group",
-      "WIPCPI"
-    ],
-    "file": "series-group/WIPCPI.json",
     "http_status": 200,
     "status": "ok"
   },
@@ -1074,30 +954,6 @@
       "2000-12-31"
     ],
     "file": "series/UNRATE_realtime-2000.json",
-    "http_status": 200,
-    "status": "ok"
-  },
-  "shapes/frb": {
-    "argv": [
-      "geofred",
-      "shapes",
-      "frb",
-      "--out",
-      "output/probe-shape-frb.geojson"
-    ],
-    "file": "shapes/frb.json",
-    "http_status": 200,
-    "status": "ok"
-  },
-  "shapes/state": {
-    "argv": [
-      "geofred",
-      "shapes",
-      "state",
-      "--out",
-      "output/probe-shape-state.geojson"
-    ],
-    "file": "shapes/state.json",
     "http_status": 200,
     "status": "ok"
   },
