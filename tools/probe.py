@@ -33,7 +33,6 @@ import regex
 from fredq.auth import resolve_api_key
 from fredq.cli import (
     _collect_params,  # pyright: ignore[reportPrivateUsage]
-    _enforce_cross_param_rules,  # pyright: ignore[reportPrivateUsage]
     _FredClientProtocol,  # pyright: ignore[reportPrivateUsage]
     _run_command,  # pyright: ignore[reportPrivateUsage]
     build_parser,
@@ -49,6 +48,7 @@ from fredq.client import (
 )
 from fredq.commands import COMMANDS_BY_NAME
 from fredq.exceptions import FredqError, FredRequestError
+from fredq.params import enforce_cross_param_rules
 
 if TYPE_CHECKING:
     import argparse
@@ -829,7 +829,7 @@ async def _execute_case(
     namespace = parser.parse_args(list(case.argv))
     command = COMMANDS_BY_NAME[namespace.command_name]
     params = _collect_params(command, namespace)
-    rule_error = _enforce_cross_param_rules(command, params)
+    rule_error = enforce_cross_param_rules(command, params)
     if rule_error is not None:
         _raise_rule_error(rule_error)
     case_key = namespace.api_key or api_key

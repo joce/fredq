@@ -8,6 +8,9 @@ from enum import Enum
 from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from fredq.commands import CommandSpec
     from fredq.types import ParamValue
 
 
@@ -245,3 +248,46 @@ def coerce_param(spec: ParamSpec, value: str) -> ParamValue:
 
     message = f"unsupported parameter kind: {spec.kind}"
     raise ValueError(message)
+
+
+def enforce_cross_param_rules(
+    command: CommandSpec, params: Mapping[str, object]
+) -> str | None:
+    """Validate cross-parameter dependency rules on a collected param dict.
+
+    Checks three rule types stored on :class:`CommandSpec`:
+
+    * ``mutually_dependent_params``: every frozenset must be either entirely
+      absent or entirely present.  A partial set is an error.
+    * ``at_least_one_of``: every frozenset must have at least one member
+      present.
+    * ``requires_partner``: if the first element of a pair is present, the
+      second must also be present.
+
+    Returns:
+        str | None: An error message when any rule is violated, or ``None``
+            when all rules pass.
+    """
+
+    present = set(params)
+
+    for group in command.mutually_dependent_params:
+        found = group & present
+        if found and found != group:
+            missing = group - found
+            missing_opts = " ".join(f"--{n.replace('_', '-')}" for n in sorted(missing))
+            found_opts = " ".join(f"--{n.replace('_', '-')}" for n in sorted(found))
+            return f"{found_opts} requires {missing_opts} to also be supplied."
+
+    for group in command.at_least_one_of:
+        if not (group & present):
+            opts = " or ".join(f"--{n.replace('_', '-')}" for n in sorted(group))
+            return f"at least one of {opts} is required."
+
+    for needy, required in command.requires_partner:
+        if needy in present and required not in present:
+            needy_opt = f"--{needy.replace('_', '-')}"
+            required_opt = f"--{required.replace('_', '-')}"
+            return f"{needy_opt} requires {required_opt} to also be supplied."
+
+    return None

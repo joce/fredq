@@ -18,10 +18,16 @@ from fredq.auth import resolve_api_key
 from fredq.client import FredClient
 from fredq.commands import COMMANDS, COMMANDS_BY_NAME, GROUP_HELP, CommandSpec
 from fredq.exceptions import FredqError
-from fredq.params import ParamKind, ParamSpec, coerce_param, parse_boolean
+from fredq.params import (
+    ParamKind,
+    ParamSpec,
+    coerce_param,
+    enforce_cross_param_rules,
+    parse_boolean,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
     from fredq.types import ParamValue
 
@@ -417,49 +423,6 @@ def _collect_params(
     return collected
 
 
-def _enforce_cross_param_rules(
-    command: CommandSpec, params: Mapping[str, object]
-) -> str | None:
-    """Validate cross-parameter dependency rules on a collected param dict.
-
-    Checks three rule types stored on :class:`CommandSpec`:
-
-    * ``mutually_dependent_params``: every frozenset must be either entirely
-      absent or entirely present.  A partial set is an error.
-    * ``at_least_one_of``: every frozenset must have at least one member
-      present.
-    * ``requires_partner``: if the first element of a pair is present, the
-      second must also be present.
-
-    Returns:
-        str | None: An error message when any rule is violated, or ``None``
-            when all rules pass.
-    """
-
-    present = set(params)
-
-    for group in command.mutually_dependent_params:
-        found = group & present
-        if found and found != group:
-            missing = group - found
-            missing_opts = " ".join(f"--{n.replace('_', '-')}" for n in sorted(missing))
-            found_opts = " ".join(f"--{n.replace('_', '-')}" for n in sorted(found))
-            return f"{found_opts} requires {missing_opts} to also be supplied."
-
-    for group in command.at_least_one_of:
-        if not (group & present):
-            opts = " or ".join(f"--{n.replace('_', '-')}" for n in sorted(group))
-            return f"at least one of {opts} is required."
-
-    for needy, required in command.requires_partner:
-        if needy in present and required not in present:
-            needy_opt = f"--{needy.replace('_', '-')}"
-            required_opt = f"--{required.replace('_', '-')}"
-            return f"{needy_opt} requires {required_opt} to also be supplied."
-
-    return None
-
-
 def _enforce_parquet_arg_pairing(args: argparse.Namespace) -> str | None:
     """Validate ``--format`` / ``--out`` pairing.
 
@@ -632,7 +595,7 @@ def _dispatch_command(  # noqa: PLR0911
         err.write(f"{exc}\n")
         return 2
 
-    cross_param_error = _enforce_cross_param_rules(command, params)
+    cross_param_error = enforce_cross_param_rules(command, params)
     if cross_param_error is not None:
         err.write(f"{cross_param_error}\n")
         return 2
