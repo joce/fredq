@@ -19,7 +19,7 @@ response models (see the library-api design spec, evidence discipline).
 - `series-updates/RECENT_WINDOW` has time-relative argv by design; its
   start/end times drift on every regeneration.
 
-## Curation rulings (2026-07-05 run: 104 cases — 93 ok, 11 http_error, 0 error)
+## Curation rulings (2026-07-05 run: 94 cases — 85 ok, 9 http_error, 0 error)
 
 - `tags-series/ERR_bogus-tag`: FRED rejects unknown tag names with HTTP 400
   rather than returning an empty list.
@@ -37,8 +37,13 @@ response models (see the library-api design spec, evidence discipline).
   error.
 - `series/ERR_bad-api-key`: FRED's 400 body is a static generic message; it
   never echoes submitted key material.
-- `series-group/ERR_invalid-id`: GeoFRED answers an invalid series id with
-  HTTP 500, unlike the core API's 400 — the geofred error family differs.
+- `series-group/ERR_invalid-id` (removed 2026-07-06, Part 5): GeoFRED
+  answered an invalid series id with HTTP 500, unlike the core API's 400 —
+  the geofred error family differed. The `geofred` command group, its
+  probe cases, and the `series-group`/`series-data`/`regional-data`/`shapes`
+  captures were removed entirely in Part 5 of the library-api feature (site
+  sunset 2022; API deprecated); the captures remain retrievable from git
+  history prior to that removal.
 - Missing-value evidence: `series-observations/DEXCAUS_holidays` contains
   `"value": "."` entries (FRED's missing-data sentinel).
 - Vintage evidence: `series-observations/UNRATE_vintage-2001` carries three

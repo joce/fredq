@@ -71,13 +71,12 @@ Configure the shared client once, before the first call (API key, timeout):
 fredq.configure(api_key="...", timeout=None)
 ```
 
-Anything without a first-class method — including the GeoFRED endpoints,
-which have no typed surface — is reachable through the escape hatch, which
-validates parameters exactly like the typed calls and returns the parsed
-payload as a plain dict:
+Anything without a first-class method is reachable through the escape
+hatch, which validates parameters exactly like the typed calls and returns
+the parsed payload as a plain dict:
 
 ```python
-payload = fredq.raw("series-data", series_id="WIPCPI")
+payload = fredq.raw("series", series_id="DGS10")
 ```
 
 ## Library surface
@@ -109,7 +108,7 @@ Module-level functions cover the endpoints with no natural entity owner:
 | `tags(...)` | All FRED tags. |
 | `tag_series(tag_names, ...)` | Series matching a set of FRED tags. |
 | `related_tags(tag_names, ...)` | Tags related to an existing tag filter. |
-| `raw(command, **params)` | Escape hatch — any command by name, including GeoFRED. |
+| `raw(command, **params)` | Escape hatch — any command by name. |
 | `configure(*, api_key=None, timeout=None)` | Set shared-client options before the first call. |
 
 Date-like parameters (`observation_start`, `realtime_start`, ...) accept a
@@ -201,13 +200,6 @@ ALFRED point-in-time: see what GDP looked like on a past date:
 ```powershell
 fredq series vintage-dates GNPCA
 fredq series observations GNPCA --realtime-start 2024-09-25
-```
-
-Fetch GeoFRED regional data — per-capita income by state for one year:
-
-```powershell
-fredq geofred series-group WIPCPI
-fredq geofred series-data WIPCPI --start-date 2022-01-01
 ```
 
 ### Parquet output
@@ -330,21 +322,6 @@ Current commands, grouped by how often they're reached for:
 | `source list` | List all FRED data sources. |
 | `source show` | Show metadata for one FRED source. |
 | `source releases` | List releases published by one FRED source. |
-
-**GeoFRED / Maps (`geofred` subcommands)**
-
-| Command | FRED data |
-| --- | --- |
-| `geofred series-group` | Show GeoFRED series-group metadata (region type, season, frequency, units). |
-| `geofred series-data` | Fetch the regional time series for one FRED series. |
-| `geofred regional-data` | Fetch a regional snapshot — all regions for a single date. |
-| `geofred shapes` | Download a GeoJSON shape file for a region type, to `--out`. |
-
-The GeoFRED endpoints use a different base URL and return regional data keyed by
-FIPS code. `geofred shapes` returns Highcharts-format GeoJSON whose coordinates
-are in a Lambert Conformal Conic projection (not WGS84); reproject before mixing
-with lat/lon basemaps. See `fredq geofred --help` for the full subcommand list.
-GeoFRED has no library-layer equivalent; reach it via `fredq.raw(...)`.
 
 A bare group prints its list of subcommands; each leaf command has its own
 adaptive help:

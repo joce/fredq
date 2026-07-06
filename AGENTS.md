@@ -23,14 +23,13 @@ Python 3.10+, uv, httpx2, argparse, pytest, ruff, pyright, tox, hatchling.
 - Full check: `uv run tox`
 
 ## Command grouping (noun-verb)
-Commands are organized into six noun groups, each with verb leaves:
+Commands are organized into five noun groups, each with verb leaves:
 - **series**: `show`, `observations`, `search`, `search-tags`, `search-related-tags`, `vintage-dates`, `categories`, `tags`, `release`, `updates`
 - **category**: `show`, `children`, `related`, `series`, `tags`, `related-tags`
 - **release**: `list`, `show`, `calendar` (all releases dates), `dates` (one release's dates), `series`, `sources`, `tags`, `related-tags`, `tables`
   - `release calendar` → `/fred/releases/dates`; `release dates ID` → `/fred/release/dates` (distinct endpoints)
 - **source**: `list`, `show`, `releases`
 - **tag**: `list`, `series`, `related`
-- **geofred**: `series-group`, `series-data`, `regional-data`, `shapes` (unchanged; leaf stays None → uses name)
 
 Each `CommandSpec.name` is globally unique and unchanged (routing key). The `leaf` field is display-only.
 
@@ -61,7 +60,6 @@ Each `CommandSpec.name` is globally unique and unchanged (routing key). The `lea
 - The CLI never imports `api.py`, `frames.py`, or `models/`. `fredq --help` and all CLI commands must never pay the polars import cost.
 - Library kwargs mirror wire parameter names exactly as spelled in `CommandSpec`s; never an inverted flag.
 - The committed corpus (`tests/fixtures/corpus/`, see its README) is the only authority for wire spellings, presence, and types. Errors are mapped by status + body shape, never message wording.
-- GeoFRED endpoints are deliberately absent from the library surface (reachable via `raw()` only); complete removal is scheduled as Part 5 of the library-api feature.
 
 ## Response model conventions (library layer)
 - Every response model subclasses `FredModel` (`src/fredq/models/_base.py`): `frozen=True`, `extra="allow"` (drift lands on `model_extra` for the gates — never use `forbid`), `populate_by_name=True`, `str_strip_whitespace=True`. No alias generator; field names mirror wire keys exactly, warts included (`seriess`).
@@ -87,7 +85,7 @@ When adding or editing a CLI command:
 3. **Notes**: real clarifications only — FRED quirks, switch-behavior surprises, dependencies. Drop diary entries and redundant restatements.
 4. **Order in `COMMANDS` tuple by importance**: daily-driver → discovery → entity lookups → schema introspection. Never append to the end.
 5. **Param boilerplate is shared** (`--api-key`, `--realtime-start`, `--realtime-end` use exact strings — copy them). Run `pytest -k help` before and after.
-6. **Positional primary args**: each command's single primary required argument is a positional (its `metavar` is shown in usage); all other parameters are flags. `series search` / `series search-tags` / `series search-related-tags` take the search text positionally; `tag series` / `tag related` take the tag list positionally; `geofred regional-data` / `geofred shapes` take their primary (`series_group` / `shape`) positionally.
+6. **Positional primary args**: each command's single primary required argument is a positional (its `metavar` is shown in usage); all other parameters are flags. `series search` / `series search-tags` / `series search-related-tags` take the search text positionally; `tag series` / `tag related` take the tag list positionally.
 
 ## Output formats
 - **Default**: raw FRED JSON to stdout, exactly as returned.
@@ -137,9 +135,6 @@ Steps:
   - Releases: `53` (GDP), `10` (CPI), `175` (Employment)
   - Sources: `1` (Board of Governors), `3` (Bureau of Labor Statistics)
 - Add targeted probes when an endpoint is series-sensitive, but keep this baseline for broad API-surface discovery.
-
-## GeoFRED / Maps
-- Implemented under the `geofred` subcommand group (`series-group`, `series-data`, `regional-data`, `shapes`). Different base URL; regional data keyed by FIPS; `shapes` returns Highcharts-format GeoJSON in a Lambert Conformal Conic projection (not WGS84).
 
 ## Out of scope
 - Separate documentation/discovery subcommands.
