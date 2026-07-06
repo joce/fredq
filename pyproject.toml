@@ -86,6 +86,17 @@ typeCheckingMode = "strict"
 root = "src/fredq/parquet_writer.py"
 reportUnknownVariableType = false
 
+[[tool.pyright.executionEnvironments]]
+# pandas/pyarrow are the optional fredq[pandas] extra and absent from the
+# base dev environment: their imports and untyped return values are
+# Unknown to pyright here. The ImportError probes keep runtime honest.
+root = "tests/test_frames.py"
+reportMissingImports = false
+reportUnusedImport = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]
 testpaths = ["tests"]
