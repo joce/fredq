@@ -13,14 +13,27 @@ reaches them for anyone who needs them.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Final, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
 
 from fredq import _core
 from fredq._bridge import run
 from fredq._core import configure  # re-exported via fredq.__init__
 from fredq.commands import COMMANDS_BY_NAME
-from fredq.exceptions import FredClientUsageError
+from fredq.exceptions import FredApiError, FredClientUsageError
 from fredq.frames import Observations, build_observations
+from fredq.models import (
+    CategoriesResult,
+    CategoryInfo,
+    ReleaseDatesResult,
+    ReleaseInfo,
+    ReleaseSourcesResult,
+    ReleasesResult,
+    SeriesInfo,
+    SeriesListResult,
+    SourceInfo,
+    SourcesResult,
+    TagsResult,
+)
 
 if TYPE_CHECKING:
     from datetime import date
@@ -78,6 +91,36 @@ def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _unwrap_single(payload: dict[str, Any], key: str) -> dict[str, Any]:
+    """Unwrap FRED's one-element entity list; malformed contract on violation.
+
+    Single-entity endpoints (series show, category show, ...) answer with
+    a one-element list under their plural key. Corpus evidence: always
+    exactly one element on success (bad ids fail earlier as FRED 400s).
+
+    Returns:
+        dict[str, Any]: The single entity record.
+
+    Raises:
+        FredApiError: If ``key`` is missing or has != 1 element
+            (``error_code=None`` marks the malformed-response contract).
+    """
+
+    raw_records = payload.get(key)
+    if not isinstance(raw_records, list):
+        message = f"expected exactly one {key!r} record, got no list"
+        raise FredApiError(error_message=message)
+    records = cast("list[object]", raw_records)
+    if len(records) != 1:
+        message = f"expected exactly one {key!r} record, got {len(records)}"
+        raise FredApiError(error_message=message)
+    record = records[0]
+    if not isinstance(record, dict):
+        message = f"{key!r} record is not an object"
+        raise FredApiError(error_message=message)
+    return cast("dict[str, Any]", record)
+
+
 class Series:
     """A FRED series, addressed by its series-ID string (e.g. "DGS10")."""
 
@@ -100,14 +143,14 @@ class Series:
         *,
         realtime_start: DateLike | None = None,
         realtime_end: DateLike | None = None,
-    ) -> dict[str, Any]:
+    ) -> SeriesInfo:
         """Fetch the series record (title, units, frequency, ...).
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            SeriesInfo: The corpus-gated series record.
         """
 
-        return _call(
+        payload = _call(
             "series",
             _values(
                 series_id=self.series_id,
@@ -115,6 +158,7 @@ class Series:
                 realtime_end=realtime_end,
             ),
         )
+        return SeriesInfo.model_validate(_unwrap_single(payload, "seriess"))
 
     def observations(  # noqa: PLR0913 - one keyword-only arg per wire param.
         self,
@@ -178,14 +222,14 @@ class Series:
         *,
         realtime_start: DateLike | None = None,
         realtime_end: DateLike | None = None,
-    ) -> dict[str, Any]:
+    ) -> CategoriesResult:
         """List categories that contain this series.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            CategoriesResult: The category list.
         """
 
-        return _call(
+        payload = _call(
             "series-categories",
             _values(
                 series_id=self.series_id,
@@ -193,6 +237,7 @@ class Series:
                 realtime_end=realtime_end,
             ),
         )
+        return CategoriesResult.model_validate(payload)
 
     def tags(
         self,
@@ -201,14 +246,14 @@ class Series:
         realtime_end: DateLike | None = None,
         order_by: str | None = None,
         sort_order: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> TagsResult:
         """List tags assigned to this series.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            TagsResult: The paginated tag list.
         """
 
-        return _call(
+        payload = _call(
             "series-tags",
             _values(
                 series_id=self.series_id,
@@ -218,20 +263,21 @@ class Series:
                 sort_order=sort_order,
             ),
         )
+        return TagsResult.model_validate(payload)
 
     def release(
         self,
         *,
         realtime_start: DateLike | None = None,
         realtime_end: DateLike | None = None,
-    ) -> dict[str, Any]:
+    ) -> ReleaseInfo:
         """Show the release that this series belongs to.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            ReleaseInfo: The corpus-gated release record.
         """
 
-        return _call(
+        payload = _call(
             "series-release",
             _values(
                 series_id=self.series_id,
@@ -239,6 +285,7 @@ class Series:
                 realtime_end=realtime_end,
             ),
         )
+        return ReleaseInfo.model_validate(_unwrap_single(payload, "releases"))
 
 
 class Category:
@@ -258,7 +305,7 @@ class Category:
 
         return f"Category({self.category_id!r})"
 
-    def info(self) -> dict[str, Any]:
+    def info(self) -> CategoryInfo:
         """Fetch the category record (name, parent ID).
 
         FRED's category endpoint takes no realtime parameters, unlike the
@@ -266,24 +313,25 @@ class Category:
         deliberate, not an omission.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            CategoryInfo: The corpus-gated category record.
         """
 
-        return _call("category", _values(category_id=self.category_id))
+        payload = _call("category", _values(category_id=self.category_id))
+        return CategoryInfo.model_validate(_unwrap_single(payload, "categories"))
 
     def children(
         self,
         *,
         realtime_start: DateLike | None = None,
         realtime_end: DateLike | None = None,
-    ) -> dict[str, Any]:
+    ) -> CategoriesResult:
         """List direct child categories of this category.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            CategoriesResult: The category list.
         """
 
-        return _call(
+        payload = _call(
             "category-children",
             _values(
                 category_id=self.category_id,
@@ -291,20 +339,21 @@ class Category:
                 realtime_end=realtime_end,
             ),
         )
+        return CategoriesResult.model_validate(payload)
 
     def related(
         self,
         *,
         realtime_start: DateLike | None = None,
         realtime_end: DateLike | None = None,
-    ) -> dict[str, Any]:
+    ) -> CategoriesResult:
         """List categories related to this category.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            CategoriesResult: The category list.
         """
 
-        return _call(
+        payload = _call(
             "category-related",
             _values(
                 category_id=self.category_id,
@@ -312,6 +361,7 @@ class Category:
                 realtime_end=realtime_end,
             ),
         )
+        return CategoriesResult.model_validate(payload)
 
     def series(  # noqa: PLR0913 - one keyword-only arg per wire param.
         self,
@@ -326,14 +376,14 @@ class Category:
         filter_value: str | None = None,
         tag_names: list[str] | str | None = None,
         exclude_tag_names: list[str] | str | None = None,
-    ) -> dict[str, Any]:
+    ) -> SeriesListResult:
         """List series belonging to this category.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            SeriesListResult: The paginated series list.
         """
 
-        return _call(
+        payload = _call(
             "category-series",
             _values(
                 category_id=self.category_id,
@@ -349,6 +399,7 @@ class Category:
                 exclude_tag_names=exclude_tag_names,
             ),
         )
+        return SeriesListResult.model_validate(payload)
 
     def tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
         self,
@@ -362,14 +413,14 @@ class Category:
         offset: int | None = None,
         order_by: str | None = None,
         sort_order: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> TagsResult:
         """List tags for series in this category.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            TagsResult: The paginated tag list.
         """
 
-        return _call(
+        payload = _call(
             "category-tags",
             _values(
                 category_id=self.category_id,
@@ -384,6 +435,7 @@ class Category:
                 sort_order=sort_order,
             ),
         )
+        return TagsResult.model_validate(payload)
 
     def related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
         self,
@@ -398,14 +450,14 @@ class Category:
         offset: int | None = None,
         order_by: str | None = None,
         sort_order: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> TagsResult:
         """List tags related to this category and an existing tag filter.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            TagsResult: The paginated tag list.
         """
 
-        return _call(
+        payload = _call(
             "category-related-tags",
             _values(
                 category_id=self.category_id,
@@ -421,6 +473,7 @@ class Category:
                 sort_order=sort_order,
             ),
         )
+        return TagsResult.model_validate(payload)
 
 
 class Release:
@@ -445,14 +498,14 @@ class Release:
         *,
         realtime_start: DateLike | None = None,
         realtime_end: DateLike | None = None,
-    ) -> dict[str, Any]:
+    ) -> ReleaseInfo:
         """Fetch the release record (name, press-release flag, links).
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            ReleaseInfo: The corpus-gated release record.
         """
 
-        return _call(
+        payload = _call(
             "release",
             _values(
                 release_id=self.release_id,
@@ -460,6 +513,7 @@ class Release:
                 realtime_end=realtime_end,
             ),
         )
+        return ReleaseInfo.model_validate(_unwrap_single(payload, "releases"))
 
     def dates(  # noqa: PLR0913 - one keyword-only arg per wire param.
         self,
@@ -470,14 +524,14 @@ class Release:
         offset: int | None = None,
         sort_order: str | None = None,
         include_release_dates_with_no_data: bool | None = None,
-    ) -> dict[str, Any]:
+    ) -> ReleaseDatesResult:
         """List publication dates for this release.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            ReleaseDatesResult: The paginated release dates.
         """
 
-        return _call(
+        payload = _call(
             "release-dates",
             _values(
                 release_id=self.release_id,
@@ -489,6 +543,7 @@ class Release:
                 include_release_dates_with_no_data=include_release_dates_with_no_data,
             ),
         )
+        return ReleaseDatesResult.model_validate(payload)
 
     def series(  # noqa: PLR0913 - one keyword-only arg per wire param.
         self,
@@ -503,14 +558,14 @@ class Release:
         filter_value: str | None = None,
         tag_names: list[str] | str | None = None,
         exclude_tag_names: list[str] | str | None = None,
-    ) -> dict[str, Any]:
+    ) -> SeriesListResult:
         """List series belonging to this release.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            SeriesListResult: The paginated series list.
         """
 
-        return _call(
+        payload = _call(
             "release-series",
             _values(
                 release_id=self.release_id,
@@ -526,20 +581,21 @@ class Release:
                 exclude_tag_names=exclude_tag_names,
             ),
         )
+        return SeriesListResult.model_validate(payload)
 
     def sources(
         self,
         *,
         realtime_start: DateLike | None = None,
         realtime_end: DateLike | None = None,
-    ) -> dict[str, Any]:
+    ) -> ReleaseSourcesResult:
         """List sources for this release.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            ReleaseSourcesResult: The sources for this release.
         """
 
-        return _call(
+        payload = _call(
             "release-sources",
             _values(
                 release_id=self.release_id,
@@ -547,6 +603,7 @@ class Release:
                 realtime_end=realtime_end,
             ),
         )
+        return ReleaseSourcesResult.model_validate(payload)
 
     def tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
         self,
@@ -560,14 +617,14 @@ class Release:
         offset: int | None = None,
         order_by: str | None = None,
         sort_order: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> TagsResult:
         """List tags for this release.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            TagsResult: The paginated tag list.
         """
 
-        return _call(
+        payload = _call(
             "release-tags",
             _values(
                 release_id=self.release_id,
@@ -582,6 +639,7 @@ class Release:
                 sort_order=sort_order,
             ),
         )
+        return TagsResult.model_validate(payload)
 
     def related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
         self,
@@ -596,14 +654,14 @@ class Release:
         offset: int | None = None,
         order_by: str | None = None,
         sort_order: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> TagsResult:
         """List tags related to this release and an existing tag filter.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            TagsResult: The paginated tag list.
         """
 
-        return _call(
+        payload = _call(
             "release-related-tags",
             _values(
                 release_id=self.release_id,
@@ -619,6 +677,7 @@ class Release:
                 sort_order=sort_order,
             ),
         )
+        return TagsResult.model_validate(payload)
 
     def tables(
         self,
@@ -666,14 +725,14 @@ class Source:
         *,
         realtime_start: DateLike | None = None,
         realtime_end: DateLike | None = None,
-    ) -> dict[str, Any]:
+    ) -> SourceInfo:
         """Fetch the source record (name, link).
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            SourceInfo: The corpus-gated source record.
         """
 
-        return _call(
+        payload = _call(
             "source",
             _values(
                 source_id=self.source_id,
@@ -681,6 +740,7 @@ class Source:
                 realtime_end=realtime_end,
             ),
         )
+        return SourceInfo.model_validate(_unwrap_single(payload, "sources"))
 
     def releases(  # noqa: PLR0913 - one keyword-only arg per wire param.
         self,
@@ -691,14 +751,14 @@ class Source:
         offset: int | None = None,
         order_by: str | None = None,
         sort_order: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> ReleasesResult:
         """List releases published by this source.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            ReleasesResult: The paginated release list.
         """
 
-        return _call(
+        payload = _call(
             "source-releases",
             _values(
                 source_id=self.source_id,
@@ -710,6 +770,7 @@ class Source:
                 sort_order=sort_order,
             ),
         )
+        return ReleasesResult.model_validate(payload)
 
 
 def search_series(  # noqa: PLR0913 - one keyword-only arg per wire param.
@@ -726,14 +787,14 @@ def search_series(  # noqa: PLR0913 - one keyword-only arg per wire param.
     filter_value: str | None = None,
     tag_names: list[str] | str | None = None,
     exclude_tag_names: list[str] | str | None = None,
-) -> dict[str, Any]:
+) -> SeriesListResult:
     """Search FRED series by keyword.
 
     Returns:
-        dict[str, Any]: The full parsed payload.
+        SeriesListResult: The paginated series list.
     """
 
-    return _call(
+    payload = _call(
         "series-search",
         _values(
             search_text=search_text,
@@ -750,6 +811,7 @@ def search_series(  # noqa: PLR0913 - one keyword-only arg per wire param.
             exclude_tag_names=exclude_tag_names,
         ),
     )
+    return SeriesListResult.model_validate(payload)
 
 
 def search_series_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
@@ -867,14 +929,14 @@ def releases(  # noqa: PLR0913 - one keyword-only arg per wire param.
     offset: int | None = None,
     order_by: str | None = None,
     sort_order: str | None = None,
-) -> dict[str, Any]:
+) -> ReleasesResult:
     """List all FRED economic data releases.
 
     Returns:
-        dict[str, Any]: The full parsed payload.
+        ReleasesResult: The paginated release list.
     """
 
-    return _call(
+    payload = _call(
         "releases",
         _values(
             realtime_start=realtime_start,
@@ -885,6 +947,7 @@ def releases(  # noqa: PLR0913 - one keyword-only arg per wire param.
             sort_order=sort_order,
         ),
     )
+    return ReleasesResult.model_validate(payload)
 
 
 def release_calendar(  # noqa: PLR0913 - one keyword-only arg per wire param.
@@ -896,14 +959,14 @@ def release_calendar(  # noqa: PLR0913 - one keyword-only arg per wire param.
     order_by: str | None = None,
     sort_order: str | None = None,
     include_release_dates_with_no_data: bool | None = None,
-) -> dict[str, Any]:
+) -> ReleaseDatesResult:
     """List release dates across all FRED releases.
 
     Returns:
-        dict[str, Any]: The full parsed payload.
+        ReleaseDatesResult: The paginated release dates.
     """
 
-    return _call(
+    payload = _call(
         "releases-dates",
         _values(
             realtime_start=realtime_start,
@@ -915,6 +978,7 @@ def release_calendar(  # noqa: PLR0913 - one keyword-only arg per wire param.
             include_release_dates_with_no_data=include_release_dates_with_no_data,
         ),
     )
+    return ReleaseDatesResult.model_validate(payload)
 
 
 def sources(  # noqa: PLR0913 - one keyword-only arg per wire param.
@@ -925,14 +989,14 @@ def sources(  # noqa: PLR0913 - one keyword-only arg per wire param.
     offset: int | None = None,
     order_by: str | None = None,
     sort_order: str | None = None,
-) -> dict[str, Any]:
+) -> SourcesResult:
     """List all FRED data sources.
 
     Returns:
-        dict[str, Any]: The full parsed payload.
+        SourcesResult: The paginated source list.
     """
 
-    return _call(
+    payload = _call(
         "sources",
         _values(
             realtime_start=realtime_start,
@@ -943,6 +1007,7 @@ def sources(  # noqa: PLR0913 - one keyword-only arg per wire param.
             sort_order=sort_order,
         ),
     )
+    return SourcesResult.model_validate(payload)
 
 
 def tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
@@ -956,14 +1021,14 @@ def tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
     offset: int | None = None,
     order_by: str | None = None,
     sort_order: str | None = None,
-) -> dict[str, Any]:
+) -> TagsResult:
     """List all FRED tags.
 
     Returns:
-        dict[str, Any]: The full parsed payload.
+        TagsResult: The paginated tag list.
     """
 
-    return _call(
+    payload = _call(
         "tags",
         _values(
             realtime_start=realtime_start,
@@ -977,6 +1042,7 @@ def tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
             sort_order=sort_order,
         ),
     )
+    return TagsResult.model_validate(payload)
 
 
 def tag_series(  # noqa: PLR0913 - one keyword-only arg per wire param.
@@ -989,14 +1055,14 @@ def tag_series(  # noqa: PLR0913 - one keyword-only arg per wire param.
     offset: int | None = None,
     order_by: str | None = None,
     sort_order: str | None = None,
-) -> dict[str, Any]:
+) -> SeriesListResult:
     """List series matching a set of FRED tags.
 
     Returns:
-        dict[str, Any]: The full parsed payload.
+        SeriesListResult: The paginated series list.
     """
 
-    return _call(
+    payload = _call(
         "tags-series",
         _values(
             tag_names=tag_names,
@@ -1009,6 +1075,7 @@ def tag_series(  # noqa: PLR0913 - one keyword-only arg per wire param.
             sort_order=sort_order,
         ),
     )
+    return SeriesListResult.model_validate(payload)
 
 
 def related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
@@ -1023,14 +1090,14 @@ def related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
     offset: int | None = None,
     order_by: str | None = None,
     sort_order: str | None = None,
-) -> dict[str, Any]:
+) -> TagsResult:
     """List tags related to an existing tag filter.
 
     Returns:
-        dict[str, Any]: The full parsed payload.
+        TagsResult: The paginated tag list.
     """
 
-    return _call(
+    payload = _call(
         "related-tags",
         _values(
             tag_names=tag_names,
@@ -1045,6 +1112,7 @@ def related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
             sort_order=sort_order,
         ),
     )
+    return TagsResult.model_validate(payload)
 
 
 def raw(command: str, **params: object) -> dict[str, Any]:

@@ -63,6 +63,18 @@ Each `CommandSpec.name` is globally unique and unchanged (routing key). The `lea
 - The committed corpus (`tests/fixtures/corpus/`, see its README) is the only authority for wire spellings, presence, and types. Errors are mapped by status + body shape, never message wording.
 - GeoFRED endpoints are deliberately absent from the library surface (reachable via `raw()` only); complete removal is scheduled as Part 5 of the library-api feature.
 
+## Response model conventions (library layer)
+- Every response model subclasses `FredModel` (`src/fredq/models/_base.py`): `frozen=True`, `extra="allow"` (drift lands on `model_extra` for the gates — never use `forbid`), `populate_by_name=True`, `str_strip_whitespace=True`. No alias generator; field names mirror wire keys exactly, warts included (`seriess`).
+- Required vs optional comes from the corpus, never docs or guesses: present in 100% of corpus records → required (no default); sometimes absent → `T | None = None`; always present but sometimes null → `T | None` (no default). Live evidence may LOOSEN (required → optional) with a dated docstring note and a pinned test; never tighten.
+- Every model is registered in `tests/test_models_gates.py` in the same commit that creates it: zero-nested-extras over all relevant captures, required-set == corpus universal keys, alphabetical field order.
+- Temporal honesty: ISO date strings → `datetime.date`; FRED's offset datetimes (`2026-04-09 07:53:12-05`) → aware `datetime` via `FredDatetime`. No temporal value stays a bare string.
+- Enums only where the vocabulary is closed by request-side validation or explicit FRED documentation; corpus-only closure is insufficient (the corpus's series are not the universe). Open vocabularies stay `str`. `Literal` for true constants (`file_type`).
+- `functools.cached_property` for conveniences; NEVER `computed_field` (`model_dump()` stays wire-shaped).
+- Nested structures are typed sub-models, never `dict[str, Any]` (documented exceptions: `raw()`, evidence-justified Frame columns); keyed collections are `dict[str, SubModel]`.
+- Model reuse across endpoints only after script-validated evidence (zero extras + required set holds on the candidate's captures); the model docstring lists every endpoint it covers.
+- Single-entity endpoints unwrap their one-element list; violations raise the malformed-response contract (`FredApiError`, `error_code=None`).
+- Module docstring names the endpoint noun + corpus date; sometimes-absent fields carry an applicability note.
+
 ## API key
 - Primary: `FRED_API_KEY` environment variable.
 - Fallback: file at `~/.fredq/api_key` (single line, key only).

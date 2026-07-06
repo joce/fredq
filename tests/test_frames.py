@@ -59,13 +59,14 @@ def test_vintage_capture_builds_with_multiple_realtime_windows() -> None:
 
 
 def test_meta_is_envelope_without_observations() -> None:
-    """Everything except the rows lands in meta, unmodified."""
+    """Everything except the rows lands in meta, wire-faithfully typed."""
 
     payload = _capture("series-observations/GNPCA.json")
     obs = build_observations(payload, fetched_at=NOW)
     expected = {k: v for k, v in payload.items() if k != "observations"}
-    assert obs.meta == expected
-    assert "units" in obs.meta  # envelope fields present
+    # Typed envelope: wire-shaped dump round-trips to the raw envelope.
+    assert obs.meta.model_dump(mode="json") == expected
+    assert obs.meta.units == payload["units"]
 
 
 def test_unknown_observation_key_is_rejected() -> None:

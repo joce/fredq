@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Final
 import polars as pl
 
 from fredq.exceptions import FredqError
+from fredq.models import ObservationsMeta
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -105,14 +106,13 @@ class Frame:
 
 @dataclass(frozen=True, slots=True)
 class Observations(Frame):
-    """Series observations plus their response envelope.
+    """Series observations plus their typed response envelope.
 
     ``meta`` carries every envelope field FRED sent alongside the rows
-    (realtime bounds, units, count, ...), verbatim.
+    (realtime bounds, units, count, ...), corpus-gated.
     """
 
-    # Part 3a: retype to the corpus-gated ObservationsMeta pydantic model.
-    meta: dict[str, Any]
+    meta: ObservationsMeta
 
 
 def _parse_date(field: str, raw: object) -> date:
@@ -206,5 +206,7 @@ def build_observations(
             "realtime_end": pl.Date,
         },
     )
-    meta = {key: value for key, value in payload.items() if key != "observations"}
+    meta = ObservationsMeta.model_validate(
+        {key: value for key, value in payload.items() if key != "observations"}
+    )
     return Observations(df=df, fetched_at=fetched_at, meta=meta)

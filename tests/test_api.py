@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 from datetime import date
 from pathlib import Path
 from typing import Any, Final
@@ -14,6 +15,19 @@ from fredq._core import map_http_error
 from fredq.commands import COMMANDS_BY_NAME
 from fredq.exceptions import FredApiError, FredClientUsageError, FredRequestError
 from fredq.frames import Observations
+from fredq.models import (
+    CategoriesResult,
+    CategoryInfo,
+    ReleaseDatesResult,
+    ReleaseInfo,
+    ReleaseSourcesResult,
+    ReleasesResult,
+    SeriesInfo,
+    SeriesListResult,
+    SourceInfo,
+    SourcesResult,
+    TagsResult,
+)
 
 CORPUS: Final[Path] = Path(__file__).parent / "fixtures" / "corpus"
 
@@ -93,6 +107,89 @@ _BOUND_IDS: Final[frozenset[str]] = frozenset(
     {"series_id", "category_id", "release_id", "source_id"}
 )
 
+# Per-command stub payloads: the SMALLEST ok corpus capture for each
+# command, so routing tests exercise real wire shapes as endpoints flip
+# from dict to typed models (Part 3 batches update _EXPECTED only).
+_STUB_PAYLOADS: Final[dict[str, str]] = {
+    "series": "series/GNPCA.json",
+    "series-observations": "series-observations/DEXCAUS_holidays.json",
+    "series-vintagedates": "series-vintagedates/GNPCA_page-desc.json",
+    "series-categories": "series-categories/DGS10.json",
+    "series-tags": "series-tags/DGS10.json",
+    "series-release": "series-release/DGS10.json",
+    "series-search": "series-search/monetary_page2.json",
+    "series-search-tags": "series-search-tags/monetary_filtered.json",
+    "series-search-related-tags": "series-search-related-tags/monetary_usa.json",
+    "series-updates": "series-updates/limit10.json",
+    "category": "category/125.json",
+    "category-children": "category-children/32991.json",
+    "category-related": "category-related/32073.json",
+    "category-series": "category-series/125_page-desc.json",
+    "category-tags": "category-tags/125_group-gen.json",
+    "category-related-tags": "category-related-tags/125_services-quarterly.json",
+    "releases": "releases/page-desc.json",
+    "releases-dates": "releases-dates/nodata.json",
+    "release": "release/53.json",
+    "release-dates": "release-dates/53_desc.json",
+    "release-series": "release-series/53.json",
+    "release-sources": "release-sources/53.json",
+    "release-tags": "release-tags/53.json",
+    "release-related-tags": "release-related-tags/53_usa.json",
+    "release-tables": "release-tables/53.json",
+    "sources": "sources/limit5.json",
+    "source": "source/1.json",
+    "source-releases": "source-releases/1_page-desc.json",
+    "tags": "tags/group-freq.json",
+    "tags-series": "tags-series/usa-quarterly.json",
+    "related-tags": "related-tags/usa.json",
+    # geofred: reachable via raw() only
+    "series-group": "series-group/WIPCPI.json",
+    "series-data": "series-data/WIPCPI_single-date.json",
+    "regional-data": "regional-data/882_state-2020.json",
+    "shapes": "shapes/frb.json",
+}
+
+# Expected result type per command; dict until that endpoint's batch flips.
+_EXPECTED: Final[dict[str, type]] = {
+    "series": SeriesInfo,
+    "series-observations": Observations,
+    "series-categories": CategoriesResult,
+    "series-tags": TagsResult,
+    "series-release": ReleaseInfo,
+    "series-search": SeriesListResult,
+    "category": CategoryInfo,
+    "category-children": CategoriesResult,
+    "category-related": CategoriesResult,
+    "category-series": SeriesListResult,
+    "category-tags": TagsResult,
+    "category-related-tags": TagsResult,
+    "releases": ReleasesResult,
+    "releases-dates": ReleaseDatesResult,
+    "release": ReleaseInfo,
+    "release-dates": ReleaseDatesResult,
+    "release-series": SeriesListResult,
+    "release-sources": ReleaseSourcesResult,
+    "release-tags": TagsResult,
+    "release-related-tags": TagsResult,
+    "sources": SourcesResult,
+    "source": SourceInfo,
+    "source-releases": ReleasesResult,
+    "tags": TagsResult,
+    "tags-series": SeriesListResult,
+    "related-tags": TagsResult,
+}
+
+
+def _stub_payload(command_name: str) -> dict[str, Any]:
+    """Load the registered corpus capture for a command.
+
+    Returns:
+        dict[str, Any]: The parsed capture payload.
+    """
+
+    rel = _STUB_PAYLOADS[command_name]
+    return json.loads((CORPUS / rel).read_text(encoding="utf-8"))
+
 
 @pytest.fixture
 def capture_calls(
@@ -106,9 +203,7 @@ def capture_calls(
         command_name: str, *, values: dict[str, Any]
     ) -> dict[str, Any]:
         calls.append((command_name, dict(values)))
-        if command_name == "series-observations":
-            return {"units": "lin", "observations": []}
-        return {"stub": True}
+        return _stub_payload(command_name)
 
     core = api._core  # pyright: ignore[reportPrivateUsage]
     monkeypatch.setattr(core, "call_endpoint", _fake_call_endpoint)
@@ -133,10 +228,7 @@ def test_every_callable_routes_to_its_command(
 
     result = _CALLS[command_name]()
     assert [c[0] for c in capture_calls] == [command_name]
-    if command_name == "series-observations":
-        assert isinstance(result, Observations)
-    else:
-        assert result == {"stub": True}
+    assert isinstance(result, _EXPECTED.get(command_name, dict))
 
 
 def test_entity_ids_reach_the_wire_values(
@@ -184,7 +276,7 @@ def test_raw_routes_to_excluded_commands(
     """raw() reaches the geofred family the surface deliberately omits."""
 
     payload = api.raw("series-group", series_id="WIPCPI")
-    assert payload == {"stub": True}
+    assert payload["series_group"]["series_group"] == "882"
     assert capture_calls == [("series-group", {"series_id": "WIPCPI"})]
 
 
@@ -238,7 +330,9 @@ def test_observations_meta_and_fetched_at(
 
     obs = api.Series("DGS10").observations()
     assert capture_calls[0][0] == "series-observations"
-    assert obs.meta == {"units": "lin"}  # envelope minus the rows
+    # Typed envelope from the DEXCAUS_holidays stub capture.
+    assert obs.meta.units == "lin"
+    assert obs.meta.count == 13  # noqa: PLR2004 - corpus-pinned
     assert obs.fetched_at.tzinfo is not None  # aware UTC stamp
 
 
@@ -263,7 +357,9 @@ def test_date_objects_reach_the_wire_as_iso(
             base_url: str | None = None,  # noqa: ARG002
         ) -> str:
             self.params = dict(params)
-            return '{"observations": []}'
+            # A full valid capture: the meta envelope must validate now.
+            rel = _STUB_PAYLOADS["series-observations"]
+            return (CORPUS / rel).read_text(encoding="utf-8")
 
         async def aclose(self) -> None:  # noqa: PLR6301 - protocol shape
             return None
