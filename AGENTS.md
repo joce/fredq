@@ -1,7 +1,11 @@
 # AGENTS.md
 
 ## Project
-fredq exposes FRED (Federal Reserve Economic Data) HTTP endpoints as an LLM-friendly CLI that prints the raw JSON FRED returns.
+fredq is a typed Python library and an LLM-friendly CLI over FRED (Federal
+Reserve Economic Data) HTTP endpoints. The CLI prints the raw JSON FRED
+returns, byte-for-byte. The library (`fredq.api` and below) returns parsed,
+typed results. The two share client/commands/params foundations but the CLI
+never routes through the library's typed surface.
 
 ## Stack
 Python 3.10+, uv, httpx2, argparse, pytest, ruff, pyright, tox, hatchling.
@@ -35,18 +39,29 @@ Each `CommandSpec.name` is globally unique and unchanged (routing key). The `lea
 - `src/fredq/auth.py` -> Read FRED_API_KEY from env or fallback file.
 - `src/fredq/commands.py` -> command metadata used to build CLI commands, validation, and help.
 - `src/fredq/params.py` -> CLI parameter coercion and validation helpers.
+- `src/fredq/_bridge.py` -> background event loop; sync-over-async bridge (library only).
+- `src/fredq/_core.py` -> async endpoint core: shared client, configure(), param building, error contract (library only).
+- `src/fredq/api.py` -> public synchronous library surface (entity classes + module functions).
+- `src/fredq/frames.py` -> polars-backed Frame containers for bulk tabular payloads (library only).
 - `src/fredq/cli.py` -> argparse command tree and stdout/stderr behavior.
 - `tests/` -> pytest tests mirroring `src/fredq/`.
 
-## Rules
+## Rules — CLI layer
 - IMPORTANT: `--help` is the primary product surface; keep it complete, adaptive, and generated from command metadata where practical.
 - Do not add `describe`, `endpoints`, `params`, or other discovery commands; discovery belongs under `fredq --help` and `fredq <endpoint> --help`.
-- Print FRED response bodies to stdout exactly as returned; do not model, reshape, pretty-print, or interpret endpoint JSON.
-- Keep FRED endpoint knowledge in metadata and validation only; do not create response classes.
+- Print FRED response bodies to stdout exactly as returned; do not model, reshape, pretty-print, or interpret endpoint JSON. (CLI layer only; the library layer interprets.)
+- In the CLI layer, keep FRED endpoint knowledge in metadata and validation only. Response classes live exclusively in the library layer (src/fredq/models/, Part 3).
 - Use `uv run python` for Python scripts; never use bare `python` or `python3`.
 - Use `regex` instead of standard library `re` for regular expressions.
 - Never log or print the FRED API key.
 - Keep runtime dependencies narrow; do not add TUI, ORM, web framework, or rich formatting libraries.
+
+## Rules — library layer
+- The library layer (`api.py`, `_core.py`, `_bridge.py`, `frames.py`, later `models/`) parses and types FRED responses; the raw-JSON law above does not apply to it.
+- The CLI never imports `api.py`, `frames.py`, or `models/`. `fredq --help` and all CLI commands must never pay the polars import cost.
+- Library kwargs mirror wire parameter names exactly as spelled in `CommandSpec`s; never an inverted flag.
+- The committed corpus (`tests/fixtures/corpus/`, see its README) is the only authority for wire spellings, presence, and types. Errors are mapped by status + body shape, never message wording.
+- GeoFRED endpoints are deliberately absent from the library surface (reachable via `raw()` only); complete removal is scheduled as Part 5 of the library-api feature.
 
 ## API key
 - Primary: `FRED_API_KEY` environment variable.
@@ -81,6 +96,8 @@ When adding or editing a CLI command:
 - Ask before making architectural changes that affect the CLI grammar or auth behavior.
 
 ## Development workflow
+Exception: the library-api feature runs brainstorm → spec → multi-part plans on a single `library-api` branch with ONE PR at the very end, merged by the user. The per-PR merge loop below applies to normal maintenance work.
+
 Use this process for all development work — bug fixes and features alike. For features, brainstorm and plan first, then follow the implement → review → dogfood loop below.
 
 Model / effort split:
@@ -113,6 +130,6 @@ Steps:
 - Implemented under the `geofred` subcommand group (`series-group`, `series-data`, `regional-data`, `shapes`). Different base URL; regional data keyed by FIPS; `shapes` returns Highcharts-format GeoJSON in a Lambert Conformal Conic projection (not WGS84).
 
 ## Out of scope
-- Mapping FRED JSON into Python domain models.
 - Separate documentation/discovery subcommands.
 - Secrets or API keys in checked-in files.
+- Typed models outside the library layer.
