@@ -631,85 +631,6 @@ def _tag_cases() -> list[ProbeCase]:
     ]
 
 
-def _geofred_cases() -> list[ProbeCase]:
-    """GeoFRED: series group/data, regional snapshot, two shape files.
-
-    The shapes command requires --out; the probe captures the body directly
-    and never writes that file, so the path is a stable dummy under the
-    gitignored output/ directory.
-
-    Returns:
-        list[ProbeCase]: The geofred-family cases.
-    """
-
-    return [
-        ProbeCase("series-group", "WIPCPI", ("geofred", "series-group", "WIPCPI")),
-        ProbeCase("series-data", "WIPCPI", ("geofred", "series-data", "WIPCPI")),
-        ProbeCase(
-            "series-data",
-            "WIPCPI_2020",
-            ("geofred", "series-data", "WIPCPI", "--start-date", "2020-01-01"),
-        ),
-        ProbeCase(
-            "series-data",
-            "WIPCPI_single-date",
-            ("geofred", "series-data", "WIPCPI", "--date", "2023-01-01"),
-        ),
-        ProbeCase(
-            "regional-data",
-            "882_state-2020",
-            (
-                "geofred",
-                "regional-data",
-                "882",
-                "--region-type",
-                "state",
-                "--date",
-                "2020-01-01",
-                "--season",
-                "NSA",
-                "--frequency",
-                "a",
-                "--units",
-                "Dollars",
-            ),
-        ),
-        ProbeCase(
-            "regional-data",
-            "882_agg-avg",
-            (
-                "geofred",
-                "regional-data",
-                "882",
-                "--region-type",
-                "state",
-                "--date",
-                "2020-01-01",
-                "--season",
-                "NSA",
-                "--frequency",
-                "a",
-                "--units",
-                "Dollars",
-                "--start-date",
-                "2019-01-01",
-                "--aggregation-method",
-                "avg",
-            ),
-        ),
-        ProbeCase(
-            "shapes",
-            "frb",
-            ("geofred", "shapes", "frb", "--out", "output/probe-shape-frb.geojson"),
-        ),
-        ProbeCase(
-            "shapes",
-            "state",
-            ("geofred", "shapes", "state", "--out", "output/probe-shape-state.geojson"),
-        ),
-    ]
-
-
 def _error_cases() -> list[ProbeCase]:
     """Deliberate failures: every error-payload family, one bad API key.
 
@@ -734,28 +655,6 @@ def _error_cases() -> list[ProbeCase]:
         ProbeCase("source", "ERR_invalid-id", ("source", "show", "999999")),
         ProbeCase("tags-series", "ERR_bogus-tag", ("tag", "series", "zzqqxbogustag")),
         ProbeCase(
-            "series-group", "ERR_invalid-id", ("geofred", "series-group", "ZZZNOTREAL")
-        ),
-        ProbeCase(
-            "regional-data",
-            "ERR_invalid-group",
-            (
-                "geofred",
-                "regional-data",
-                "999999",
-                "--region-type",
-                "state",
-                "--date",
-                "2020-01-01",
-                "--season",
-                "NSA",
-                "--frequency",
-                "a",
-                "--units",
-                "Dollars",
-            ),
-        ),
-        ProbeCase(
             "series",
             "ERR_bad-api-key",
             ("--api-key", FAKE_API_KEY, "series", "show", "GNPCA"),
@@ -779,7 +678,6 @@ def build_cases() -> list[ProbeCase]:
         + _release_cases()
         + _source_cases()
         + _tag_cases()
-        + _geofred_cases()
         + _error_cases()
     )
 

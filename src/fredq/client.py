@@ -153,8 +153,7 @@ class FredClient:
         Args:
             api_key: FRED API key used to authenticate every request.
             timeout: Optional custom httpx2 timeout configuration.
-            base_url: Override the FRED base URL (useful for tests and for the
-                future GeoFRED Maps endpoints).
+            base_url: Override the FRED base URL (useful for tests).
         """
 
         self._api_key = api_key

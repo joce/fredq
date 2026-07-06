@@ -45,13 +45,18 @@ def test_http_error_with_fred_shape_maps_to_api_error() -> None:
 
 
 def test_http_500_with_fred_shape_maps_to_api_error() -> None:
-    """GeoFRED-style 500s with the shape map the same way (corpus-pinned)."""
+    """A 500 transport status with FRED's error shape still maps (corpus-pinned).
 
-    exc = _corpus_error("series-group/ERR_invalid-id.json", 500)
+    status_code and error_code are independent: status_code reflects the
+    HTTP transport response, error_code comes from the body's own
+    ``error_code`` field. This pins that mapping is by shape, not status.
+    """
+
+    exc = _corpus_error("series/ERR_invalid-id.json", 500)
     with pytest.raises(FredApiError) as exc_info:
         map_http_error(exc)
     assert exc_info.value.status_code == 500  # noqa: PLR2004
-    assert exc_info.value.error_code == 500  # noqa: PLR2004
+    assert exc_info.value.error_code == 400  # noqa: PLR2004
 
 
 def test_no_not_found_subclass_exists() -> None:

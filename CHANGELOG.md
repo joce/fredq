@@ -7,7 +7,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 fredq is now a typed Python library as well as a CLI. CLI behavior and
-output are unchanged.
+output are unchanged, except for the removal of the `geofred` command
+group (see Removed).
 
 ### Added
 
@@ -24,8 +25,7 @@ output are unchanged.
   frame (`fredq.frames`) with `.to_polars()`, `.to_pandas()`, `.to_arrow()`,
   `.to_dicts()`, and `.save_parquet()`, plus a typed `.meta` envelope.
 - `fredq.raw(command, **params)`: an escape hatch that reaches every
-  command the CLI knows, including the GeoFRED family, which has no
-  first-class library surface.
+  command the CLI knows, validated exactly like every other library call.
 - `fredq.configure(*, api_key=None, timeout=None)` to set the shared
   library client's options before the first call.
 - `fredq.FredApiError`, `fredq.FredClientUsageError`, and related
@@ -38,6 +38,19 @@ output are unchanged.
 ### Changed
 
 - Added `pydantic` as a core runtime dependency (typed response models).
+
+### Removed
+
+- **Breaking:** the `geofred` CLI command group (`series-group`,
+  `series-data`, `regional-data`, `shapes`) and its four FRED Maps API
+  endpoints. The GeoFRED site was sunset in 2022 and the underlying API is
+  deprecated. These commands are no longer reachable from the CLI, and
+  `fredq.raw()` no longer recognizes these command names (GeoFRED was
+  never part of the typed library surface — `raw()` was its only access
+  point, and that access point is now gone too). Call the FRED Maps API
+  directly (e.g. with `httpx`) if you still need this data; see the
+  [FRED API docs](https://fred.stlouisfed.org/docs/api/geofred/) for the
+  endpoint paths and parameters.
 
 ### Internal
 

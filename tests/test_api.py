@@ -144,11 +144,6 @@ _STUB_PAYLOADS: Final[dict[str, str]] = {
     "tags": "tags/group-freq.json",
     "tags-series": "tags-series/usa-quarterly.json",
     "related-tags": "related-tags/usa.json",
-    # geofred: reachable via raw() only
-    "series-group": "series-group/WIPCPI.json",
-    "series-data": "series-data/WIPCPI_single-date.json",
-    "regional-data": "regional-data/882_state-2020.json",
-    "shapes": "shapes/frb.json",
 }
 
 # Expected result type per command; dict until that endpoint's batch flips.
@@ -190,8 +185,7 @@ _EXPECTED: Final[dict[str, type]] = {
 def test_typed_surface_is_total() -> None:
     """Every mapped callable returns a model or Frame — no dicts remain.
 
-    raw() stays dict by design; the geofred four are CLI-only. This is the
-    Part 3 done-criterion pin.
+    raw() stays dict by design. This is the Part 3 done-criterion pin.
     """
 
     untyped = set(_CALLS) - set(_EXPECTED)
@@ -230,12 +224,10 @@ def capture_calls(
 
 
 def test_surface_is_total_over_commands() -> None:
-    """Mapped + geofred-excluded == all 35 commands, disjoint (spec pin)."""
+    """Mapped callables cover every command exactly (spec pin)."""
 
     mapped = set(_CALLS)
-    excluded = set(api.GEOFRED_EXCLUDED)
-    assert mapped.isdisjoint(excluded)
-    assert mapped | excluded == set(COMMANDS_BY_NAME)
+    assert mapped == set(COMMANDS_BY_NAME)
     assert _FUNCS.keys() == _CALLS.keys()
 
 
@@ -289,21 +281,21 @@ def test_kwargs_cover_every_wire_param(command_name: str) -> None:
     assert sig_names == expected, command_name
 
 
-def test_raw_routes_to_excluded_commands(
+def test_raw_routes_to_a_mapped_command(
     capture_calls: list[tuple[str, dict[str, Any]]],
 ) -> None:
-    """raw() reaches the geofred family the surface deliberately omits."""
+    """raw() reaches any known command by name, same as the typed surface."""
 
-    payload = api.raw("series-group", series_id="WIPCPI")
-    assert payload["series_group"]["series_group"] == "882"
-    assert capture_calls == [("series-group", {"series_id": "WIPCPI"})]
+    payload = api.raw("series", series_id="GNPCA")
+    assert payload["seriess"][0]["id"] == "GNPCA"
+    assert capture_calls == [("series", {"series_id": "GNPCA"})]
 
 
 def test_raw_rejects_unknown_command() -> None:
     """A typo'd command name is a usage error, not a KeyError."""
 
     with pytest.raises(FredClientUsageError, match="unknown command"):
-        api.raw("series-groupp")
+        api.raw("seriess")
 
 
 def test_raw_error_path_maps_corpus_bodies(
@@ -315,22 +307,22 @@ def test_raw_error_path_maps_corpus_bodies(
     bypassed error mapping; this pins ours against a real corpus body.
     """
 
-    body = (CORPUS / "series-group" / "ERR_invalid-id.json").read_text(encoding="utf-8")
+    body = (CORPUS / "series" / "ERR_invalid-id.json").read_text(encoding="utf-8")
 
     async def _raise_and_map(  # noqa: RUF029 - coroutine required by call_endpoint's API
         command_name: str,  # noqa: ARG001 - signature must match call_endpoint's
         *,
         values: dict[str, Any],  # noqa: ARG001 - signature must match call_endpoint's
     ) -> dict[str, Any]:
-        map_http_error(FredRequestError(500, "https://x", body=body))
+        map_http_error(FredRequestError(400, "https://x", body=body))
         message = "unreachable"
         raise AssertionError(message)
 
     core = api._core  # pyright: ignore[reportPrivateUsage]
     monkeypatch.setattr(core, "call_endpoint", _raise_and_map)
     with pytest.raises(FredApiError) as exc_info:
-        api.raw("series-group", series_id="ZZZNOTREAL")
-    assert exc_info.value.error_code == 500  # noqa: PLR2004
+        api.raw("series", series_id="ZZZNOTREAL")
+    assert exc_info.value.error_code == 400  # noqa: PLR2004
 
 
 def test_repr_is_useful() -> None:

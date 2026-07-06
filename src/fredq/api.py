@@ -5,15 +5,12 @@ FRED payload as a dict (typed models arrive endpoint-by-endpoint in Part
 3), except ``Series.observations`` which returns a typed
 :class:`~fredq.frames.Observations` frame. Kwargs mirror FRED wire
 parameter names exactly as the CLI's command metadata spells them.
-
-GeoFRED endpoints are deliberately absent (spec Non-goals); ``raw()``
-reaches them for anyone who needs them.
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Final, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from fredq import _core
 from fredq._bridge import run
@@ -42,13 +39,7 @@ if TYPE_CHECKING:
 
 DateLike: TypeAlias = "str | date | datetime"
 
-GEOFRED_EXCLUDED: Final[frozenset[str]] = frozenset(
-    {"series-group", "series-data", "regional-data", "shapes"}
-)
-"""Commands deliberately absent from the library surface (spec Non-goals)."""
-
 __all__ = [
-    "GEOFRED_EXCLUDED",
     "Category",
     "DateLike",
     "Release",
@@ -1125,9 +1116,8 @@ def related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
 def raw(command: str, **params: object) -> dict[str, Any]:
     """Call any fredq command by name; return the parsed payload.
 
-    The escape hatch: reaches every command the CLI knows, including the
-    geofred family that has no first-class library surface. Parameters
-    are validated exactly like every other library call.
+    The escape hatch: reaches every command the CLI knows. Parameters are
+    validated exactly like every other library call.
 
     Returns:
         dict[str, Any]: The full parsed payload.
