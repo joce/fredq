@@ -6,6 +6,51 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+fredq is now a typed Python library as well as a CLI. CLI behavior and
+output are unchanged.
+
+### Added
+
+- Typed library surface: `fredq.Series`, `fredq.Category`, `fredq.Release`,
+  and `fredq.Source` entity classes, plus module-level functions
+  (`search_series`, `releases`, `sources`, `tags`, and related lookups) —
+  see the README for the full surface table.
+- Corpus-gated pydantic response models under `fredq.models` (`SeriesInfo`,
+  `ReleaseInfo`, `SourceInfo`, `TagsResult`, and others): frozen, with
+  required/optional derived from real FRED response captures rather than
+  documentation, and unrecognized fields captured on `model_extra` instead
+  of raising.
+- `fredq.Series.observations()` returns a polars-backed `Observations`
+  frame (`fredq.frames`) with `.to_polars()`, `.to_pandas()`, `.to_arrow()`,
+  `.to_dicts()`, and `.save_parquet()`, plus a typed `.meta` envelope.
+- `fredq.raw(command, **params)`: an escape hatch that reaches every
+  command the CLI knows, including the GeoFRED family, which has no
+  first-class library surface.
+- `fredq.configure(*, api_key=None, timeout=None)` to set the shared
+  library client's options before the first call.
+- `fredq.FredApiError`, `fredq.FredClientUsageError`, and related
+  exceptions for typed error handling in library code.
+- `py.typed` marker ([PEP 561](https://peps.python.org/pep-0561/)) so type
+  checkers see the library's real return types without stubs.
+- New optional extra: `pip install "fredq[pandas]"` (pandas + pyarrow) for
+  `Observations.to_pandas()` / `.to_arrow()`.
+
+### Changed
+
+- Added `pydantic` as a core runtime dependency (typed response models).
+
+### Internal
+
+- Packaging membership is test-pinned (`tests/test_packaging.py`): the
+  wheel carries `py.typed` and the library modules and excludes
+  `tests/`/`node_modules/`/`docs/`/`output/`; the sdist carries the test
+  corpus and excludes dev-only trees. Added an explicit
+  `[tool.hatch.build.targets.sdist] exclude` list — hatchling's
+  VCS-ignore-based exclusion silently no-ops when the build root is passed
+  as an absolute path inside a git worktree (`.git` is a file there),
+  which had let dev trees like `node_modules/` leak into a worktree-built
+  sdist.
+
 ## [0.3.3]
 
 Maintenance release — no user-facing changes.
