@@ -324,6 +324,24 @@ def test_every_model_is_gated() -> None:
     assert not ungated, f"ungated models: {[m.__name__ for m in ungated]}"
 
 
+def test_pad_offset_leaves_bare_dates_untouched() -> None:
+    """A date-only string must not be mistaken for a minute-less offset.
+
+    "2026-04-09" ends in "-09", which looks like an offset tail; the
+    padder requires a time separator before padding (retrospective-review
+    catch, 2026-07-06).
+    """
+
+    from fredq.models._base import (  # noqa: PLC0415
+        _pad_offset,  # pyright: ignore[reportPrivateUsage]
+    )
+
+    assert _pad_offset("2026-04-09") == "2026-04-09"
+    assert _pad_offset("2026-04-09 07:53:12-05") == "2026-04-09 07:53:12-05:00"
+    assert _pad_offset("2026-04-09T07:53:12+03") == "2026-04-09T07:53:12+03:00"
+    assert _pad_offset("2026-04-09 07:53:12-05:00") == "2026-04-09 07:53:12-05:00"
+
+
 def test_fred_datetime_parses_corpus_offset_spelling() -> None:
     """FRED's minute-less offset (corpus: last_updated) parses AWARE.
 

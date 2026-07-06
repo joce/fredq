@@ -40,7 +40,13 @@ def _pad_offset(value: object) -> object:
         object: The padded string, or the value unchanged if not shaped so.
     """
 
-    if isinstance(value, str) and len(value) > _OFFSET_TAIL_LENGTH:
+    if (
+        isinstance(value, str)
+        # Only datetimes carry an offset; a bare date like "2026-04-09"
+        # must pass through untouched (its "-09" tail is not an offset).
+        and (" " in value or "T" in value)
+        and len(value) > _OFFSET_TAIL_LENGTH
+    ):
         tail = value[-_OFFSET_TAIL_LENGTH:]
         if tail[0] in "+-" and tail[1:].isdigit():
             return f"{value}:00"
