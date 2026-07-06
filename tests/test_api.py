@@ -22,11 +22,13 @@ from fredq.models import (
     ReleaseInfo,
     ReleaseSourcesResult,
     ReleasesResult,
+    ReleaseTablesResult,
     SeriesInfo,
     SeriesListResult,
     SourceInfo,
     SourcesResult,
     TagsResult,
+    VintageDatesResult,
 )
 
 CORPUS: Final[Path] = Path(__file__).parent / "fixtures" / "corpus"
@@ -177,7 +179,24 @@ _EXPECTED: Final[dict[str, type]] = {
     "tags": TagsResult,
     "tags-series": SeriesListResult,
     "related-tags": TagsResult,
+    "series-vintagedates": VintageDatesResult,
+    "series-search-tags": TagsResult,
+    "series-search-related-tags": TagsResult,
+    "series-updates": SeriesListResult,
+    "release-tables": ReleaseTablesResult,
 }
+
+
+def test_typed_surface_is_total() -> None:
+    """Every mapped callable returns a model or Frame — no dicts remain.
+
+    raw() stays dict by design; the geofred four are CLI-only. This is the
+    Part 3 done-criterion pin.
+    """
+
+    untyped = set(_CALLS) - set(_EXPECTED)
+    assert untyped == set(), f"still dict-returning: {sorted(untyped)}"
+    assert all(expected is not dict for expected in _EXPECTED.values())
 
 
 def _stub_payload(command_name: str) -> dict[str, Any]:

@@ -11,13 +11,15 @@ from fredq.models.releases import (
     ReleaseInfo,
     ReleasesResult,
 )
-from fredq.models.series import SeriesInfo, SeriesListResult
+from fredq.models.series import SeriesInfo, SeriesListResult, VintageDatesResult
 from fredq.models.sources import ReleaseSourcesResult, SourceInfo, SourcesResult
+from fredq.models.tables import Element, ReleaseTablesResult
 from fredq.models.tags import TagInfo, TagsResult
 
 __all__ = [
     "CategoriesResult",
     "CategoryInfo",
+    "Element",
     "FredDatetime",
     "FredModel",
     "ObservationsMeta",
@@ -25,6 +27,7 @@ __all__ = [
     "ReleaseDatesResult",
     "ReleaseInfo",
     "ReleaseSourcesResult",
+    "ReleaseTablesResult",
     "ReleasesResult",
     "SeriesInfo",
     "SeriesListResult",
@@ -32,4 +35,5 @@ __all__ = [
     "SourcesResult",
     "TagInfo",
     "TagsResult",
+    "VintageDatesResult",
 ]

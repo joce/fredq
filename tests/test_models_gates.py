@@ -147,6 +147,7 @@ _SERIES_LIST_GLOBS: Final[tuple[str, ...]] = (
     "category-series/*.json",
     "release-series/*.json",
     "tags-series/*.json",
+    "series-updates/*.json",
 )
 
 
@@ -215,6 +216,42 @@ def _series_list_envelopes() -> list[dict[str, Any]]:
     return _payloads(_SERIES_LIST_GLOBS, "seriess", paginated=True)
 
 
+def _vintage_dates_envelopes() -> list[dict[str, Any]]:
+    return _payloads(("series-vintagedates/*.json",), "vintage_dates")
+
+
+def _release_tables_payloads() -> list[dict[str, Any]]:
+    return _payloads(("release-tables/*.json",), "elements")
+
+
+def _element_records() -> list[dict[str, Any]]:
+    """Every element node across the release-tables captures, recursively.
+
+    Returns:
+        list[dict[str, Any]]: Flattened element records (children walked).
+    """
+
+    def walk(element: dict[str, Any]) -> list[dict[str, Any]]:
+        found = [element]
+        children = element.get("children")
+        if isinstance(children, list):
+            items = cast("list[object]", children)
+            for child in items:
+                if isinstance(child, dict):
+                    found += walk(cast("dict[str, Any]", child))
+        return found
+
+    records: list[dict[str, Any]] = []
+    for payload in _release_tables_payloads():
+        elements = payload.get("elements")
+        if isinstance(elements, dict):
+            mapping = cast("dict[str, Any]", elements)
+            for element in mapping.values():
+                if isinstance(element, dict):
+                    records += walk(cast("dict[str, Any]", element))
+    return records
+
+
 # Registry: (model class, records callable). Every model gets one entry.
 _GATES: Final[list[tuple[type[Any], RecordsFn]]] = [
     (models.SeriesInfo, _series_records),
@@ -231,6 +268,9 @@ _GATES: Final[list[tuple[type[Any], RecordsFn]]] = [
     (models.SourcesResult, _sources_envelopes),
     (models.TagInfo, _tag_records),
     (models.TagsResult, _tags_envelopes),
+    (models.VintageDatesResult, _vintage_dates_envelopes),
+    (models.Element, _element_records),
+    (models.ReleaseTablesResult, _release_tables_payloads),
 ]
 
 _GATE_IDS: Final[list[str]] = [model_cls.__name__ for model_cls, _ in _GATES]

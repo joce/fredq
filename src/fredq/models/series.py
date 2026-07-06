@@ -43,10 +43,10 @@ class SeriesListResult(FredModel):
     """A paginated series-list response.
 
     Appears in: series-search, category-series, release-series,
-    tags-series (corpus-gated across all four; series-updates has its own
-    envelope, measured in Part 3c). FRED echoes ``filter_variable`` and
-    ``filter_value`` in the envelope only when the request filtered
-    (corpus-measured), hence optional.
+    tags-series, series-updates (corpus-gated across all five). FRED
+    echoes ``filter_variable`` and ``filter_value`` in the envelope only
+    for filterable endpoints (always on series-updates, on the others only
+    when the request filtered) — corpus-measured, hence optional.
     """
 
     count: int
@@ -59,3 +59,16 @@ class SeriesListResult(FredModel):
     realtime_start: date
     seriess: list[SeriesInfo]
     sort_order: str
+
+
+class VintageDatesResult(FredModel):
+    """The series-vintagedates response: paginated ALFRED vintage dates."""
+
+    count: int
+    limit: int
+    offset: int
+    order_by: str
+    realtime_end: date
+    realtime_start: date
+    sort_order: str
+    vintage_dates: list[date]

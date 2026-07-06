@@ -28,11 +28,13 @@ from fredq.models import (
     ReleaseInfo,
     ReleaseSourcesResult,
     ReleasesResult,
+    ReleaseTablesResult,
     SeriesInfo,
     SeriesListResult,
     SourceInfo,
     SourcesResult,
     TagsResult,
+    VintageDatesResult,
 )
 
 if TYPE_CHECKING:
@@ -198,14 +200,14 @@ class Series:
         limit: int | None = None,
         offset: int | None = None,
         sort_order: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> VintageDatesResult:
         """List vintage dates (revision dates) for this series.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            VintageDatesResult: The paginated vintage dates.
         """
 
-        return _call(
+        payload = _call(
             "series-vintagedates",
             _values(
                 series_id=self.series_id,
@@ -216,6 +218,7 @@ class Series:
                 sort_order=sort_order,
             ),
         )
+        return VintageDatesResult.model_validate(payload)
 
     def categories(
         self,
@@ -685,14 +688,14 @@ class Release:
         element_id: int | None = None,
         include_observation_values: bool | None = None,
         observation_date: DateLike | None = None,
-    ) -> dict[str, Any]:
+    ) -> ReleaseTablesResult:
         """Fetch the hierarchical data table for this release.
 
         Returns:
-            dict[str, Any]: The full parsed payload.
+            ReleaseTablesResult: The release table tree.
         """
 
-        return _call(
+        payload = _call(
             "release-tables",
             _values(
                 release_id=self.release_id,
@@ -701,6 +704,7 @@ class Release:
                 observation_date=observation_date,
             ),
         )
+        return ReleaseTablesResult.model_validate(payload)
 
 
 class Source:
@@ -826,14 +830,14 @@ def search_series_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
     offset: int | None = None,
     order_by: str | None = None,
     sort_order: str | None = None,
-) -> dict[str, Any]:
+) -> TagsResult:
     """List tags for a series full-text search.
 
     Returns:
-        dict[str, Any]: The full parsed payload.
+        TagsResult: The paginated tag list.
     """
 
-    return _call(
+    payload = _call(
         "series-search-tags",
         _values(
             series_search_text=series_search_text,
@@ -848,6 +852,7 @@ def search_series_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
             sort_order=sort_order,
         ),
     )
+    return TagsResult.model_validate(payload)
 
 
 def search_series_related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
@@ -863,14 +868,14 @@ def search_series_related_tags(  # noqa: PLR0913 - one keyword-only arg per wire
     offset: int | None = None,
     order_by: str | None = None,
     sort_order: str | None = None,
-) -> dict[str, Any]:
+) -> TagsResult:
     """List tags related to a search and existing tag filter.
 
     Returns:
-        dict[str, Any]: The full parsed payload.
+        TagsResult: The paginated tag list.
     """
 
-    return _call(
+    payload = _call(
         "series-search-related-tags",
         _values(
             series_search_text=series_search_text,
@@ -886,6 +891,7 @@ def search_series_related_tags(  # noqa: PLR0913 - one keyword-only arg per wire
             sort_order=sort_order,
         ),
     )
+    return TagsResult.model_validate(payload)
 
 
 def series_updates(  # noqa: PLR0913 - one keyword-only arg per wire param.
@@ -897,17 +903,17 @@ def series_updates(  # noqa: PLR0913 - one keyword-only arg per wire param.
     filter_value: str | None = None,
     start_time: str | None = None,
     end_time: str | None = None,
-) -> dict[str, Any]:
+) -> SeriesListResult:
     """List recently updated FRED series.
 
     ``start_time``/``end_time`` use FRED's compact ``YYYYMMDDHhmm`` format
     (e.g. ``"202401011200"``), not ISO dates.
 
     Returns:
-        dict[str, Any]: The full parsed payload.
+        SeriesListResult: The paginated series list.
     """
 
-    return _call(
+    payload = _call(
         "series-updates",
         _values(
             realtime_start=realtime_start,
@@ -919,6 +925,7 @@ def series_updates(  # noqa: PLR0913 - one keyword-only arg per wire param.
             end_time=end_time,
         ),
     )
+    return SeriesListResult.model_validate(payload)
 
 
 def releases(  # noqa: PLR0913 - one keyword-only arg per wire param.
