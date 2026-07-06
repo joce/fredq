@@ -184,8 +184,13 @@ def _close_default_client() -> None:
 atexit.register(_close_default_client)
 
 
-def _stringify(separator: str, value: object) -> str:
+def _stringify(value: object) -> str:
     """Render a typed Python value exactly as a CLI user would spell it.
+
+    Lists/tuples join on "," — the separator ``_coerce_csv_param`` SPLITS
+    on — so per-item validation tokenizes correctly; coercion then owns
+    the re-join to the wire separator (e.g. ";"). Joining on the wire
+    separator here would bypass item validation entirely (review catch).
 
     Returns:
         str: The CLI-equivalent spelling of ``value``.
@@ -195,12 +200,15 @@ def _stringify(separator: str, value: object) -> str:
     """
 
     if isinstance(value, bool):
+        # Defensive only: _build_params intercepts bools before calling
+        # here. Do NOT delete — bool subclasses int, so falling through
+        # would produce Python's "True"/"False" spellings.
         return "true" if value else "false"
     if isinstance(value, datetime | date):
         return value.isoformat()
     if isinstance(value, list | tuple):
         items = cast("list[object] | tuple[object, ...]", value)
-        return separator.join(str(item) for item in items)
+        return ",".join(str(item) for item in items)
     if isinstance(value, int | float | str):
         return str(value)
     message = f"unsupported parameter value type: {type(value).__name__}"
@@ -253,7 +261,7 @@ def _build_params(
             # (cli.py:_collect_params), which bypasses coerce_param.
             params[name] = "true" if value else "false"
             continue
-        text = _stringify(spec.csv_separator, value)
+        text = _stringify(value)
         try:
             params[name] = coerce_param(spec, text)
         except ValueError as exc:

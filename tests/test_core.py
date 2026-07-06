@@ -290,3 +290,26 @@ def test_configure_replace_all_semantics() -> None:
         "api_key": "k2",
         "timeout": None,
     }
+
+
+def test_stringify_joins_lists_on_comma_for_coercion() -> None:
+    """Lists join on "," — the separator _coerce_csv_param splits on.
+
+    Joining on the wire separator (";") instead would make per-item
+    validation see one giant token and bypass allowed_values/min_items
+    checks (review catch). Coercion owns the re-join to the wire form.
+    """
+
+    stringify = core._stringify  # pyright: ignore[reportPrivateUsage]
+    assert stringify(["usa", "quarterly"]) == "usa,quarterly"
+    assert stringify(("a", "b", "c")) == "a,b,c"
+
+
+def test_call_endpoint_rejects_unsupported_value_type(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A param value with no CLI-equivalent spelling is a usage error."""
+
+    _install_stub(monkeypatch)
+    with pytest.raises(FredClientUsageError, match="unsupported parameter value"):
+        run(core.call_endpoint("series", values={"series_id": {"not": "a str"}}))
