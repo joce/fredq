@@ -49,14 +49,14 @@ Each `CommandSpec.name` is globally unique and unchanged (routing key). The `lea
 - IMPORTANT: `--help` is the primary product surface; keep it complete, adaptive, and generated from command metadata where practical.
 - Do not add `describe`, `endpoints`, `params`, or other discovery commands; discovery belongs under `fredq --help` and `fredq <endpoint> --help`.
 - Print FRED response bodies to stdout exactly as returned; do not model, reshape, pretty-print, or interpret endpoint JSON. (CLI layer only; the library layer interprets.)
-- In the CLI layer, keep FRED endpoint knowledge in metadata and validation only. Response classes live exclusively in the library layer (src/fredq/models/, Part 3).
+- In the CLI layer, keep FRED endpoint knowledge in metadata and validation only. Response classes live exclusively in the library layer (src/fredq/models/).
 - Use `uv run python` for Python scripts; never use bare `python` or `python3`.
 - Use `regex` instead of standard library `re` for regular expressions.
 - Never log or print the FRED API key.
 - Keep runtime dependencies narrow; do not add TUI, ORM, web framework, or rich formatting libraries.
 
 ## Rules — library layer
-- The library layer (`api.py`, `_core.py`, `_bridge.py`, `frames.py`, later `models/`) parses and types FRED responses; the raw-JSON law above does not apply to it.
+- The library layer (`api.py`, `_core.py`, `_bridge.py`, `frames.py`, `models/`) parses and types FRED responses; the raw-JSON law above does not apply to it.
 - The CLI never imports `api.py`, `frames.py`, or `models/`. `fredq --help` and all CLI commands must never pay the polars import cost.
 - Library kwargs mirror wire parameter names exactly as spelled in `CommandSpec`s; never an inverted flag.
 - The committed corpus (`tests/fixtures/corpus/`, see its README) is the only authority for wire spellings, presence, and types. Errors are mapped by status + body shape, never message wording.

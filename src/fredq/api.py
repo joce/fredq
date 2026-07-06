@@ -1,10 +1,11 @@
 """Public synchronous fredq API.
 
-Every method/function performs one HTTP call and returns the full parsed
-FRED payload as a dict (typed models arrive endpoint-by-endpoint in Part
-3), except ``Series.observations`` which returns a typed
-:class:`~fredq.frames.Observations` frame. Kwargs mirror FRED wire
-parameter names exactly as the CLI's command metadata spells them.
+Every method/function performs one HTTP call and returns a corpus-gated
+pydantic model (see :mod:`fredq.models`), except ``Series.observations``
+which returns a typed :class:`~fredq.frames.Observations` frame and
+``raw()`` which returns the parsed payload as a plain dict. Kwargs mirror
+FRED wire parameter names exactly as the CLI's command metadata spells
+them.
 """
 
 from __future__ import annotations
