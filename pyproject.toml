@@ -247,7 +247,33 @@ version-file = "src/fredq/_version.py"
 packages = ["src/fredq"]
 
 [tool.hatch.build.targets.sdist]
+# Explicit include AND exclude: hatchling normally also excludes .gitignore
+# patterns, but that detection silently fails to find the project's
+# .gitignore when the build root is passed as an absolute path (exactly what
+# `uv build`'s PEP 517 hook does) inside a git worktree, where `.git` is a
+# file rather than a directory. Without this explicit exclude list, a build
+# from a worktree ships every gitignored dev tree (node_modules/, .claude/,
+# .venv/, ...) into the sdist. See tests/test_packaging.py.
 include = ["src", "tests", "AGENTS.md", "CHANGELOG.md", "LICENSE", "README.md", "RELEASING.md", "pyproject.toml"]
+exclude = [
+    "**/__pycache__",
+    "**/*.py[cod]",
+    ".claude",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tox",
+    ".uv-cache",
+    ".venv",
+    ".vscode",
+    "docs",
+    "htmlcov",
+    "node_modules",
+    "output",
+    "report",
+    "tmp",
+]
 
 [build-system]
 requires = ["hatchling>=1.29,<2.0", "hatch-vcs>=0.4,<1.0"]
