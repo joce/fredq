@@ -79,7 +79,7 @@ def _now_utc() -> datetime:
 
 
 class Series:
-    """A FRED series, addressed by its series ID."""
+    """A FRED series, addressed by its series-ID string (e.g. "DGS10")."""
 
     def __init__(self, series_id: str) -> None:
         """Bind a series ID for subsequent calls."""
@@ -242,7 +242,7 @@ class Series:
 
 
 class Category:
-    """A FRED category, addressed by its category ID."""
+    """A FRED category, addressed by its integer ID (the tree root is 0)."""
 
     def __init__(self, category_id: int) -> None:
         """Bind a category ID for subsequent calls."""
@@ -260,6 +260,10 @@ class Category:
 
     def info(self) -> dict[str, Any]:
         """Fetch the category record (name, parent ID).
+
+        FRED's category endpoint takes no realtime parameters, unlike the
+        other entity ``info()`` methods — the zero-argument signature is
+        deliberate, not an omission.
 
         Returns:
             dict[str, Any]: The full parsed payload.
@@ -420,7 +424,7 @@ class Category:
 
 
 class Release:
-    """A FRED release, addressed by its release ID."""
+    """A FRED release, addressed by its integer ID (e.g. 53 = GDP)."""
 
     def __init__(self, release_id: int) -> None:
         """Bind a release ID for subsequent calls."""
@@ -641,7 +645,7 @@ class Release:
 
 
 class Source:
-    """A FRED source, addressed by its source ID."""
+    """A FRED source, addressed by its integer ID (e.g. 1 = Board of Governors)."""
 
     def __init__(self, source_id: int) -> None:
         """Bind a source ID for subsequent calls."""
@@ -833,6 +837,9 @@ def series_updates(  # noqa: PLR0913 - one keyword-only arg per wire param.
     end_time: str | None = None,
 ) -> dict[str, Any]:
     """List recently updated FRED series.
+
+    ``start_time``/``end_time`` use FRED's compact ``YYYYMMDDHhmm`` format
+    (e.g. ``"202401011200"``), not ISO dates.
 
     Returns:
         dict[str, Any]: The full parsed payload.

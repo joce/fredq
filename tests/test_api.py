@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+from datetime import date
 from pathlib import Path
 from typing import Any, Final
 
@@ -228,3 +229,48 @@ def test_repr_is_useful() -> None:
     assert repr(api.Category(125)) == "Category(125)"
     assert repr(api.Release(53)) == "Release(53)"
     assert repr(api.Source(1)) == "Source(1)"
+
+
+def test_observations_meta_and_fetched_at(
+    capture_calls: list[tuple[str, dict[str, Any]]],
+) -> None:
+    """observations() splits the envelope into meta and stamps fetched_at."""
+
+    obs = api.Series("DGS10").observations()
+    assert capture_calls[0][0] == "series-observations"
+    assert obs.meta == {"units": "lin"}  # envelope minus the rows
+    assert obs.fetched_at.tzinfo is not None  # aware UTC stamp
+
+
+def test_date_objects_reach_the_wire_as_iso(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A datetime.date through the PUBLIC surface serializes to ISO wire form.
+
+    capture_calls stubs call_endpoint (pre-serialization), so this test
+    stubs one level lower — the client — to pin the full public promise.
+    """
+
+    class _WireStub:
+        def __init__(self) -> None:
+            self.params: dict[str, object] = {}
+
+        async def get(
+            self,
+            path: str,  # noqa: ARG002
+            params: dict[str, object],
+            *,
+            base_url: str | None = None,  # noqa: ARG002
+        ) -> str:
+            self.params = dict(params)
+            return '{"observations": []}'
+
+        async def aclose(self) -> None:  # noqa: PLR6301 - protocol shape
+            return None
+
+    stub = _WireStub()
+    core = api._core  # pyright: ignore[reportPrivateUsage]
+    monkeypatch.setattr(core, "_get_client", lambda: stub)
+    api.Series("DGS10").observations(observation_start=date(2024, 1, 1))
+    assert stub.params["observation_start"] == "2024-01-01"
+    assert stub.params["series_id"] == "DGS10"
