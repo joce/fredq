@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import fredq
 from fredq.commands import COMMANDS
 
@@ -25,3 +27,10 @@ def test_commands_paths_are_rooted() -> None:
 
     for command in COMMANDS:
         assert command.path.startswith(("/fred/", "/geofred/")), command.path
+
+
+def test_py_typed_marker_ships_with_the_package() -> None:
+    """PEP 561: the wheel must carry py.typed for downstream type checkers."""
+
+    marker = Path(fredq.__file__).parent / "py.typed"
+    assert marker.is_file()

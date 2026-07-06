@@ -1,7 +1,7 @@
 [project]
 name = "fredq"
 dynamic = ["version"]
-description = "LLM-friendly CLI for raw FRED (Federal Reserve Economic Data) API JSON."
+description = "Typed Python library and LLM-friendly CLI for FRED (Federal Reserve Economic Data)."
 readme = "README.md"
 authors = [{ name = "Jocelyn Legault", email = "jocelynlegault@gmail.com" }]
 license = "MIT"
@@ -14,6 +14,8 @@ keywords = [
     "macro",
     "cli",
     "llm-tools",
+    "library",
+    "typed",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -37,6 +39,9 @@ dependencies = [
     "regex>=2025.11,<2027.0",
     "typing-extensions>=4.13",
 ]
+
+[project.optional-dependencies]
+pandas = ["pandas>=2.2,<3.0", "pyarrow>=17,<23"]
 
 [project.scripts]
 fredq = "fredq.cli:main"
@@ -220,6 +225,7 @@ preview = true
     "DOC501",
     "PLC2701",
     "S101",
+    "S404",
     "SLF001",
 ]
 "tools/*" = [
