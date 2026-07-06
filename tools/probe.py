@@ -3,8 +3,9 @@
 Run from the repo root:  uv run python -m tools.probe
 
 Writes raw response bodies to tests/fixtures/corpus/<command>/<case>.json and
-a manifest.json describing every case (argv, status, timestamp). Re-running
-and diffing the corpus is the FRED schema-drift detector.
+a manifest.json describing every case (argv, status, http_status, file;
+run timestamp in _meta). Re-running and diffing the corpus is the FRED
+schema-drift detector.
 
 The runner overwrites captures but never deletes: renaming or removing a
 case orphans its old file. tests/test_corpus.py pins manifest <-> files
