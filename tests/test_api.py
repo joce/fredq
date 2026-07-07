@@ -381,3 +381,50 @@ def test_date_objects_reach_the_wire_as_iso(
     api.Series("DGS10").observations(observation_start=date(2024, 1, 1))
     assert stub.params["observation_start"] == "2024-01-01"
     assert stub.params["series_id"] == "DGS10"
+
+
+def _stub_series_payload(
+    monkeypatch: pytest.MonkeyPatch, payload: dict[str, Any]
+) -> None:
+    """Make the next Series.info() call receive ``payload`` verbatim."""
+
+    async def _fake(  # noqa: RUF029 - coroutine required by call_endpoint's API
+        command_name: str,  # noqa: ARG001 - signature must match call_endpoint's
+        *,
+        values: dict[str, Any],  # noqa: ARG001 - signature must match call_endpoint's
+    ) -> dict[str, Any]:
+        return payload
+
+    core = api._core  # pyright: ignore[reportPrivateUsage]
+    monkeypatch.setattr(core, "call_endpoint", _fake)
+
+
+_UNWRAP_VIOLATIONS: Final[list[tuple[dict[str, Any], str]]] = [
+    ({"count": 0}, "got no list"),
+    ({"seriess": []}, "got 0"),
+    ({"seriess": [{}, {}]}, "got 2"),
+    ({"seriess": ["not-an-object"]}, "not an object"),
+]
+
+
+@pytest.mark.parametrize(
+    ("payload", "match"),
+    _UNWRAP_VIOLATIONS,
+    ids=["missing-key", "empty-list", "two-records", "non-dict-record"],
+)
+def test_unwrap_violations_raise_malformed_contract(
+    monkeypatch: pytest.MonkeyPatch, payload: dict[str, Any], match: str
+) -> None:
+    """Single-entity unwrap violations raise the malformed-response contract.
+
+    Spec pin (Part 3): FredApiError with error_code=None — the same
+    contract as any other malformed 200. Corpus evidence says success
+    payloads always carry exactly one record; anything else is drift and
+    must fail loudly, never index-error or silently mis-parse.
+    """
+
+    _stub_series_payload(monkeypatch, payload)
+    with pytest.raises(FredApiError, match=match) as exc_info:
+        api.Series("DGS10").info()
+    assert exc_info.value.error_code is None
+    assert exc_info.value.status_code is None
