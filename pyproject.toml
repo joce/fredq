@@ -105,6 +105,14 @@ reportUnknownMemberType = false
 reportUnknownArgumentType = false
 reportUnknownVariableType = false
 
+[[tool.pyright.executionEnvironments]]
+# Same rationale as tests/test_frames.py above: this file's
+# to_pandas()/to_arrow() pinning also probes the optional extra.
+root = "tests/test_skill_content.py"
+reportMissingImports = false
+reportUnusedImport = false
+reportUnknownMemberType = false
+
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]
 testpaths = ["tests"]
