@@ -200,6 +200,23 @@ def test_call_endpoint_serializes_bool_and_csv(
     assert stub.calls[1][1]["tag_names"] == "usa;quarterly"
 
 
+def test_call_endpoint_rejects_bool_for_non_boolean_param(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A bool passed to a non-boolean param is a usage error, not `=true`.
+
+    The boolean bypass mirrors the CLI's, but the CLI only ever sees a bool
+    for a boolean flag (argparse), while a library caller can pass one to
+    any param. `limit=True` must reach coercion and be rejected locally,
+    never serialized as `limit=true` and shipped to FRED.
+    """
+
+    stub = _install_stub(monkeypatch)
+    with pytest.raises(FredClientUsageError, match="limit"):
+        run(core.call_endpoint("releases", values={"limit": True}))
+    assert stub.calls == []  # rejected before reaching the client
+
+
 def test_call_endpoint_rejects_unknown_param(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

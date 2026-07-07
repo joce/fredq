@@ -15,7 +15,7 @@ from fredq.auth import resolve_api_key
 from fredq.client import FredClient
 from fredq.commands import COMMANDS_BY_NAME
 from fredq.exceptions import FredApiError, FredClientUsageError, FredRequestError
-from fredq.params import coerce_param, enforce_cross_param_rules
+from fredq.params import ParamKind, coerce_param, enforce_cross_param_rules
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -200,9 +200,11 @@ def _stringify(value: object) -> str:
     """
 
     if isinstance(value, bool):
-        # Defensive only: _build_params intercepts bools before calling
-        # here. Do NOT delete — bool subclasses int, so falling through
-        # would produce Python's "True"/"False" spellings.
+        # _build_params only intercepts bools for BOOLEAN-kind params, so a
+        # bool reaching here is a type-confusion on a non-boolean param
+        # (e.g. limit=True). Emit lowercase so coercion then rejects it the
+        # same way the CLI rejects `--limit true`. Do NOT delete — bool
+        # subclasses int, so falling through would spell "True"/"False".
         return "true" if value else "false"
     if isinstance(value, datetime | date):
         return value.isoformat()
@@ -255,10 +257,14 @@ def _build_params(
     params: dict[str, ParamValue] = {}
     for name, value in provided.items():
         spec = specs[name]
-        if isinstance(value, bool):
+        if spec.kind is ParamKind.BOOLEAN and isinstance(value, bool):
             # FRED requires lowercase 'true'/'false', not Python's
             # 'True'/'False' — mirrors the CLI's own bool handling
             # (cli.py:_collect_params), which bypasses coerce_param.
+            # Gated on the BOOLEAN kind: unlike argparse (which only yields
+            # a bool for a boolean flag), a library caller can pass a bool
+            # to any param, and `limit=True` must reach coercion and be
+            # rejected — not silently serialized as `limit=true`.
             params[name] = "true" if value else "false"
             continue
         text = _stringify(value)
