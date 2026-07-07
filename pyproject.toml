@@ -1,7 +1,7 @@
 [project]
 name = "fredq"
 dynamic = ["version"]
-description = "LLM-friendly CLI for raw FRED (Federal Reserve Economic Data) API JSON."
+description = "Typed Python library and LLM-friendly CLI for FRED (Federal Reserve Economic Data)."
 readme = "README.md"
 authors = [{ name = "Jocelyn Legault", email = "jocelynlegault@gmail.com" }]
 license = "MIT"
@@ -14,6 +14,8 @@ keywords = [
     "macro",
     "cli",
     "llm-tools",
+    "library",
+    "typed",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -34,9 +36,13 @@ classifiers = [
 dependencies = [
     "httpx2>=2.5,<3.0",
     "polars>=1.41,<2.0",
+    "pydantic>=2.9,<3.0",
     "regex>=2025.11,<2027.0",
     "typing-extensions>=4.13",
 ]
+
+[project.optional-dependencies]
+pandas = ["pandas>=2.2,<3.0", "pyarrow>=17,<23"]
 
 [project.scripts]
 fredq = "fredq.cli:main"
@@ -71,6 +77,8 @@ dev = [
 [tool.black]
 target-version = ["py310"]
 line-length = 88
+# examples/ holds marimo notebooks whose cell layout marimo itself owns.
+extend-exclude = "examples/"
 
 [tool.isort]
 profile = "black"
@@ -78,7 +86,7 @@ py_version = "auto"
 skip = ["__pycache__", ".venv", ".uv-cache", ".git", ".pytest_cache", ".tox"]
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "tools"]
 exclude = ["src/fredq/_version.py"]
 typeCheckingMode = "strict"
 
@@ -86,8 +94,19 @@ typeCheckingMode = "strict"
 root = "src/fredq/parquet_writer.py"
 reportUnknownVariableType = false
 
+[[tool.pyright.executionEnvironments]]
+# pandas/pyarrow are the optional fredq[pandas] extra and absent from the
+# base dev environment: their imports and untyped return values are
+# Unknown to pyright here. The ImportError probes keep runtime honest.
+root = "tests/test_frames.py"
+reportMissingImports = false
+reportUnusedImport = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+
 [tool.pytest.ini_options]
-pythonpath = "src"
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 timeout = 10
 asyncio_mode = "auto"
@@ -117,6 +136,7 @@ directory = "htmlcov"
 exclude = [
     "__pycache__",
     ".git",
+    "examples",
     ".pytest_cache",
     ".ruff_cache",
     ".specstory",
@@ -209,7 +229,12 @@ preview = true
     "DOC501",
     "PLC2701",
     "S101",
+    "S404",
     "SLF001",
+]
+"tools/*" = [
+    "PLC2701",
+    "T201",
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -225,7 +250,33 @@ version-file = "src/fredq/_version.py"
 packages = ["src/fredq"]
 
 [tool.hatch.build.targets.sdist]
+# Explicit include AND exclude: hatchling normally also excludes .gitignore
+# patterns, but that detection silently fails to find the project's
+# .gitignore when the build root is passed as an absolute path (exactly what
+# `uv build`'s PEP 517 hook does) inside a git worktree, where `.git` is a
+# file rather than a directory. Without this explicit exclude list, a build
+# from a worktree ships every gitignored dev tree (node_modules/, .claude/,
+# .venv/, ...) into the sdist. See tests/test_packaging.py.
 include = ["src", "tests", "AGENTS.md", "CHANGELOG.md", "LICENSE", "README.md", "RELEASING.md", "pyproject.toml"]
+exclude = [
+    "**/__pycache__",
+    "**/*.py[cod]",
+    ".claude",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".tox",
+    ".uv-cache",
+    ".venv",
+    ".vscode",
+    "docs",
+    "htmlcov",
+    "node_modules",
+    "output",
+    "report",
+    "tmp",
+]
 
 [build-system]
 requires = ["hatchling>=1.29,<2.0", "hatch-vcs>=0.4,<1.0"]

@@ -6,165 +6,222 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![GitHub License](https://img.shields.io/github/license/joce/fredq)](https://github.com/joce/fredq/blob/main/LICENSE)
 
-FRED Query — Federal Reserve Economic Data on the command line.
-
-fredq brings the [FRED](https://fred.stlouisfed.org/docs/api/fred/) (Federal
-Reserve Economic Data) HTTP endpoints to the command line. It is built for
-scripts, agents, and quick terminal work that needs the JSON returned by the
-FRED API.
-
-The project stays deliberately close to the source. It does not reshape FRED
-responses, define economic domain models, or add a discovery API beyond CLI
-help.
-
-## Features
-
-- Raw FRED JSON on stdout, with no pretty-printing or interpretation.
-- Endpoint-specific commands for every public FRED API endpoint.
-- Generated help that includes examples, parameters, and known value sets.
-- Typed Parquet output for `series observations` when a long time series is
-  more useful as a columnar table than as JSON.
-- ALFRED point-in-time support (`--realtime-start`, `--realtime-end`,
-  `series vintage-dates`).
-- GeoFRED / Maps regional data (`geofred` subcommands): regional time series,
-  all-region snapshots, series-group metadata, and GeoJSON shape files.
+fredq brings [FRED](https://fred.stlouisfed.org/docs/api/fred/) (Federal
+Reserve Economic Data) to Python two ways: a typed library for programs
+(`fredq.Series("DGS10").observations()` returns a polars frame; `.info()`
+returns a validated, typed record) and an LLM-friendly command line
+(`fredq series observations DGS10`) that prints the raw JSON FRED returns,
+byte-for-byte, for scripts, agents, and quick terminal work.
 
 ## Install
 
-fredq is a Python 3.10+ project. Install it as a tool with
-[uv](https://docs.astral.sh/uv/) or with pip:
+fredq is a Python 3.10+ package:
 
 ```powershell
-uv tool install fredq
-# or
 pip install fredq
+# or, as a standalone CLI tool
+uv tool install fredq
 ```
 
-Then run:
+Add the `pandas` extra for `to_pandas()` / `to_arrow()` frame conversions:
+
+```powershell
+pip install "fredq[pandas]"
+```
+
+A free FRED API key is required — see [Auth](#auth).
+
+## Library quickstart
+
+```python
+import fredq
+
+# Observations come back as a typed, polars-backed frame.
+obs = fredq.Series("DGS10").observations(observation_start="2024-01-01")
+df = obs.to_polars()          # or .to_pandas() / .to_arrow() (needs [pandas]) / .to_dicts()
+print(obs.meta.units, obs.meta.count)   # the response envelope, corpus-typed
+
+# Metadata calls return validated pydantic models with real fields.
+info = fredq.Series("DGS10").info()
+print(info.title, info.frequency, info.observation_start)
+
+# Free-text search, releases, sources — all typed.
+hits = fredq.search_series("10-year treasury", limit=10)
+for s in hits.seriess:
+    print(s.id, s.title)
+
+release = fredq.Release(53).info()  # 53 = GDP
+print(release.name, release.link)
+```
+
+Errors are raised as typed exceptions instead of surfacing raw HTTP details:
+
+```python
+from fredq import FredApiError
+
+try:
+    fredq.Series("NOT-A-REAL-SERIES").info()
+except FredApiError as exc:
+    print(exc.error_code, exc.error_message)
+```
+
+Configure the shared client once, before the first call (API key, timeout):
+
+```python
+fredq.configure(api_key="...", timeout=None)
+```
+
+Anything without a first-class method is reachable through the escape
+hatch, which validates parameters exactly like the typed calls and returns
+the parsed payload as a plain dict:
+
+```python
+payload = fredq.raw("series", series_id="DGS10")
+```
+
+## Library surface
+
+Every entity class binds one ID and exposes endpoint methods as
+keyword-only calls (wire parameter names, unchanged from FRED's own
+spelling). Every call is one HTTP request and returns a typed pydantic
+model, except `Series.observations()`, which returns an `Observations`
+frame.
+
+| Entity | Methods |
+| --- | --- |
+| `Series(series_id)` | `info`, `observations`, `vintage_dates`, `categories`, `tags`, `release` |
+| `Category(category_id)` | `info`, `children`, `related`, `series`, `tags`, `related_tags` |
+| `Release(release_id)` | `info`, `dates`, `series`, `sources`, `tags`, `related_tags`, `tables` |
+| `Source(source_id)` | `info`, `releases` |
+
+Module-level functions cover the endpoints with no natural entity owner:
+
+| Function | FRED data |
+| --- | --- |
+| `search_series(search_text, ...)` | Search FRED series by keyword. |
+| `search_series_tags(series_search_text, ...)` | Tags for a series full-text search. |
+| `search_series_related_tags(series_search_text, tag_names, ...)` | Tags related to a search and existing tag filter. |
+| `series_updates(...)` | Recently updated FRED series. |
+| `releases(...)` | All FRED economic data releases. |
+| `release_calendar(...)` | Release dates across all FRED releases. |
+| `sources(...)` | All FRED data sources. |
+| `tags(...)` | All FRED tags. |
+| `tag_series(tag_names, ...)` | Series matching a set of FRED tags. |
+| `related_tags(tag_names, ...)` | Tags related to an existing tag filter. |
+| `raw(command, **params)` | Escape hatch — any command by name. |
+| `configure(*, api_key=None, timeout=None)` | Set shared-client options before the first call. |
+
+Date-like parameters (`observation_start`, `realtime_start`, ...) accept a
+`str`, `datetime.date`, or `datetime.datetime`. Errors are raised as
+`fredq.FredApiError` (FRED's structured error response) or
+`fredq.FredClientUsageError` (invalid arguments caught before any request is
+sent); both subclass `fredq.FredqError`.
+
+## Typed models
+
+Every typed return value is a frozen pydantic model under `fredq.models`,
+built directly from a corpus of real FRED responses: fields are marked
+required only when they are present in 100% of the corpus's captures for
+that endpoint, and optional otherwise — no guessing from documentation.
+Unrecognized fields land on `model_extra` rather than raising, so a new FRED
+field surfaces as data, not a crash. fredq ships [PEP 561](https://peps.python.org/pep-0561/)
+type information (`py.typed`), so type checkers see the real return types
+without stubs.
+
+## Examples
+
+[`examples/fred_explorer.py`](examples/fred_explorer.py) is an interactive
+[marimo](https://marimo.io) notebook built entirely on the library: a series
+explorer with units transforms and frequency aggregation, multi-series
+comparison, catalog search, ALFRED vintage-revision analysis, and a
+mortgage-vs-Treasury spread dashboard. Run it without adding dependencies:
+
+```sh
+uv run --with marimo --with altair marimo edit examples/fred_explorer.py
+```
+
+## Command line
+
+The CLI is a separate, from-scratch layer: it prints the FRED response body
+to stdout exactly as returned, with no reshaping or interpretation — the
+library's typed models are not involved. It is built for scripts, agents,
+and terminal use that want raw JSON.
 
 ```powershell
 fredq --help
 ```
 
-### From Source
-
-To run from a local checkout (development):
-
-```powershell
-uv sync --all-groups
-uv run fredq --help
-```
-
-Or install the checkout as a tool:
-
-```powershell
-uv tool install .
-fredq --help
-```
-
-## API Key
-
-The FRED API requires a free API key. Request one at
-<https://fred.stlouisfed.org/docs/api/api_key.html>.
-
-fredq reads the key from, in order:
-
-1. The `FRED_API_KEY` environment variable.
-2. The first non-empty line of `~/.fredq/api_key`.
-3. The `--api-key` flag (visible in process listings; prefer the env var).
-
-On POSIX systems, restrict the key file so only your user can read it:
-
-```bash
-chmod 600 ~/.fredq/api_key
-```
-
-fredq emits a warning if the file is readable by group or world. To disable
-the file fallback entirely (for hermetic runs), set `FREDQ_DISABLE_KEY_FILE=1`
-or pass `--no-key-file`.
-
-fredq never prints, logs, or echoes the API key. The key is also redacted
-from URLs in error messages and from any httpx2 debug logs emitted under
-`--verbose`.
-
-## Quick Start
+### Quick start
 
 Show metadata for a series:
 
 ```powershell
-uv run fredq series show GNPCA
+fredq series show GNPCA
 ```
 
 Fetch a series' observations:
 
 ```powershell
-uv run fredq series observations CPIAUCSL
+fredq series observations CPIAUCSL
 ```
 
 Apply a unit transformation and frequency aggregation:
 
 ```powershell
-uv run fredq series observations CPIAUCSL --units pch --frequency m
+fredq series observations CPIAUCSL --units pch --frequency m
 ```
 
 Search for a series by keyword:
 
 ```powershell
-uv run fredq series search "10-year treasury" --limit 10
+fredq series search "10-year treasury" --limit 10
 ```
 
 Browse the FRED category tree from the root:
 
 ```powershell
-uv run fredq category children 0
+fredq category children 0
 ```
 
 List recent economic releases:
 
 ```powershell
-uv run fredq release list --limit 10
+fredq release list --limit 10
 ```
 
 List recent release publication dates across all releases:
 
 ```powershell
-uv run fredq release calendar --limit 20
+fredq release calendar --limit 20
 ```
 
 Show metadata for a specific release (53 = GDP):
 
 ```powershell
-uv run fredq release show 53
+fredq release show 53
 ```
 
 Find all series tagged with a set of FRED tags:
 
 ```powershell
-uv run fredq tag series "usa;monthly;cpi" --limit 25
+fredq tag series "usa;monthly;cpi" --limit 25
 ```
 
 ALFRED point-in-time: see what GDP looked like on a past date:
 
 ```powershell
-uv run fredq series vintage-dates GNPCA
-uv run fredq series observations GNPCA --realtime-start 2024-09-25
+fredq series vintage-dates GNPCA
+fredq series observations GNPCA --realtime-start 2024-09-25
 ```
 
-Fetch GeoFRED regional data — per-capita income by state for one year:
-
-```powershell
-uv run fredq geofred series-group WIPCPI
-uv run fredq geofred series-data WIPCPI --start-date 2022-01-01
-```
-
-## Parquet Output
+### Parquet output
 
 `series observations` can write a typed Parquet table instead of raw JSON.
 Parquet output is included in a plain install — no extra required. Pass
 `--format parquet --out PATH`:
 
 ```powershell
-uv run fredq series observations CPIAUCSL --units pch --frequency m \
+fredq series observations CPIAUCSL --units pch --frequency m \
   --format parquet --out cpi_yoy.parquet
 ```
 
@@ -181,38 +238,38 @@ stays JSON-only, and rejects `--format parquet` with a usage error. Parquet
 output assumes FRED's default observation layout (one row per observation);
 fredq does not expose FRED's alternative `output_type` modes.
 
-## Discovering IDs
+### Discovering IDs
 
 Most commands take an ID as a positional argument. If you don't know one yet,
 start with the commands that need no ID, then chain:
 
 ```powershell
 # Find a series ID by keyword
-uv run fredq series search "unemployment rate" --limit 10
+fredq series search "unemployment rate" --limit 10
 
 # List the catalogs
-uv run fredq release list --limit 1000  # release IDs
-uv run fredq source list                # source IDs
-uv run fredq tag list --limit 50        # tag names
+fredq release list --limit 1000  # release IDs
+fredq source list                # source IDs
+fredq tag list --limit 50        # tag names
 
 # Walk the category tree from the root (0 = root)
-uv run fredq category children 0
+fredq category children 0
 ```
 
 Then use the ID with the matching command:
 
 ```powershell
-uv run fredq series observations DGS10
-uv run fredq category series 106
-uv run fredq release series 10
+fredq series observations DGS10
+fredq category series 106
+fredq release series 10
 ```
 
-## Commands
+### Commands
 
 Use root help to see the command list:
 
 ```powershell
-uv run fredq --help
+fredq --help
 ```
 
 Current commands, grouped by how often they're reached for:
@@ -278,34 +335,20 @@ Current commands, grouped by how often they're reached for:
 | `source show` | Show metadata for one FRED source. |
 | `source releases` | List releases published by one FRED source. |
 
-**GeoFRED / Maps (`geofred` subcommands)**
-
-| Command | FRED data |
-| --- | --- |
-| `geofred series-group` | Show GeoFRED series-group metadata (region type, season, frequency, units). |
-| `geofred series-data` | Fetch the regional time series for one FRED series. |
-| `geofred regional-data` | Fetch a regional snapshot — all regions for a single date. |
-| `geofred shapes` | Download a GeoJSON shape file for a region type, to `--out`. |
-
-The GeoFRED endpoints use a different base URL and return regional data keyed by
-FIPS code. `geofred shapes` returns Highcharts-format GeoJSON whose coordinates
-are in a Lambert Conformal Conic projection (not WGS84); reproject before mixing
-with lat/lon basemaps. See `fredq geofred --help` for the full subcommand list.
-
 A bare group prints its list of subcommands; each leaf command has its own
 adaptive help:
 
 ```powershell
-uv run fredq series --help              # group: lists the series subcommands
-uv run fredq series observations --help # leaf: full endpoint help
-uv run fredq series search --help
-uv run fredq release calendar --help
+fredq series --help              # group: lists the series subcommands
+fredq series observations --help # leaf: full endpoint help
+fredq series search --help
+fredq release calendar --help
 ```
 
 Leaf-command help is the primary documentation surface. It shows the FRED target
 endpoint, accepted parameters, allowed value sets, defaults, and examples.
 
-## Dates, Booleans, and Tag Lists
+### Dates, booleans, and tag lists
 
 Date parameters accept:
 
@@ -321,10 +364,10 @@ Tag lists (`--tag-names`, `--exclude-tag-names`) use semicolons as
 separators, matching FRED's wire format:
 
 ```powershell
-uv run fredq tag series "usa;annual"
+fredq tag series "usa;annual"
 ```
 
-## ALFRED Point-in-Time
+### ALFRED point-in-time
 
 Most endpoints accept `--realtime-start` and `--realtime-end` to view data
 as of a historical date (the [ALFRED](https://alfred.stlouisfed.org/)
@@ -334,61 +377,64 @@ backtests and for distinguishing data revisions from real-time signals.
 
 ```powershell
 # When were GNP revisions published?
-uv run fredq series vintage-dates GNPCA
+fredq series vintage-dates GNPCA
 
 # What did GNP look like on 2024-09-25?
-uv run fredq series observations GNPCA \
+fredq series observations GNPCA \
   --realtime-start 2024-09-25 --realtime-end 2024-09-25
 ```
 
-## Output Contract
+### Output contract
 
 fredq writes the FRED response body to stdout exactly as returned. This makes
 it easy to pipe into tools that expect JSON:
 
 ```powershell
-uv run fredq series show GNPCA | jq .
-uv run fredq release list --limit 25 | jq '.releases[].name'
+fredq series show GNPCA | jq .
+fredq release list --limit 25 | jq '.releases[].name'
 ```
 
 Diagnostics, warnings, and errors are written to stderr. The exit code is
 `0` on success, `1` on a FRED request failure, and `2` on a usage or
 configuration error.
 
+## Auth
+
+The FRED API requires a free API key. Request one at
+<https://fred.stlouisfed.org/docs/api/api_key.html>.
+
+Both the library and the CLI read the key from, in order:
+
+1. The `FRED_API_KEY` environment variable.
+2. The first non-empty line of `~/.fredq/api_key`.
+3. CLI only: the `--api-key` flag (visible in process listings; prefer the
+   env var). Library callers pass `api_key=` to `fredq.configure()` instead.
+
+On POSIX systems, restrict the key file so only your user can read it:
+
+```bash
+chmod 600 ~/.fredq/api_key
+```
+
+fredq emits a warning if the file is readable by group or world. To disable
+the file fallback entirely (for hermetic runs), set `FREDQ_DISABLE_KEY_FILE=1`
+or pass `--no-key-file` (CLI), or call `fredq.configure(api_key=...)` with an
+explicit key (library).
+
+fredq never prints, logs, or echoes the API key. The key is also redacted
+from URLs in error messages and from any httpx2 debug logs emitted under
+`--verbose`.
+
 ## Development
 
-Install development dependencies:
+See [AGENTS.md](AGENTS.md) for architecture, conventions, and the
+CLI-layer/library-layer split. In short:
 
 ```powershell
 uv sync --all-groups
-```
-
-Run the test suite:
-
-```powershell
 uv run pytest
+uv run tox   # full gate: formatting, lint, type check, tests across supported Python versions, spelling
 ```
-
-Run checks locally:
-
-```powershell
-uv run black --check .
-uv run ruff format --check --diff .
-uv run ruff check .
-uv run pyright
-uv run pytest -n auto
-```
-
-Run the full project check, including Python checks across supported
-versions and spelling:
-
-```powershell
-uv run tox
-```
-
-When adding or changing command metadata, update validation, adaptive help,
-and tests together. Then verify the relevant command against FRED with its
-help, minimal required parameters, and representative optional parameters.
 
 ## License
 

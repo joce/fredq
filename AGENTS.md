@@ -1,7 +1,11 @@
 # AGENTS.md
 
 ## Project
-fredq exposes FRED (Federal Reserve Economic Data) HTTP endpoints as an LLM-friendly CLI that prints the raw JSON FRED returns.
+fredq is a typed Python library and an LLM-friendly CLI over FRED (Federal
+Reserve Economic Data) HTTP endpoints. The CLI prints the raw JSON FRED
+returns, byte-for-byte. The library (`fredq.api` and below) returns parsed,
+typed results. The two share client/commands/params foundations but the CLI
+never routes through the library's typed surface.
 
 ## Stack
 Python 3.10+, uv, httpx2, argparse, pytest, ruff, pyright, tox, hatchling.
@@ -19,14 +23,13 @@ Python 3.10+, uv, httpx2, argparse, pytest, ruff, pyright, tox, hatchling.
 - Full check: `uv run tox`
 
 ## Command grouping (noun-verb)
-Commands are organized into six noun groups, each with verb leaves:
+Commands are organized into five noun groups, each with verb leaves:
 - **series**: `show`, `observations`, `search`, `search-tags`, `search-related-tags`, `vintage-dates`, `categories`, `tags`, `release`, `updates`
 - **category**: `show`, `children`, `related`, `series`, `tags`, `related-tags`
 - **release**: `list`, `show`, `calendar` (all releases dates), `dates` (one release's dates), `series`, `sources`, `tags`, `related-tags`, `tables`
   - `release calendar` → `/fred/releases/dates`; `release dates ID` → `/fred/release/dates` (distinct endpoints)
 - **source**: `list`, `show`, `releases`
 - **tag**: `list`, `series`, `related`
-- **geofred**: `series-group`, `series-data`, `regional-data`, `shapes` (unchanged; leaf stays None → uses name)
 
 Each `CommandSpec.name` is globally unique and unchanged (routing key). The `leaf` field is display-only.
 
@@ -35,18 +38,40 @@ Each `CommandSpec.name` is globally unique and unchanged (routing key). The `lea
 - `src/fredq/auth.py` -> Read FRED_API_KEY from env or fallback file.
 - `src/fredq/commands.py` -> command metadata used to build CLI commands, validation, and help.
 - `src/fredq/params.py` -> CLI parameter coercion and validation helpers.
+- `src/fredq/_bridge.py` -> background event loop; sync-over-async bridge (library only).
+- `src/fredq/_core.py` -> async endpoint core: shared client, configure(), param building, error contract (library only).
+- `src/fredq/api.py` -> public synchronous library surface (entity classes + module functions).
+- `src/fredq/frames.py` -> polars-backed Frame containers for bulk tabular payloads (library only).
 - `src/fredq/cli.py` -> argparse command tree and stdout/stderr behavior.
 - `tests/` -> pytest tests mirroring `src/fredq/`.
 
-## Rules
+## Rules — CLI layer
 - IMPORTANT: `--help` is the primary product surface; keep it complete, adaptive, and generated from command metadata where practical.
 - Do not add `describe`, `endpoints`, `params`, or other discovery commands; discovery belongs under `fredq --help` and `fredq <endpoint> --help`.
-- Print FRED response bodies to stdout exactly as returned; do not model, reshape, pretty-print, or interpret endpoint JSON.
-- Keep FRED endpoint knowledge in metadata and validation only; do not create response classes.
+- Print FRED response bodies to stdout exactly as returned; do not model, reshape, pretty-print, or interpret endpoint JSON. (CLI layer only; the library layer interprets.)
+- In the CLI layer, keep FRED endpoint knowledge in metadata and validation only. Response classes live exclusively in the library layer (src/fredq/models/).
 - Use `uv run python` for Python scripts; never use bare `python` or `python3`.
 - Use `regex` instead of standard library `re` for regular expressions.
 - Never log or print the FRED API key.
 - Keep runtime dependencies narrow; do not add TUI, ORM, web framework, or rich formatting libraries.
+
+## Rules — library layer
+- The library layer (`api.py`, `_core.py`, `_bridge.py`, `frames.py`, `models/`) parses and types FRED responses; the raw-JSON law above does not apply to it.
+- The CLI never imports `api.py`, `frames.py`, or `models/`. `fredq --help` and all CLI commands must never pay the polars import cost.
+- Library kwargs mirror wire parameter names exactly as spelled in `CommandSpec`s; never an inverted flag.
+- The committed corpus (`tests/fixtures/corpus/`, see its README) is the only authority for wire spellings, presence, and types. Errors are mapped by status + body shape, never message wording.
+
+## Response model conventions (library layer)
+- Every response model subclasses `FredModel` (`src/fredq/models/_base.py`): `frozen=True`, `extra="allow"` (drift lands on `model_extra` for the gates — never use `forbid`), `populate_by_name=True`, `str_strip_whitespace=True`. No alias generator; field names mirror wire keys exactly, warts included (`seriess`).
+- Required vs optional comes from the corpus, never docs or guesses: present in 100% of corpus records → required (no default); sometimes absent → `T | None = None`; always present but sometimes null → `T | None` (no default). Live evidence may LOOSEN (required → optional) with a dated docstring note and a pinned test; never tighten.
+- Every model is registered in `tests/test_models_gates.py` in the same commit that creates it: zero-nested-extras over all relevant captures, required-set == corpus universal keys, alphabetical field order.
+- Temporal honesty: ISO date strings → `datetime.date`; FRED's offset datetimes (`2026-04-09 07:53:12-05`) → aware `datetime` via `FredDatetime`. No temporal value stays a bare string.
+- Enums only where the vocabulary is closed by request-side validation or explicit FRED documentation; corpus-only closure is insufficient (the corpus's series are not the universe). Open vocabularies stay `str`. `Literal` for true constants (`file_type`).
+- `functools.cached_property` for conveniences; NEVER `computed_field` (`model_dump()` stays wire-shaped).
+- Nested structures are typed sub-models, never `dict[str, Any]` (documented exceptions: `raw()`, evidence-justified Frame columns); keyed collections are `dict[str, SubModel]`.
+- Model reuse across endpoints only after script-validated evidence (zero extras + required set holds on the candidate's captures); the model docstring lists every endpoint it covers.
+- Single-entity endpoints unwrap their one-element list; violations raise the malformed-response contract (`FredApiError`, `error_code=None`).
+- Module docstring names the endpoint noun + corpus date; sometimes-absent fields carry an applicability note.
 
 ## API key
 - Primary: `FRED_API_KEY` environment variable.
@@ -60,7 +85,7 @@ When adding or editing a CLI command:
 3. **Notes**: real clarifications only — FRED quirks, switch-behavior surprises, dependencies. Drop diary entries and redundant restatements.
 4. **Order in `COMMANDS` tuple by importance**: daily-driver → discovery → entity lookups → schema introspection. Never append to the end.
 5. **Param boilerplate is shared** (`--api-key`, `--realtime-start`, `--realtime-end` use exact strings — copy them). Run `pytest -k help` before and after.
-6. **Positional primary args**: each command's single primary required argument is a positional (its `metavar` is shown in usage); all other parameters are flags. `series search` / `series search-tags` / `series search-related-tags` take the search text positionally; `tag series` / `tag related` take the tag list positionally; `geofred regional-data` / `geofred shapes` take their primary (`series_group` / `shape`) positionally.
+6. **Positional primary args**: each command's single primary required argument is a positional (its `metavar` is shown in usage); all other parameters are flags. `series search` / `series search-tags` / `series search-related-tags` take the search text positionally; `tag series` / `tag related` take the tag list positionally.
 
 ## Output formats
 - **Default**: raw FRED JSON to stdout, exactly as returned.
@@ -81,6 +106,8 @@ When adding or editing a CLI command:
 - Ask before making architectural changes that affect the CLI grammar or auth behavior.
 
 ## Development workflow
+Exception: the library-api feature runs brainstorm → spec → multi-part plans on a single `library-api` branch with ONE PR at the very end, merged by the user. The per-PR merge loop below applies to normal maintenance work.
+
 Use this process for all development work — bug fixes and features alike. For features, brainstorm and plan first, then follow the implement → review → dogfood loop below.
 
 Model / effort split:
@@ -109,10 +136,7 @@ Steps:
   - Sources: `1` (Board of Governors), `3` (Bureau of Labor Statistics)
 - Add targeted probes when an endpoint is series-sensitive, but keep this baseline for broad API-surface discovery.
 
-## GeoFRED / Maps
-- Implemented under the `geofred` subcommand group (`series-group`, `series-data`, `regional-data`, `shapes`). Different base URL; regional data keyed by FIPS; `shapes` returns Highcharts-format GeoJSON in a Lambert Conformal Conic projection (not WGS84).
-
 ## Out of scope
-- Mapping FRED JSON into Python domain models.
 - Separate documentation/discovery subcommands.
 - Secrets or API keys in checked-in files.
+- Typed models outside the library layer.

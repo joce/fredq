@@ -18,10 +18,16 @@ from fredq.auth import resolve_api_key
 from fredq.client import FredClient
 from fredq.commands import COMMANDS, COMMANDS_BY_NAME, GROUP_HELP, CommandSpec
 from fredq.exceptions import FredqError
-from fredq.params import ParamKind, ParamSpec, coerce_param, parse_boolean
+from fredq.params import (
+    ParamKind,
+    ParamSpec,
+    coerce_param,
+    enforce_cross_param_rules,
+    parse_boolean,
+)
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
     from fredq.types import ParamValue
 
@@ -277,27 +283,11 @@ def _add_parquet_negative_guards(parser: argparse.ArgumentParser) -> None:
     parser.set_defaults(_parquet_unsupported=True)
 
 
-def _add_body_to_file_out_option(parser: argparse.ArgumentParser) -> None:
-    """Register required ``--out PATH`` on a body-to-file command."""
-
-    parser.add_argument(
-        "--out",
-        dest="out_path",
-        type=Path,
-        required=True,
-        metavar="PATH",
-        help="Destination file for the response body. Required.",
-    )
-    parser.set_defaults(_body_to_file=True)
-
-
 def _set_command_parser(parser: argparse.ArgumentParser, command: CommandSpec) -> None:
     for param in command.params:
         _add_command_param(parser, param)
     parser.set_defaults(command_name=command.name)
-    if command.output_to_file:
-        _add_body_to_file_out_option(parser)
-    elif command.name in _PARQUET_COMMANDS:
+    if command.name in _PARQUET_COMMANDS:
         _add_parquet_output_options(parser)
     else:
         _add_parquet_negative_guards(parser)
@@ -312,7 +302,7 @@ def _build_parser_impl() -> tuple[argparse.ArgumentParser, _GroupParsers]:
 
     Returns:
         tuple: ``(root_parser, group_parsers)`` where ``group_parsers`` maps
-            each group name (e.g. ``"geofred"``) to its
+            each group name (e.g. ``"series"``) to its
             :class:`argparse.ArgumentParser` so callers can print group-scoped
             help when the user stops at the group level.
     """
@@ -386,7 +376,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Build fredq's argument parser.
 
     Flat commands (``group=None``) are added directly to the root subparser.
-    Grouped commands (``group="geofred"``, etc.) are nested one level deeper:
+    Grouped commands (``group="series"``, etc.) are nested one level deeper:
     the group name becomes a top-level subcommand whose own subparsers hold
     the individual commands.  Routing still works by ``command_name`` (the
     globally unique ``CommandSpec.name``) so ``_dispatch_command`` is
@@ -415,49 +405,6 @@ def _collect_params(
         coerced = coerce_param(spec, str(raw))
         collected[spec.name] = coerced
     return collected
-
-
-def _enforce_cross_param_rules(
-    command: CommandSpec, params: Mapping[str, object]
-) -> str | None:
-    """Validate cross-parameter dependency rules on a collected param dict.
-
-    Checks three rule types stored on :class:`CommandSpec`:
-
-    * ``mutually_dependent_params``: every frozenset must be either entirely
-      absent or entirely present.  A partial set is an error.
-    * ``at_least_one_of``: every frozenset must have at least one member
-      present.
-    * ``requires_partner``: if the first element of a pair is present, the
-      second must also be present.
-
-    Returns:
-        str | None: An error message when any rule is violated, or ``None``
-            when all rules pass.
-    """
-
-    present = set(params)
-
-    for group in command.mutually_dependent_params:
-        found = group & present
-        if found and found != group:
-            missing = group - found
-            missing_opts = " ".join(f"--{n.replace('_', '-')}" for n in sorted(missing))
-            found_opts = " ".join(f"--{n.replace('_', '-')}" for n in sorted(found))
-            return f"{found_opts} requires {missing_opts} to also be supplied."
-
-    for group in command.at_least_one_of:
-        if not (group & present):
-            opts = " or ".join(f"--{n.replace('_', '-')}" for n in sorted(group))
-            return f"at least one of {opts} is required."
-
-    for needy, required in command.requires_partner:
-        if needy in present and required not in present:
-            needy_opt = f"--{needy.replace('_', '-')}"
-            required_opt = f"--{required.replace('_', '-')}"
-            return f"{needy_opt} requires {required_opt} to also be supplied."
-
-    return None
 
 
 def _enforce_parquet_arg_pairing(args: argparse.Namespace) -> str | None:
@@ -525,56 +472,6 @@ def _handle_parquet_output(
     out.write("\n")
 
 
-class _WriteBodyError(FredqError):
-    """Raised when the response body cannot be written to the destination file.
-
-    Wraps OS-level errors (FileNotFoundError, PermissionError, disk full, …)
-    so the CLI can surface a clean stderr message and exit 1 instead of letting
-    an unhandled exception propagate.  The parent directory is intentionally
-    *not* created automatically — creating directories without an explicit flag
-    would be surprising behavior for a CLI tool.
-    """
-
-    def __init__(self, path: Path, cause: OSError) -> None:
-        """Initialize the write error."""
-
-        super().__init__(f"failed to write {path}: {cause}")
-        self.path = path
-        self.cause = cause
-
-
-def _write_body_to_file(
-    args: argparse.Namespace,
-    body: str,
-    command: CommandSpec,
-    out: TextIO,
-) -> None:
-    """Write ``body`` verbatim to ``args.out_path`` and emit a descriptor to ``out``.
-
-    The descriptor JSON has keys ``command``, ``out``, and ``bytes``.
-
-    Raises:
-        _WriteBodyError: When the OS rejects the write (missing parent
-            directory, permission denied, disk full, etc.).  The parent
-            directory is never auto-created; pass an existing directory or
-            create it beforehand.
-    """
-
-    out_path: Path = args.out_path
-    encoded = body.encode("utf-8")
-    try:
-        out_path.write_bytes(encoded)
-    except OSError as exc:
-        raise _WriteBodyError(out_path, exc) from exc
-    descriptor = {
-        "command": command.name,
-        "out": str(out_path),
-        "bytes": len(encoded),
-    }
-    out.write(json.dumps(descriptor, separators=(",", ":")))
-    out.write("\n")
-
-
 def _optional_str(value: object) -> str | None:
     if value is None:
         return None
@@ -603,7 +500,7 @@ def _write_json_body(body: str, out: TextIO) -> None:
         out.write("\n")
 
 
-def _dispatch_command(  # noqa: PLR0911
+def _dispatch_command(
     args: argparse.Namespace,
     command: CommandSpec,
     out: TextIO,
@@ -632,7 +529,7 @@ def _dispatch_command(  # noqa: PLR0911
         err.write(f"{exc}\n")
         return 2
 
-    cross_param_error = _enforce_cross_param_rules(command, params)
+    cross_param_error = enforce_cross_param_rules(command, params)
     if cross_param_error is not None:
         err.write(f"{cross_param_error}\n")
         return 2
@@ -642,14 +539,6 @@ def _dispatch_command(  # noqa: PLR0911
     except FredqError as exc:
         err.write(f"{exc}\n")
         return 1
-
-    if command.output_to_file:
-        try:
-            _write_body_to_file(args, body, command, out)
-        except FredqError as exc:
-            err.write(f"{exc}\n")
-            return 1
-        return 0
 
     if getattr(args, "output_format", "json") == "parquet":
         try:
@@ -765,13 +654,10 @@ def main(
 
     command = COMMANDS_BY_NAME[command_name]
 
-    # Body-to-file commands use --out for raw body output, not parquet.
-    # Skip the parquet pairing check for them.
-    if not command.output_to_file:
-        pairing_error = _enforce_parquet_arg_pairing(args)
-        if pairing_error is not None:
-            err.write(f"{pairing_error}\n")
-            return 2
+    pairing_error = _enforce_parquet_arg_pairing(args)
+    if pairing_error is not None:
+        err.write(f"{pairing_error}\n")
+        return 2
 
     active_client, client_error = _resolve_client(args, client, err)
     if client_error:

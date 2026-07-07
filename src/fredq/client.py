@@ -153,8 +153,7 @@ class FredClient:
         Args:
             api_key: FRED API key used to authenticate every request.
             timeout: Optional custom httpx2 timeout configuration.
-            base_url: Override the FRED base URL (useful for tests and for the
-                future GeoFRED Maps endpoints).
+            base_url: Override the FRED base URL (useful for tests).
         """
 
         self._api_key = api_key
@@ -203,7 +202,8 @@ class FredClient:
                     attempt += 1
                     continue
                 url_str = self._redact_url(exc.request.url)
-                raise FredRequestError(status_code, url_str) from exc
+                body = _API_KEY_RE.sub(_API_KEY_REDACTED, exc.response.text)
+                raise FredRequestError(status_code, url_str, body=body) from exc
             except httpx.TransportError as exc:
                 if attempt < self._REQUEST_ATTEMPTS:
                     await asyncio.sleep(self._RETRY_DELAY_SECONDS * attempt)

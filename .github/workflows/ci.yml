@@ -48,6 +48,24 @@ jobs:
       - name: Run tox
         run: uvx --with tox-uv tox -e py${{ matrix.python-version }}
 
+  ci-pandas:
+    needs: spell-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags needed for hatch-vcs version
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.2.0
+        with:
+          version: "latest"
+          python-version: "3.12"
+
+      - name: Run tox
+        run: uvx --with tox-uv tox -e pandas
+
   coverage:
     needs: spell-check
     runs-on: ubuntu-latest

@@ -39,5 +39,8 @@ tmp/
 # Ad-hoc fredq report fleet (generated artifacts, data dumps, builders)
 report/
 
+# marimo session/layout caches (regenerated on notebook edit)
+__marimo__/
+
 # Local brainstorming specs / plans (not committed)
 docs/superpowers/

@@ -32,6 +32,7 @@ class FredRequestError(FredqError):
         url: str,
         *,
         reason: str | None = None,
+        body: str | None = None,
     ) -> None:
         """Initialize the request error."""
 
@@ -42,6 +43,9 @@ class FredRequestError(FredqError):
         self.status_code = status_code
         self.url = url
         self.reason = reason
+        # Raw response body (API-key material scrubbed by the client) so
+        # error payload shapes can serve as corpus evidence.
+        self.body = body
 
 
 class FredUnavailableError(FredqError):
@@ -52,3 +56,34 @@ class FredUnavailableError(FredqError):
 
         super().__init__(f"FRED API unavailable while processing {context}")
         self.context = context
+
+
+class FredApiError(FredqError):
+    """Raised when FRED answers with its structured error payload.
+
+    FRED reports every request-level failure — unknown ids, bad parameter
+    values, unregistered API keys — as an HTTP 4xx/5xx whose JSON body is
+    ``{"error_code": <int>, "error_message": <str>}``, with no structural
+    difference between the causes (corpus evidence, 2026-07-05). There is
+    deliberately no not-found subclass: distinguishing "does not exist"
+    from other 400s would require matching message wording, which is
+    forbidden by the error-mapping law.
+
+    ``error_code`` is ``None`` only for the malformed-response contract
+    (an HTTP 200 whose body is not a JSON object).
+    """
+
+    def __init__(
+        self,
+        *,
+        error_message: str,
+        error_code: int | None = None,
+        status_code: int | None = None,
+    ) -> None:
+        """Initialize the API error."""
+
+        status_note = f" (HTTP {status_code})" if status_code is not None else ""
+        super().__init__(f"FRED API error{status_note}: {error_message}")
+        self.error_code = error_code
+        self.error_message = error_message
+        self.status_code = status_code
