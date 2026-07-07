@@ -4,6 +4,7 @@
   "language": "en",
   "useGitignore": true,
   "ignorePaths": [
+    "**/__marimo__",
     ".git",
     ".gitignore",
     ".pytest_cache",
@@ -69,6 +70,7 @@
     "longrepr",
     "metavar",
     "metavars",
+    "nbsp",
     "jocelynlegault",
     "joce",
     "Legault",
@@ -81,6 +83,7 @@
     "stlouisfed",
     "ungated",
     "unmodeled",
+    "unpivot",
     "vintagedates",
     "wasxfail",
     "worktree",

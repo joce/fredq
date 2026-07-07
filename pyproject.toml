@@ -77,6 +77,8 @@ dev = [
 [tool.black]
 target-version = ["py310"]
 line-length = 88
+# examples/ holds marimo notebooks whose cell layout marimo itself owns.
+extend-exclude = "examples/"
 
 [tool.isort]
 profile = "black"
@@ -134,6 +136,7 @@ directory = "htmlcov"
 exclude = [
     "__pycache__",
     ".git",
+    "examples",
     ".pytest_cache",
     ".ruff_cache",
     ".specstory",

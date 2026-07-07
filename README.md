@@ -128,6 +128,18 @@ field surfaces as data, not a crash. fredq ships [PEP 561](https://peps.python.o
 type information (`py.typed`), so type checkers see the real return types
 without stubs.
 
+## Examples
+
+[`examples/fred_explorer.py`](examples/fred_explorer.py) is an interactive
+[marimo](https://marimo.io) notebook built entirely on the library: a series
+explorer with units transforms and frequency aggregation, multi-series
+comparison, catalog search, ALFRED vintage-revision analysis, and a
+mortgage-vs-Treasury spread dashboard. Run it without adding dependencies:
+
+```sh
+uv run --with marimo --with altair marimo edit examples/fred_explorer.py
+```
+
 ## Command line
 
 The CLI is a separate, from-scratch layer: it prints the FRED response body
