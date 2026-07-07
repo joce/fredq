@@ -25,6 +25,11 @@ from fredq.params import (
     enforce_cross_param_rules,
     parse_boolean,
 )
+from fredq.skills import AGENT_TARGETS, TargetReport
+from fredq.skills import install as skills_install
+from fredq.skills import resolve_roots as skills_resolve_roots
+from fredq.skills import status as skills_status
+from fredq.skills import uninstall as skills_uninstall
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -293,6 +298,106 @@ def _set_command_parser(parser: argparse.ArgumentParser, command: CommandSpec) -
         _add_parquet_negative_guards(parser)
 
 
+# Directory name the installer copies the skill content under (see
+# fredq.skills._install.SKILL_DIR_NAME); duplicated here as a literal rather
+# than imported so the CLI's report-line formatting stays a pure string
+# operation independent of the installer's internals.
+_SKILL_DIR_NAME: Final[str] = "fredq"
+
+
+def _add_skills_targeting_options(parser: argparse.ArgumentParser) -> None:
+    """Register ``--agent``/``--to``/``--project`` on an install/uninstall subparser."""
+
+    parser.add_argument(
+        "--agent",
+        dest="agent",
+        default=None,
+        metavar="NAME[,NAME...]",
+        help=(
+            f"Comma-separated named agent targets ({', '.join(sorted(AGENT_TARGETS))})."
+        ),
+    )
+    parser.add_argument(
+        "--to",
+        dest="to",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="Additional skills root to install into or remove from.",
+    )
+    parser.add_argument(
+        "--project",
+        dest="project",
+        action="store_true",
+        default=False,
+        help="Use project-level roots (relative to the current directory).",
+    )
+
+
+def _add_skills_command_group(
+    subparsers: Any,  # noqa: ANN401
+) -> argparse.ArgumentParser:
+    """Build the ``fredq skills {install,uninstall,list}`` subparser tree.
+
+    Kept separate from the ``COMMANDS``-driven loop in
+    :func:`_build_parser_impl`: skills is packaging/installer surface (pure
+    filesystem, no FRED endpoint) rather than a modeled FRED command.
+
+    Returns:
+        argparse.ArgumentParser: The ``skills`` group parser, so callers can
+            print its help when no subcommand is given (same convention as
+            the noun-group parsers).
+    """
+
+    skills_parser = subparsers.add_parser(
+        "skills",
+        help="Install, remove, or list the fredq agent skill.",
+        description=(
+            "Manage the fredq agent skill in agent skill directories. See "
+            "`fredq skills <subcommand> --help` for each operation."
+        ),
+        formatter_class=_HelpFormatter,
+    )
+    skills_subparsers = skills_parser.add_subparsers(
+        dest="skills_action", metavar="SUBCOMMAND"
+    )
+
+    install_parser = skills_subparsers.add_parser(
+        "install",
+        help="Install the fredq agent skill into agent skill directories.",
+        description=(
+            "Copy the fredq agent skill into the named agent skill "
+            "directories, stamping the installed package version. Refuses "
+            "to overwrite a directory it does not own."
+        ),
+        formatter_class=_HelpFormatter,
+    )
+    _add_skills_targeting_options(install_parser)
+
+    uninstall_parser = skills_subparsers.add_parser(
+        "uninstall",
+        help="Remove the fredq agent skill from agent skill directories.",
+        description=(
+            "Remove the fredq agent skill from the named agent skill "
+            "directories. Refuses to remove a directory it does not own."
+        ),
+        formatter_class=_HelpFormatter,
+    )
+    _add_skills_targeting_options(uninstall_parser)
+
+    skills_subparsers.add_parser(
+        "list",
+        help="Show where the fredq agent skill is installed.",
+        description=(
+            "Show the fredq agent skill's install state across every named "
+            "agent, at both user and project scope."
+        ),
+        formatter_class=_HelpFormatter,
+    )
+
+    return skills_parser
+
+
 # Type alias used by _build_parser_impl to keep the return annotation concise.
 _GroupParsers = dict[str, argparse.ArgumentParser]
 
@@ -368,6 +473,12 @@ def _build_parser_impl() -> tuple[argparse.ArgumentParser, _GroupParsers]:
                 formatter_class=_HelpFormatter,
             )
             _set_command_parser(group_sub, command)
+
+    # Packaging/installer surface: not a FRED command, so it is not driven by
+    # COMMANDS. Registered into group_parsers under the same convention as the
+    # noun groups above so a bare `fredq skills` (no subcommand) prints its
+    # help via the existing "group without subcommand" fallback in main().
+    group_parsers["skills"] = _add_skills_command_group(subparsers)
 
     return parser, group_parsers
 
@@ -552,6 +663,132 @@ def _dispatch_command(
     return 0
 
 
+def _skills_agents_from_namespace(args: argparse.Namespace) -> list[str]:
+    """Parse ``--agent`` into a name list, mirroring ``params._coerce_csv_param``.
+
+    Empty comma-separated items (``"claude,,codex"``, or a bare ``","``) are
+    a hard usage error rather than silently dropped, matching the CSV
+    contract every other ``--`` CSV option follows.
+
+    Returns:
+        list[str]: Agent names in the order given, or ``[]`` when ``--agent``
+            was not supplied.
+
+    Raises:
+        ValueError: If any comma-separated item is empty.
+    """
+
+    raw = (getattr(args, "agent", None) or "").strip()
+    if not raw:
+        return []
+    items = [item.strip() for item in raw.split(",")]
+    if any(not item for item in items):
+        message = "--agent cannot contain empty comma-separated values"
+        raise ValueError(message)
+    return items
+
+
+def _skills_roots_or_usage_error(
+    args: argparse.Namespace, err: TextIO
+) -> list[Path] | None:
+    """Resolve ``--agent``/``--to``/``--project`` into skills roots.
+
+    Returns:
+        list[Path] | None: The resolved roots, or ``None`` when a usage
+            error was already written to ``err`` (caller returns exit code
+            2).
+    """
+
+    to = getattr(args, "to", None)
+    try:
+        agents = _skills_agents_from_namespace(args)
+    except ValueError as exc:
+        err.write(f"{exc}\n")
+        return None
+    if not agents and to is None:
+        err.write("one of --agent or --to is required\n")
+        return None
+    try:
+        return skills_resolve_roots(agents, project=args.project, to=to)
+    except ValueError as exc:
+        err.write(f"{exc}\n")
+        return None
+
+
+def _skills_install_report_line(report: TargetReport) -> str:
+    skill_dir = report.root / _SKILL_DIR_NAME
+    if report.action == "refused":
+        return f"skipped (not the fredq skill): {skill_dir}"
+    return f"installed: {skill_dir} (fredq {report.detail})"
+
+
+def _skills_uninstall_report_line(report: TargetReport) -> str:
+    skill_dir = report.root / _SKILL_DIR_NAME
+    if report.action == "refused":
+        return f"skipped (not the fredq skill): {skill_dir}"
+    if report.action == "removed":
+        return f"removed: {skill_dir}"
+    return f"absent: {skill_dir}"
+
+
+def _skills_list_report_line(report: TargetReport) -> str:
+    """Format one status() report as an ``agent scope root state`` line.
+
+    ``report.detail`` carries ``"agent scope"`` for an absent target, or
+    ``"agent scope version"`` for a current/stale one (see
+    ``fredq.skills.status``).
+
+    Returns:
+        str: The formatted status line for one named target.
+    """
+
+    if report.action == "absent":
+        return f"{report.detail} {report.root} absent"
+    label, _, version = report.detail.rpartition(" ")
+    if report.action == "current":
+        return f"{label} {report.root} installed {version} (current)"
+    return (
+        f"{label} {report.root} installed {version} (stale; current is {__version__})"
+    )
+
+
+def _dispatch_skills(args: argparse.Namespace, out: TextIO, err: TextIO) -> int:
+    """Run a ``fredq skills`` subcommand: pure filesystem, no FRED client.
+
+    Called from :func:`main` before any client construction or API-key
+    resolution, so ``fredq skills list`` (and install/uninstall) work with no
+    ``FRED_API_KEY`` configured.
+
+    Returns:
+        int: ``0`` on a clean run, ``1`` if any target refused (an existing
+            directory that is not the fredq skill), ``2`` on a usage error
+            (bad ``--agent`` value, or neither ``--agent`` nor ``--to``).
+    """
+
+    action = args.skills_action
+    if action == "list":
+        for report in skills_status():
+            out.write(_skills_list_report_line(report))
+            out.write("\n")
+        return 0
+
+    roots = _skills_roots_or_usage_error(args, err)
+    if roots is None:
+        return 2
+
+    if action == "install":
+        reports = skills_install(roots)
+        line_for = _skills_install_report_line
+    else:
+        reports = skills_uninstall(roots)
+        line_for = _skills_uninstall_report_line
+
+    for report in reports:
+        out.write(line_for(report))
+        out.write("\n")
+    return 1 if any(report.action == "refused" for report in reports) else 0
+
+
 def _resolve_client(
     args: argparse.Namespace,
     client: _FredClientProtocol | None,
@@ -635,8 +872,18 @@ def main(
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
 
-    command_name = getattr(args, "command_name", None)
     top_command = getattr(args, "_top_command", None)
+    skills_action = getattr(args, "skills_action", None)
+    # Skills is packaging/installer surface (pure filesystem, no FRED
+    # endpoint): dispatch it before command_name resolution, parquet-pairing
+    # enforcement, and (crucially) _resolve_client — so it never constructs a
+    # FredClient or touches API-key resolution. A bare `fredq skills` (no
+    # skills_action) falls through to the ordinary "group without
+    # subcommand" handling below via group_parsers["skills"].
+    if top_command == "skills" and skills_action is not None:
+        return _dispatch_skills(args, out, err)
+
+    command_name = getattr(args, "command_name", None)
     # command_name is None when no leaf command was resolved:
     #   - No argument at all → top_command is also None → root help.
     #   - User typed a group name but omitted the subcommand → top_command is

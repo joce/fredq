@@ -34,6 +34,15 @@ group (see Removed).
   checkers see the library's real return types without stubs.
 - New optional extra: `pip install "fredq[pandas]"` (pandas + pyarrow) for
   `Observations.to_pandas()` / `.to_arrow()`.
+- An installable agent skill (Agent Skills standard: `SKILL.md` plus four
+  markdown domains — observations, revisions, catalog, dataframes — with
+  corpus-dated sharp edges), shipped inside the wheel under `fredq.skills`.
+- A `fredq skills` CLI group: `install`/`uninstall`/`list` with explicit
+  `--agent` targeting (`claude`/`codex`/`copilot`/`cursor`/`gemini`/`pi`,
+  comma-separable), `--project` for repository-level directories, and a
+  `--to PATH` escape hatch. Installs are copy-only, stamped with the
+  installing version (surfaced by `list` as current/stale), and ownership-
+  checked: a directory not created by fredq is never replaced or removed.
 
 ### Changed
 

@@ -112,6 +112,18 @@ def test_wheel_contains_the_typed_library_surface(
 
 
 @pytest.mark.timeout(_BUILD_TIMEOUT_SECONDS)
+def test_wheel_contains_the_agent_skill_content(
+    built_distributions: _BuiltDistributions,
+) -> None:
+    """The wheel ships the agent skill's router, a domain, and the installer."""
+
+    names = built_distributions.wheel_names
+    assert "fredq/skills/content/SKILL.md" in names
+    assert "fredq/skills/content/observations/README.md" in names
+    assert "fredq/skills/_install.py" in names
+
+
+@pytest.mark.timeout(_BUILD_TIMEOUT_SECONDS)
 def test_wheel_contains_a_spot_check_of_model_modules(
     built_distributions: _BuiltDistributions,
 ) -> None:
