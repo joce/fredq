@@ -43,6 +43,8 @@ Each `CommandSpec.name` is globally unique and unchanged (routing key). The `lea
 - `src/fredq/api.py` -> public synchronous library surface (entity classes + module functions).
 - `src/fredq/frames.py` -> polars-backed Frame containers for bulk tabular payloads (library only).
 - `src/fredq/cli.py` -> argparse command tree and stdout/stderr behavior.
+- `src/fredq/skills/content/` -> Agent Skills-standard skill (SKILL.md router + domain docs) teaching agents fredq's library and CLI, shipped as package data.
+- `src/fredq/skills/_install.py` -> copy-only installer for the skill content (resolve_roots/install/uninstall/status) targeting every major agent's documented skill-discovery root.
 - `tests/` -> pytest tests mirroring `src/fredq/`.
 
 ## Rules — CLI layer
@@ -54,6 +56,7 @@ Each `CommandSpec.name` is globally unique and unchanged (routing key). The `lea
 - Use `regex` instead of standard library `re` for regular expressions.
 - Never log or print the FRED API key.
 - Keep runtime dependencies narrow; do not add TUI, ORM, web framework, or rich formatting libraries.
+- The skills command group is packaging/installer surface: human-readable output, outside both the raw-JSON contract and the no-discovery-commands rule.
 
 ## Rules — library layer
 - The library layer (`api.py`, `_core.py`, `_bridge.py`, `frames.py`, `models/`) parses and types FRED responses; the raw-JSON law above does not apply to it.
