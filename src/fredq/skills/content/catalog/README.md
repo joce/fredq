@@ -2,8 +2,8 @@
 
 Finding a series, releases, sources, and tags — everything upstream of
 pulling actual data. Every ID-taking call elsewhere in this skill
-(`Series(series_id)`, `Category(category_id)`, `Release(release_id)`,
-`Source(source_id)`) expects an ID discovered here first.
+(`Series`, `Category`, `Release`, `Source`) expects an ID discovered here
+first.
 
 ## Searching for a series
 
@@ -15,9 +15,8 @@ info = fredq.Series(series_id).info()
 
 `search_series()` returns a `SeriesListResult`: `.seriess` is the ranked
 hit list (each a full `SeriesInfo`), `.count` is FRED's total match count
-(often far larger than `.seriess` — page with `limit`/`offset`). Chain the
-`id` of whichever hit you want into `Series(...)` for the rest of this
-skill's calls.
+(often far larger than `.seriess` — page with `limit`/`offset`). Chain a
+hit's `id` into `Series(...)` for the rest of this skill's calls.
 
 CLI equivalent:
 
@@ -35,9 +34,9 @@ top_level = fredq.Category(0).children()
 ```
 
 `children()`/`related()` both return a `CategoriesResult` (`.categories`,
-a plain list — FRED's category endpoints carry no pagination envelope).
-`Category(0).children()` lists FRED's top-level subject areas (Money,
-Banking, & Finance; Prices; National Accounts; ...).
+a plain list — no pagination envelope). `Category(0).children()` lists
+FRED's top-level subject areas (Money, Banking, & Finance; Prices;
+National Accounts; ...).
 
 CLI equivalent:
 
@@ -54,8 +53,8 @@ sources = fredq.Release(53).sources()
 
 `Release.info()` returns a `ReleaseInfo` (name, `press_release` flag,
 publisher link); `Release.sources()` returns a `ReleaseSourcesResult`
-listing the agencies that publish it (53 = GDP, published by the Bureau
-of Economic Analysis).
+listing the publishing agencies (53 = GDP, from the Bureau of Economic
+Analysis).
 
 CLI equivalent:
 
@@ -70,9 +69,8 @@ fredq release sources 53
 matches = fredq.tag_series(["usa", "quarterly"])
 ```
 
-`tag_series()` returns a `SeriesListResult`; a list of tag names is
-ANDed together, not ORed — this call finds series carrying **both** the
-`usa` and `quarterly` tags, not either.
+`tag_series()` returns a `SeriesListResult`; tag names are ANDed, not
+ORed — this finds series carrying **both** `usa` and `quarterly`.
 
 CLI equivalent (semicolon-joined, matching FRED's wire format):
 
@@ -86,8 +84,6 @@ Full parameter lists, defaults, and examples live in `--help`, not here:
 
 ```bash
 fredq series search --help
-fredq category children --help
-fredq release show --help
 fredq tag series --help
 ```
 
