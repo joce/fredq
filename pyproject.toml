@@ -42,7 +42,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pandas = ["pandas>=2.2,<3.0", "pyarrow>=17,<23"]
+pandas = ["pandas>=2.2,<3.0", "pyarrow>=17,<26"]
 
 [project.scripts]
 fredq = "fredq.cli:main"
