@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.1]
+
+Maintenance release — no user-facing changes.
+
+### Internal
+
+- Bumped `pyarrow` to 25.0.0 and widened its pin in the `pandas` extra
+  from `<23` to `<26`.
+- Bumped development dependencies: tox 4.56.4, ruff 0.15.21,
+  tzdata 2026.3.
+
 ## [0.4.0]
 
 fredq is now a typed Python library as well as a CLI. CLI behavior and
@@ -184,7 +195,8 @@ Initial release.
   with the key redacted from all errors and logs.
 - Exit-code contract: `0` success, `1` FRED request failure, `2` usage error.
 
-[Unreleased]: https://github.com/joce/fredq/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/joce/fredq/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/joce/fredq/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/joce/fredq/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/joce/fredq/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/joce/fredq/compare/v0.3.1...v0.3.2
