@@ -293,7 +293,8 @@ def test_skill_md_two_surfaces_snippet(monkeypatch: pytest.MonkeyPatch) -> None:
     _install_fake(monkeypatch, _corpus_text("series-observations/CPIAUCSL_pch.json"))
     pch = fredq.Series("CPIAUCSL").observations(units="pch")
     assert pch.meta.units == "pch"
-    assert pch.to_polars().height == 36  # noqa: PLR2004 - corpus-pinned row count
+    # corpus-pinned row count
+    assert pch.to_polars().height == 36  # ruff: ignore[magic-value-comparison]
 
 
 # --- observations/README.md (4) -----------------------------------------
@@ -307,7 +308,8 @@ def test_observations_readme_fetching(monkeypatch: pytest.MonkeyPatch) -> None:
 
     _install_fake(monkeypatch, _corpus_text("series-observations/GNPCA.json"))
     obs = fredq.Series("GNPCA").observations()
-    assert obs.to_polars().height == 97  # noqa: PLR2004 - corpus-pinned row count
+    # corpus-pinned row count
+    assert obs.to_polars().height == 97  # ruff: ignore[magic-value-comparison]
 
 
 def test_observations_readme_units_transform(
@@ -347,7 +349,8 @@ def test_observations_readme_frequency_aggregation(
     monthly = fredq.Series("DGS10").observations(
         frequency="m", observation_start="2023-01-01", observation_end="2024-12-31"
     )
-    assert monthly.to_polars().height == 24  # noqa: PLR2004 - corpus-pinned count
+    # corpus-pinned count
+    assert monthly.to_polars().height == 24  # ruff: ignore[magic-value-comparison]
 
 
 def test_observations_readme_missing_values(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -380,8 +383,9 @@ def test_revisions_readme_vintage_dates(monkeypatch: pytest.MonkeyPatch) -> None
 
     _install_fake(monkeypatch, _corpus_text("series-vintagedates/GNPCA.json"))
     dates = fredq.Series("GNPCA").vintage_dates()
-    assert dates.count == 188  # noqa: PLR2004 - corpus-pinned
-    assert len(dates.vintage_dates) == 188  # noqa: PLR2004 - corpus-pinned
+    assert dates.count == 188  # ruff: ignore[magic-value-comparison] - corpus-pinned
+    # corpus-pinned
+    assert len(dates.vintage_dates) == 188  # ruff: ignore[magic-value-comparison]
 
 
 def test_revisions_readme_point_in_time_observations(
@@ -409,8 +413,11 @@ def test_revisions_readme_point_in_time_observations(
         observation_end="2000-12-31",
     )
     df = asof.to_polars()
-    assert df.height == 14  # noqa: PLR2004 - corpus-pinned row count
-    assert (df["date"] == date(2000, 3, 1)).sum() == 2  # noqa: PLR2004 - two vintages
+    # corpus-pinned row count
+    assert df.height == 14  # ruff: ignore[magic-value-comparison]
+    # two vintages
+    # ruff: ignore[magic-value-comparison]
+    assert (df["date"] == date(2000, 3, 1)).sum() == 2
 
 
 def test_revisions_readme_revision_cadence(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -427,7 +434,8 @@ def test_revisions_readme_revision_cadence(monkeypatch: pytest.MonkeyPatch) -> N
     gdp = fredq.Series("GDP").observations(
         observation_start="2015-01-01", observation_end="2024-12-31"
     )
-    assert gdp.to_polars().height == 40  # noqa: PLR2004 - corpus-pinned row count
+    # corpus-pinned row count
+    assert gdp.to_polars().height == 40  # ruff: ignore[magic-value-comparison]
 
 
 # --- catalog/README.md (4) -------------------------------------------------
@@ -476,7 +484,8 @@ def test_catalog_readme_category_tree(monkeypatch: pytest.MonkeyPatch) -> None:
 
     _install_fake(monkeypatch, _corpus_text("category-children/root.json"))
     top_level = fredq.Category(0).children()
-    assert len(top_level.categories) == 8  # noqa: PLR2004 - corpus-pinned
+    # corpus-pinned
+    assert len(top_level.categories) == 8  # ruff: ignore[magic-value-comparison]
 
 
 def test_catalog_readme_release_and_sources(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -514,7 +523,8 @@ def test_catalog_readme_tag_series(monkeypatch: pytest.MonkeyPatch) -> None:
 
     _install_fake(monkeypatch, _corpus_text("tags-series/usa-quarterly.json"))
     matches = fredq.tag_series(["usa", "quarterly"])
-    assert matches.count == 64576  # noqa: PLR2004 - corpus-pinned
+    # corpus-pinned
+    assert matches.count == 64576  # ruff: ignore[magic-value-comparison]
 
 
 # --- catalog/SHARP-EDGES.md (1) ---------------------------------------------
@@ -538,8 +548,10 @@ def test_catalog_sharp_edges_one_error_shape_snippet(
     _install_error_fake(monkeypatch, 400, _corpus_text("category/ERR_invalid-id.json"))
     with pytest.raises(FredApiError) as exc_info:
         fredq.Category(999999999).info()
-    assert exc_info.value.status_code == 400  # noqa: PLR2004 - corpus-pinned
-    assert exc_info.value.error_code == 400  # noqa: PLR2004 - corpus-pinned
+    # corpus-pinned
+    assert exc_info.value.status_code == 400  # ruff: ignore[magic-value-comparison]
+    # corpus-pinned
+    assert exc_info.value.error_code == 400  # ruff: ignore[magic-value-comparison]
     assert "does not exist" in exc_info.value.error_message
 
 
@@ -571,24 +583,29 @@ def test_dataframes_readme_conversion_vocabulary(
 
     _install_fake(monkeypatch, _corpus_text("series-observations/TWEXB.json"))
     obs = fredq.Series("TWEXB").observations()
-    assert obs.to_polars().height == 1305  # noqa: PLR2004 - corpus-pinned
+    # corpus-pinned
+    assert obs.to_polars().height == 1305  # ruff: ignore[magic-value-comparison]
     assert obs.to_dicts()
 
     try:
-        import pandas  # noqa: F401, ICN001, PLC0415
+        # ruff: ignore[unused-import, unconventional-import-alias, import-outside-top-level]
+        import pandas
     except ImportError:
         with pytest.raises(ImportError, match=r"fredq\[pandas\]"):
             obs.to_pandas()
     else:
-        assert obs.to_pandas().shape[0] == 1305  # noqa: PLR2004 - corpus-pinned
+        # corpus-pinned
+        assert obs.to_pandas().shape[0] == 1305  # ruff: ignore[magic-value-comparison]
 
     try:
-        import pyarrow  # noqa: F401, ICN001, PLC0415
+        # ruff: ignore[unused-import, unconventional-import-alias, import-outside-top-level]
+        import pyarrow
     except ImportError:
         with pytest.raises(ImportError, match=r"fredq\[pandas\]"):
             obs.to_arrow()
     else:
-        assert obs.to_arrow().num_rows == 1305  # noqa: PLR2004 - corpus-pinned
+        # corpus-pinned
+        assert obs.to_arrow().num_rows == 1305  # ruff: ignore[magic-value-comparison]
 
 
 def test_dataframes_readme_meta_envelope(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -636,4 +653,5 @@ def test_dataframes_readme_joining_frequencies(
     ten_year = fredq.Series("DGS10").observations(frequency="m").to_polars()
     cpi_pch = fredq.Series("CPIAUCSL").observations(units="pch").to_polars()
     combined = ten_year.join(cpi_pch, on="date", how="full", suffix="_cpi")
-    assert combined.height == 24  # noqa: PLR2004 - corpus-pinned row count
+    # corpus-pinned row count
+    assert combined.height == 24  # ruff: ignore[magic-value-comparison]

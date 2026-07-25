@@ -212,7 +212,8 @@ def capture_calls(
 
     calls: list[tuple[str, dict[str, Any]]] = []
 
-    async def _fake_call_endpoint(  # noqa: RUF029 - coroutine required by call_endpoint's API
+    # coroutine required by call_endpoint's API
+    async def _fake_call_endpoint(  # ruff: ignore[unused-async]
         command_name: str, *, values: dict[str, Any]
     ) -> dict[str, Any]:
         calls.append((command_name, dict(values)))
@@ -253,8 +254,10 @@ def test_entity_ids_reach_the_wire_values(
     api.Source(1).releases()
     values = dict(capture_calls)
     assert values["series"]["series_id"] == "DGS10"
-    assert values["category-children"]["category_id"] == 125  # noqa: PLR2004
-    assert values["release-dates"]["release_id"] == 53  # noqa: PLR2004
+    # ruff: ignore[magic-value-comparison]
+    assert values["category-children"]["category_id"] == 125
+    # ruff: ignore[magic-value-comparison]
+    assert values["release-dates"]["release_id"] == 53
     assert values["source-releases"]["source_id"] == 1
 
 
@@ -309,10 +312,13 @@ def test_raw_error_path_maps_corpus_bodies(
 
     body = (CORPUS / "series" / "ERR_invalid-id.json").read_text(encoding="utf-8")
 
-    async def _raise_and_map(  # noqa: RUF029 - coroutine required by call_endpoint's API
-        command_name: str,  # noqa: ARG001 - signature must match call_endpoint's
+    # coroutine required by call_endpoint's API
+    async def _raise_and_map(  # ruff: ignore[unused-async]
+        # signature must match call_endpoint's
+        command_name: str,  # ruff: ignore[unused-function-argument]
         *,
-        values: dict[str, Any],  # noqa: ARG001 - signature must match call_endpoint's
+        # signature must match call_endpoint's
+        values: dict[str, Any],  # ruff: ignore[unused-function-argument]
     ) -> dict[str, Any]:
         map_http_error(FredRequestError(400, "https://x", body=body))
         message = "unreachable"
@@ -322,7 +328,7 @@ def test_raw_error_path_maps_corpus_bodies(
     monkeypatch.setattr(core, "call_endpoint", _raise_and_map)
     with pytest.raises(FredApiError) as exc_info:
         api.raw("series", series_id="ZZZNOTREAL")
-    assert exc_info.value.error_code == 400  # noqa: PLR2004
+    assert exc_info.value.error_code == 400  # ruff: ignore[magic-value-comparison]
 
 
 def test_repr_is_useful() -> None:
@@ -343,7 +349,7 @@ def test_observations_meta_and_fetched_at(
     assert capture_calls[0][0] == "series-observations"
     # Typed envelope from the DEXCAUS_holidays stub capture.
     assert obs.meta.units == "lin"
-    assert obs.meta.count == 13  # noqa: PLR2004 - corpus-pinned
+    assert obs.meta.count == 13  # ruff: ignore[magic-value-comparison] - corpus-pinned
     assert obs.fetched_at.tzinfo is not None  # aware UTC stamp
 
 
@@ -362,17 +368,17 @@ def test_date_objects_reach_the_wire_as_iso(
 
         async def get(
             self,
-            path: str,  # noqa: ARG002
+            path: str,  # ruff: ignore[unused-method-argument]
             params: dict[str, object],
             *,
-            base_url: str | None = None,  # noqa: ARG002
+            base_url: str | None = None,  # ruff: ignore[unused-method-argument]
         ) -> str:
             self.params = dict(params)
             # A full valid capture: the meta envelope must validate now.
             rel = _STUB_PAYLOADS["series-observations"]
             return (CORPUS / rel).read_text(encoding="utf-8")
 
-        async def aclose(self) -> None:  # noqa: PLR6301 - protocol shape
+        async def aclose(self) -> None:  # ruff: ignore[no-self-use] - protocol shape
             return None
 
     stub = _WireStub()
@@ -388,10 +394,13 @@ def _stub_series_payload(
 ) -> None:
     """Make the next Series.info() call receive ``payload`` verbatim."""
 
-    async def _fake(  # noqa: RUF029 - coroutine required by call_endpoint's API
-        command_name: str,  # noqa: ARG001 - signature must match call_endpoint's
+    # coroutine required by call_endpoint's API
+    async def _fake(  # ruff: ignore[unused-async]
+        # signature must match call_endpoint's
+        command_name: str,  # ruff: ignore[unused-function-argument]
         *,
-        values: dict[str, Any],  # noqa: ARG001 - signature must match call_endpoint's
+        # signature must match call_endpoint's
+        values: dict[str, Any],  # ruff: ignore[unused-function-argument]
     ) -> dict[str, Any]:
         return payload
 

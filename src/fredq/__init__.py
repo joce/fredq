@@ -51,7 +51,8 @@ if TYPE_CHECKING:
     from fredq.frames import Frame, FrameShapeError, Observations
 
 
-def __getattr__(name: str) -> Any:  # noqa: ANN401 - PEP 562 module __getattr__
+# PEP 562 module __getattr__
+def __getattr__(name: str) -> Any:  # ruff: ignore[any-type]
     """Lazily import heavy public names on first access (PEP 562).
 
     Returns:

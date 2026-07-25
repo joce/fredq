@@ -335,7 +335,7 @@ def _add_skills_targeting_options(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_skills_command_group(
-    subparsers: Any,  # noqa: ANN401
+    subparsers: Any,  # ruff: ignore[any-type]
 ) -> argparse.ArgumentParser:
     """Build the ``fredq skills {install,uninstall,list}`` subparser tree.
 
@@ -564,7 +564,8 @@ def _handle_parquet_output(
     polars import cost.
     """
 
-    from fredq.parquet_writer import (  # noqa: PLC0415 - lazy import.
+    # lazy import.
+    from fredq.parquet_writer import (  # ruff: ignore[import-outside-top-level]
         ObservationsContext,
         write_observations_parquet,
     )

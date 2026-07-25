@@ -201,7 +201,7 @@ def parse_date(value: str) -> str:
         ts = int(stripped)
     except ValueError:
         ts = None
-    if ts is not None and len(stripped) >= 10:  # noqa: PLR2004
+    if ts is not None and len(stripped) >= 10:  # ruff: ignore[magic-value-comparison]
         return datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
 
     message = (

@@ -15,7 +15,8 @@ async def _double(value: int) -> int:
     return value * 2
 
 
-async def _boom() -> None:  # noqa: RUF029 - coroutine required by run()'s API
+# coroutine required by run()'s API
+async def _boom() -> None:  # ruff: ignore[unused-async]
     message = "kaboom"
     raise RuntimeError(message)
 
@@ -27,7 +28,7 @@ async def _hang() -> None:
 def test_run_returns_coroutine_result() -> None:
     """run() executes the coroutine and returns its value."""
 
-    assert run(_double(21)) == 42  # noqa: PLR2004
+    assert run(_double(21)) == 42  # ruff: ignore[magic-value-comparison]
 
 
 def test_run_propagates_exceptions() -> None:
@@ -47,7 +48,8 @@ def test_run_times_out_and_cancels() -> None:
 def test_run_reuses_one_loop() -> None:
     """Sequential calls share the same background loop."""
 
-    async def _loop_id() -> int:  # noqa: RUF029 - coroutine required by run()'s API
+    # coroutine required by run()'s API
+    async def _loop_id() -> int:  # ruff: ignore[unused-async]
         return id(asyncio.get_running_loop())
 
     assert run(_loop_id()) == run(_loop_id())
@@ -61,7 +63,8 @@ def test_run_works_when_caller_has_a_running_loop() -> None:
     running event loop' in notebooks/agent runtimes.
     """
 
-    async def _call_sync_api_from_async_context() -> int:  # noqa: RUF029
+    async def _call_sync_api_from_async_context() -> int:  # ruff: ignore[unused-async]
         return run(_double(5))
 
-    assert asyncio.run(_call_sync_api_from_async_context()) == 10  # noqa: PLR2004
+    # ruff: ignore[magic-value-comparison]
+    assert asyncio.run(_call_sync_api_from_async_context()) == 10

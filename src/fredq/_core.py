@@ -148,7 +148,7 @@ def configure(
 
 
 def _get_client() -> FredClient:
-    global _client  # noqa: PLW0603 - module singleton by design
+    global _client  # ruff: ignore[global-statement] - module singleton by design
     with _client_lock:
         if _client is None:
             api_key = _client_options.get("api_key") or resolve_api_key()
@@ -159,7 +159,7 @@ def _get_client() -> FredClient:
 def _reset_for_tests() -> None:  # pyright: ignore[reportUnusedFunction]
     """Drop the shared client so tests can reconfigure. Test-only."""
 
-    global _client  # noqa: PLW0603 - module singleton by design
+    global _client  # ruff: ignore[global-statement] - module singleton by design
     with _client_lock:
         if _client is not None:
             with contextlib.suppress(Exception):

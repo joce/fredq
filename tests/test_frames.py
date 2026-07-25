@@ -43,7 +43,8 @@ def test_missing_values_become_null_not_nan() -> None:
 
     payload = _capture("series-observations/DEXCAUS_holidays.json")
     dots = sum(1 for o in payload["observations"] if o["value"] == ".")
-    assert dots == 2  # corpus-pinned count (README ruling)  # noqa: PLR2004
+    # corpus-pinned count (README ruling)
+    assert dots == 2  # ruff: ignore[magic-value-comparison]
     obs = build_observations(payload, fetched_at=NOW)
     assert obs.df["value"].null_count() == dots
     assert not obs.df["value"].is_nan().any()
@@ -55,7 +56,8 @@ def test_vintage_capture_builds_with_multiple_realtime_windows() -> None:
     payload = _capture("series-observations/UNRATE_vintage-2001.json")
     obs = build_observations(payload, fetched_at=NOW)
     windows = obs.df.select("realtime_start", "realtime_end").unique()
-    assert windows.height == 3  # corpus-pinned (README ruling)  # noqa: PLR2004
+    # corpus-pinned (README ruling)
+    assert windows.height == 3  # ruff: ignore[magic-value-comparison]
 
 
 def test_meta_is_envelope_without_observations() -> None:
@@ -130,7 +132,8 @@ def test_to_pandas_raises_helpful_import_error_without_extra() -> None:
 
     frame = Frame(df=pl.DataFrame({"a": [1]}), fetched_at=NOW)
     try:
-        import pandas  # noqa: F401, ICN001, PLC0415
+        # ruff: ignore[unused-import, unconventional-import-alias, import-outside-top-level]
+        import pandas
     except ImportError:
         with pytest.raises(ImportError, match=r"fredq\[pandas\]"):
             frame.to_pandas()
@@ -143,7 +146,8 @@ def test_to_arrow_raises_helpful_import_error_without_extra() -> None:
 
     frame = Frame(df=pl.DataFrame({"a": [1]}), fetched_at=NOW)
     try:
-        import pyarrow  # noqa: F401, ICN001, PLC0415
+        # ruff: ignore[unused-import, unconventional-import-alias, import-outside-top-level]
+        import pyarrow
     except ImportError:
         with pytest.raises(ImportError, match=r"fredq\[pandas\]"):
             frame.to_arrow()

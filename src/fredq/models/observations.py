@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import date  # noqa: TC003 - pydantic needs runtime types
+# pydantic needs runtime types
+# ruff: ignore[typing-only-standard-library-import]
+from datetime import date
 from typing import Literal
 
 from fredq.models._base import FredModel

@@ -40,7 +40,7 @@ def test_importing_fredq_stays_light() -> None:
         "heavy = {'polars', 'fredq.api', 'fredq.frames'} & set(sys.modules); "
         "print(sorted(heavy))"
     )
-    out = subprocess.run(  # noqa: S603
+    out = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         [sys.executable, "-c", code], capture_output=True, text=True, check=True
     )
     assert out.stdout.strip() == "[]"
@@ -50,7 +50,7 @@ def test_cli_module_stays_light() -> None:
     """Importing the CLI never pays for polars either."""
 
     code = "import sys; import fredq.cli; print('polars' in sys.modules)"
-    out = subprocess.run(  # noqa: S603
+    out = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         [sys.executable, "-c", code], capture_output=True, text=True, check=True
     )
     assert out.stdout.strip() == "False"
@@ -59,8 +59,8 @@ def test_cli_module_stays_light() -> None:
 def test_lazy_names_resolve_to_api_objects() -> None:
     """Spot-check the lazy routing targets."""
 
-    from fredq.api import Series  # noqa: PLC0415
-    from fredq.frames import Frame  # noqa: PLC0415
+    from fredq.api import Series  # ruff: ignore[import-outside-top-level]
+    from fredq.frames import Frame  # ruff: ignore[import-outside-top-level]
 
     assert fredq.Series is Series
     assert fredq.Frame is Frame
@@ -69,6 +69,6 @@ def test_lazy_names_resolve_to_api_objects() -> None:
 def test_configure_is_the_core_configure() -> None:
     """fredq.configure is the singleton-config entry point, one object."""
 
-    from fredq._core import configure  # noqa: PLC0415
+    from fredq._core import configure  # ruff: ignore[import-outside-top-level]
 
     assert fredq.configure is configure

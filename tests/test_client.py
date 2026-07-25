@@ -28,7 +28,7 @@ REQUEST_ATTEMPTS = 3
 def test_client_uses_httpx2_backend() -> None:
     """The runtime HTTP client comes from the httpx2 package."""
 
-    import fredq.client as client_module  # noqa: PLC0415
+    import fredq.client as client_module  # ruff: ignore[import-outside-top-level]
 
     assert client_module.httpx.__name__ == "httpx2"
 
@@ -286,7 +286,7 @@ def test_redact_filter_passes_through_records_without_api_key() -> None:
 def test_both_reserved_keys_rejected_together() -> None:
     """Passing both api_key and file_type raises and names both keys."""
 
-    import asyncio  # noqa: PLC0415
+    import asyncio  # ruff: ignore[import-outside-top-level]
 
     client = FredClient(api_key="secret")
 

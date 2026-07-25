@@ -268,15 +268,16 @@ def test_integer_max_value_boundary_accepted() -> None:
 
     spec = _spec(ParamKind.INTEGER, min_value=1, max_value=1000)
     result = coerce_param(spec, "1000")
-    assert result == 1000  # noqa: PLR2004
+    assert result == 1000  # ruff: ignore[magic-value-comparison]
 
 
 def test_integer_without_bounds_any_value_works() -> None:
     """INTEGER with no bounds still accepts any integer (no regression)."""
 
     spec = _spec(ParamKind.INTEGER)
-    assert coerce_param(spec, "-999") == -999  # noqa: PLR2004
-    assert coerce_param(spec, "9999999") == 9999999  # noqa: PLR2004
+    assert coerce_param(spec, "-999") == -999  # ruff: ignore[magic-value-comparison]
+    # ruff: ignore[magic-value-comparison]
+    assert coerce_param(spec, "9999999") == 9999999
 
 
 def test_integer_offset_min_zero_rejects_negative() -> None:
@@ -299,34 +300,34 @@ def test_integer_offset_min_zero_accepts_zero() -> None:
 
 def test_bounds_suffix_both_bounds() -> None:
     """Both min and max produce '(1-1000)' style suffix."""
-    from fredq.params import bounds_suffix  # noqa: PLC0415
+    from fredq.params import bounds_suffix  # ruff: ignore[import-outside-top-level]
 
     assert bounds_suffix(1, 1000) == " (1-1000)"
 
 
 def test_bounds_suffix_min_only() -> None:
     """Only min_value produces '>= N' style suffix."""
-    from fredq.params import bounds_suffix  # noqa: PLC0415
+    from fredq.params import bounds_suffix  # ruff: ignore[import-outside-top-level]
 
     assert bounds_suffix(0, None) == " (>= 0)"
 
 
 def test_bounds_suffix_max_only() -> None:
     """Only max_value produces '<= N' style suffix."""
-    from fredq.params import bounds_suffix  # noqa: PLC0415
+    from fredq.params import bounds_suffix  # ruff: ignore[import-outside-top-level]
 
     assert bounds_suffix(None, 100) == " (<= 100)"
 
 
 def test_bounds_suffix_no_bounds() -> None:
     """No bounds returns empty string."""
-    from fredq.params import bounds_suffix  # noqa: PLC0415
+    from fredq.params import bounds_suffix  # ruff: ignore[import-outside-top-level]
 
     assert not bounds_suffix(None, None)
 
 
 def test_bounds_suffix_arbitrary_values() -> None:
     """Changing bounds updates the suffix."""
-    from fredq.params import bounds_suffix  # noqa: PLC0415
+    from fredq.params import bounds_suffix  # ruff: ignore[import-outside-top-level]
 
     assert bounds_suffix(2, 999) == " (2-999)"

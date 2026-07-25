@@ -221,28 +221,28 @@ select = [
 fixable = ["ALL"]
 unfixable = []
 ignore = [
-    "COM812",
-    "D105",
-    "D202",
-    "D203",
-    "D213",
-    "D413",
+    "missing-trailing-comma",
+    "undocumented-magic-method",
+    "blank-line-after-function",
+    "incorrect-blank-line-before-class",
+    "multi-line-summary-second-line",
+    "missing-blank-line-after-last-section",
 ]
 preview = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
-    "DOC201",
-    "DOC402",
-    "DOC501",
-    "PLC2701",
-    "S101",
-    "S404",
-    "SLF001",
+    "docstring-missing-returns",
+    "docstring-missing-yields",
+    "docstring-missing-exception",
+    "import-private-name",
+    "assert",
+    "suspicious-subprocess-import",
+    "private-member-access",
 ]
 "tools/*" = [
-    "PLC2701",
-    "T201",
+    "import-private-name",
+    "print",
 ]
 
 [tool.ruff.lint.pydocstyle]

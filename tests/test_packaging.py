@@ -78,8 +78,9 @@ def built_distributions(
     """
 
     out_dir = tmp_path_factory.mktemp("fredq-dist")
-    subprocess.run(  # noqa: S603
-        ["uv", "build", "--out-dir", str(out_dir)],  # noqa: S607
+    subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        # ruff: ignore[start-process-with-partial-path]
+        ["uv", "build", "--out-dir", str(out_dir)],
         cwd=_REPO_ROOT,
         check=True,
         capture_output=True,
