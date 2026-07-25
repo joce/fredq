@@ -149,7 +149,8 @@ def collect_nested_extras(model: object, path: str = "$") -> list[tuple[str, str
         list[tuple[str, str]]: One entry per extra field found.
     """
 
-    from pydantic import BaseModel  # noqa: PLC0415 - keep pydantic off non-model tests
+    # Keep pydantic off non-model tests.
+    from pydantic import BaseModel  # ruff: ignore[import-outside-top-level]
 
     extras: list[tuple[str, str]] = []
     if isinstance(model, BaseModel):

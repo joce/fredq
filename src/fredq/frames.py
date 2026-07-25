@@ -62,7 +62,9 @@ class Frame:
         """
 
         try:
-            import pandas  # noqa: F401, ICN001, PLC0415 - optional dependency probe  # pyright: ignore[reportMissingImports, reportMissingTypeStubs, reportUnusedImport]
+            # optional dependency probe
+            # ruff: ignore[unused-import, unconventional-import-alias, import-outside-top-level]
+            import pandas  # pyright: ignore[reportMissingImports, reportMissingTypeStubs, reportUnusedImport]
         except ImportError as exc:
             message = (
                 "to_pandas() requires the optional extra: pip install fredq[pandas]"
@@ -81,7 +83,9 @@ class Frame:
         """
 
         try:
-            import pyarrow  # noqa: F401, ICN001, PLC0415 - optional dependency probe  # pyright: ignore[reportMissingImports, reportMissingTypeStubs, reportUnusedImport]
+            # optional dependency probe
+            # ruff: ignore[unused-import, unconventional-import-alias, import-outside-top-level]
+            import pyarrow  # pyright: ignore[reportMissingImports, reportMissingTypeStubs, reportUnusedImport]
         except ImportError as exc:
             message = (
                 "to_arrow() requires the optional extra: pip install fredq[pandas]"

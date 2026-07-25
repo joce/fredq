@@ -310,7 +310,7 @@ def test_fields_are_alphabetical(model_cls: type[Any], records_fn: RecordsFn) ->
 def test_every_model_is_gated() -> None:
     """Completeness: every public model in fredq.models has a _GATES entry."""
 
-    from pydantic import BaseModel  # noqa: PLC0415
+    from pydantic import BaseModel  # ruff: ignore[import-outside-top-level]
 
     gated = {model_cls for model_cls, _ in _GATES}
     public = {
@@ -332,7 +332,7 @@ def test_pad_offset_leaves_bare_dates_untouched() -> None:
     catch, 2026-07-06).
     """
 
-    from fredq.models._base import (  # noqa: PLC0415
+    from fredq.models._base import (  # ruff: ignore[import-outside-top-level]
         _pad_offset,  # pyright: ignore[reportPrivateUsage]
     )
 

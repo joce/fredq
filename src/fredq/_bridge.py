@@ -24,7 +24,7 @@ _loop: asyncio.AbstractEventLoop | None = None
 
 
 def _ensure_loop() -> asyncio.AbstractEventLoop:
-    global _loop  # noqa: PLW0603 - module-level singleton by design
+    global _loop  # ruff: ignore[global-statement] - module-level singleton by design
     with _lock:
         if _loop is not None and not _loop.is_closed():
             return _loop

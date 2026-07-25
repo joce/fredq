@@ -38,8 +38,8 @@ def test_http_error_with_fred_shape_maps_to_api_error() -> None:
     with pytest.raises(FredApiError) as exc_info:
         map_http_error(exc)
     err = exc_info.value
-    assert err.status_code == 400  # noqa: PLR2004
-    assert err.error_code == 400  # noqa: PLR2004
+    assert err.status_code == 400  # ruff: ignore[magic-value-comparison]
+    assert err.error_code == 400  # ruff: ignore[magic-value-comparison]
     assert "does not exist" in err.error_message
     assert err.__cause__ is exc
 
@@ -55,8 +55,8 @@ def test_http_500_with_fred_shape_maps_to_api_error() -> None:
     exc = _corpus_error("series/ERR_invalid-id.json", 500)
     with pytest.raises(FredApiError) as exc_info:
         map_http_error(exc)
-    assert exc_info.value.status_code == 500  # noqa: PLR2004
-    assert exc_info.value.error_code == 400  # noqa: PLR2004
+    assert exc_info.value.status_code == 500  # ruff: ignore[magic-value-comparison]
+    assert exc_info.value.error_code == 400  # ruff: ignore[magic-value-comparison]
 
 
 def test_no_not_found_subclass_exists() -> None:
@@ -66,7 +66,7 @@ def test_no_not_found_subclass_exists() -> None:
     subclass would require wording-sniffing, which is forbidden.
     """
 
-    import fredq.exceptions as exc_mod  # noqa: PLC0415
+    import fredq.exceptions as exc_mod  # ruff: ignore[import-outside-top-level]
 
     not_foundish = [n for n in dir(exc_mod) if "notfound" in n.lower()]
     assert not_foundish == []
@@ -127,7 +127,7 @@ class _StubClient:
         path: str,
         params: dict[str, object],
         *,
-        base_url: str | None = None,  # noqa: ARG002
+        base_url: str | None = None,  # ruff: ignore[unused-method-argument]
     ) -> str:
         self.calls.append((path, dict(params)))
         return self.body
@@ -279,7 +279,7 @@ def test_call_endpoint_maps_http_errors(monkeypatch: pytest.MonkeyPatch) -> None
             path: str,
             params: dict[str, object],
             *,
-            base_url: str | None = None,  # noqa: ARG002
+            base_url: str | None = None,  # ruff: ignore[unused-method-argument]
         ) -> str:
             self.calls.append((path, dict(params)))
             raise FredRequestError(400, "https://x", body=body)
@@ -290,7 +290,7 @@ def test_call_endpoint_maps_http_errors(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setattr(core, "_get_client", _get_err_client)
     with pytest.raises(FredApiError) as exc_info:
         run(core.call_endpoint("series", values={"series_id": "ZZZNOTREAL"}))
-    assert exc_info.value.error_code == 400  # noqa: PLR2004
+    assert exc_info.value.error_code == 400  # ruff: ignore[magic-value-comparison]
 
 
 def test_configure_before_first_call_only() -> None:

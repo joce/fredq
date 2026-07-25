@@ -902,7 +902,8 @@ def test_category_id_zero_accepted(
         ),
     ],
 )
-def test_fred_id_positive_accepted(  # noqa: PLR0913, PLR0917
+# ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def test_fred_id_positive_accepted(
     args: list[str],
     url_suffix: str,
     body: str,
@@ -1043,7 +1044,8 @@ _FILTER_COMMANDS_BASE_URLS: Final[list[tuple[list[str], list[str], str]]] = [
 @pytest.mark.parametrize(
     ("command", "required_args", "url_suffix"), _FILTER_COMMANDS_WITH_URLS
 )
-def test_filter_variable_and_value_together_exit_0(  # noqa: PLR0913, PLR0917
+# ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def test_filter_variable_and_value_together_exit_0(
     command: list[str],
     required_args: list[str],
     url_suffix: str,
@@ -1076,7 +1078,8 @@ def test_filter_variable_and_value_together_exit_0(  # noqa: PLR0913, PLR0917
 @pytest.mark.parametrize(
     ("command", "required_args", "url_suffix"), _FILTER_COMMANDS_BASE_URLS
 )
-def test_neither_filter_variable_nor_value_exits_0(  # noqa: PLR0913, PLR0917
+# ruff: ignore[too-many-arguments, too-many-positional-arguments]
+def test_neither_filter_variable_nor_value_exits_0(
     command: list[str],
     required_args: list[str],
     url_suffix: str,

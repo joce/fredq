@@ -147,10 +147,10 @@ class _StubClient:
 
     async def get(
         self,
-        path: str,  # noqa: ARG002
-        params: dict[str, ParamValue],  # noqa: ARG002
+        path: str,  # ruff: ignore[unused-method-argument]
+        params: dict[str, ParamValue],  # ruff: ignore[unused-method-argument]
         *,
-        base_url: str | None = None,  # noqa: ARG002
+        base_url: str | None = None,  # ruff: ignore[unused-method-argument]
     ) -> str:
         if self.error is not None:
             raise self.error
@@ -175,7 +175,7 @@ async def test_run_probe_ok_case_writes_file_and_manifest(tmp_path: Path) -> Non
     manifest = json.loads((tmp_path / "manifest.json").read_text("utf-8"))
     entry = manifest["series/GNPCA"]
     assert entry["status"] == "ok"
-    assert entry["http_status"] == 200  # noqa: PLR2004
+    assert entry["http_status"] == 200  # ruff: ignore[magic-value-comparison]
     capture = tmp_path / "series" / "GNPCA.json"
     assert json.loads(capture.read_text("utf-8")) == {"seriess": [{"id": "GNPCA"}]}
     assert stub.closed  # _run_command must close the per-case client
@@ -197,7 +197,7 @@ async def test_run_probe_http_error_keeps_scrubbed_body(tmp_path: Path) -> None:
     manifest = json.loads((tmp_path / "manifest.json").read_text("utf-8"))
     entry = manifest["series/GNPCA"]
     assert entry["status"] == "http_error"
-    assert entry["http_status"] == 400  # noqa: PLR2004
+    assert entry["http_status"] == 400  # ruff: ignore[magic-value-comparison]
     text = (tmp_path / "series" / "GNPCA.json").read_text("utf-8")
     assert "leaky" not in text
     assert "api_key=[REDACTED]" in text
@@ -216,7 +216,7 @@ async def test_run_probe_non_json_200_is_error_without_file(tmp_path: Path) -> N
     assert entry["status"] == "error"
     # The HTTP transaction succeeded; only the payload is corrupt. Contrast
     # non-HTTP failures, which record http_status=None.
-    assert entry["http_status"] == 200  # noqa: PLR2004
+    assert entry["http_status"] == 200  # ruff: ignore[magic-value-comparison]
     assert "file" not in entry
     assert not (tmp_path / "series" / "GNPCA.json").exists()
 

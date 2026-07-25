@@ -76,7 +76,7 @@ def _install_api_key_redact_filter() -> None:
     are created.
     """
 
-    global _redact_filter_installed  # noqa: PLW0603
+    global _redact_filter_installed  # ruff: ignore[global-statement]
     if _redact_filter_installed:
         return
 
@@ -184,7 +184,7 @@ class FredClient:
         url: str,
         *,
         context: str,
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,  # ruff: ignore[any-type]
     ) -> httpx.Response:
         attempt = 1
         while True:
@@ -192,7 +192,7 @@ class FredClient:
                 response = await self._client.request(method, url, **kwargs)
                 if response.is_error:
                     response.raise_for_status()
-            except httpx.HTTPStatusError as exc:  # noqa: PERF203
+            except httpx.HTTPStatusError as exc:  # ruff: ignore[try-except-in-loop]
                 status_code = exc.response.status_code if exc.response else -1
                 if (
                     status_code in self._RETRYABLE_STATUS_CODES

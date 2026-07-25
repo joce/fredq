@@ -192,7 +192,7 @@ def test_all_dot_values_column_is_all_nan(tmp_path: Path) -> None:
 def test_oserror_on_write_raises_parquet_writer_error(tmp_path: Path) -> None:
     """An OSError during write raises ParquetWriterError (not OSError)."""
 
-    from unittest.mock import patch  # noqa: PLC0415
+    from unittest.mock import patch  # ruff: ignore[import-outside-top-level]
 
     body = _envelope(
         [
@@ -216,7 +216,7 @@ def test_oserror_on_write_raises_parquet_writer_error(tmp_path: Path) -> None:
 def test_non_scalar_envelope_value_does_not_crash(tmp_path: Path) -> None:
     """Nested-dict or list values in the envelope are silently skipped in metadata."""
 
-    import json  # noqa: PLC0415
+    import json  # ruff: ignore[import-outside-top-level]
 
     # Inject a non-scalar value under a metadata key to simulate an unexpected
     # FRED response shape.

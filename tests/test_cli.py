@@ -286,7 +286,7 @@ def test_verbose_does_not_include_api_key_in_logs(
 ) -> None:
     """--verbose debug logging must never emit the FRED API key."""
 
-    import logging  # noqa: PLC0415
+    import logging  # ruff: ignore[import-outside-top-level]
 
     monkeypatch.setenv("FRED_API_KEY", "my-secret-api-key")
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -579,7 +579,7 @@ class _FakeFredClient:
         path: str,
         params: dict[str, ParamValue],
         *,
-        base_url: str | None = None,  # noqa: ARG002
+        base_url: str | None = None,  # ruff: ignore[unused-method-argument]
     ) -> str:
         self.calls.append((path, dict(params)))
         return self.response

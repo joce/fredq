@@ -154,7 +154,8 @@ class Series:
         )
         return SeriesInfo.model_validate(_unwrap_single(payload, "seriess"))
 
-    def observations(  # noqa: PLR0913 - one keyword-only arg per wire param.
+    # one keyword-only arg per wire param.
+    def observations(  # ruff: ignore[too-many-arguments]
         self,
         *,
         observation_start: DateLike | None = None,
@@ -358,7 +359,8 @@ class Category:
         )
         return CategoriesResult.model_validate(payload)
 
-    def series(  # noqa: PLR0913 - one keyword-only arg per wire param.
+    # one keyword-only arg per wire param.
+    def series(  # ruff: ignore[too-many-arguments]
         self,
         *,
         realtime_start: DateLike | None = None,
@@ -396,7 +398,7 @@ class Category:
         )
         return SeriesListResult.model_validate(payload)
 
-    def tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
+    def tags(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire param.
         self,
         *,
         realtime_start: DateLike | None = None,
@@ -432,7 +434,8 @@ class Category:
         )
         return TagsResult.model_validate(payload)
 
-    def related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
+    # one keyword-only arg per wire param.
+    def related_tags(  # ruff: ignore[too-many-arguments]
         self,
         tag_names: list[str] | str,
         *,
@@ -510,7 +513,8 @@ class Release:
         )
         return ReleaseInfo.model_validate(_unwrap_single(payload, "releases"))
 
-    def dates(  # noqa: PLR0913 - one keyword-only arg per wire param.
+    # one keyword-only arg per wire param.
+    def dates(  # ruff: ignore[too-many-arguments]
         self,
         *,
         realtime_start: DateLike | None = None,
@@ -540,7 +544,8 @@ class Release:
         )
         return ReleaseDatesResult.model_validate(payload)
 
-    def series(  # noqa: PLR0913 - one keyword-only arg per wire param.
+    # one keyword-only arg per wire param.
+    def series(  # ruff: ignore[too-many-arguments]
         self,
         *,
         realtime_start: DateLike | None = None,
@@ -600,7 +605,7 @@ class Release:
         )
         return ReleaseSourcesResult.model_validate(payload)
 
-    def tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
+    def tags(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire param.
         self,
         *,
         realtime_start: DateLike | None = None,
@@ -636,7 +641,8 @@ class Release:
         )
         return TagsResult.model_validate(payload)
 
-    def related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
+    # one keyword-only arg per wire param.
+    def related_tags(  # ruff: ignore[too-many-arguments]
         self,
         tag_names: list[str] | str,
         *,
@@ -738,7 +744,8 @@ class Source:
         )
         return SourceInfo.model_validate(_unwrap_single(payload, "sources"))
 
-    def releases(  # noqa: PLR0913 - one keyword-only arg per wire param.
+    # one keyword-only arg per wire param.
+    def releases(  # ruff: ignore[too-many-arguments]
         self,
         *,
         realtime_start: DateLike | None = None,
@@ -769,7 +776,8 @@ class Source:
         return ReleasesResult.model_validate(payload)
 
 
-def search_series(  # noqa: PLR0913 - one keyword-only arg per wire param.
+# one keyword-only arg per wire param.
+def search_series(  # ruff: ignore[too-many-arguments]
     search_text: str,
     *,
     search_type: str | None = None,
@@ -810,7 +818,8 @@ def search_series(  # noqa: PLR0913 - one keyword-only arg per wire param.
     return SeriesListResult.model_validate(payload)
 
 
-def search_series_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
+# one keyword-only arg per wire param.
+def search_series_tags(  # ruff: ignore[too-many-arguments]
     series_search_text: str,
     *,
     realtime_start: DateLike | None = None,
@@ -847,7 +856,8 @@ def search_series_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
     return TagsResult.model_validate(payload)
 
 
-def search_series_related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
+# one keyword-only arg per wire param.
+def search_series_related_tags(  # ruff: ignore[too-many-arguments]
     series_search_text: str,
     tag_names: list[str] | str,
     *,
@@ -886,7 +896,8 @@ def search_series_related_tags(  # noqa: PLR0913 - one keyword-only arg per wire
     return TagsResult.model_validate(payload)
 
 
-def series_updates(  # noqa: PLR0913 - one keyword-only arg per wire param.
+# one keyword-only arg per wire param.
+def series_updates(  # ruff: ignore[too-many-arguments]
     *,
     realtime_start: DateLike | None = None,
     realtime_end: DateLike | None = None,
@@ -920,7 +931,7 @@ def series_updates(  # noqa: PLR0913 - one keyword-only arg per wire param.
     return SeriesListResult.model_validate(payload)
 
 
-def releases(  # noqa: PLR0913 - one keyword-only arg per wire param.
+def releases(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire param.
     *,
     realtime_start: DateLike | None = None,
     realtime_end: DateLike | None = None,
@@ -949,7 +960,8 @@ def releases(  # noqa: PLR0913 - one keyword-only arg per wire param.
     return ReleasesResult.model_validate(payload)
 
 
-def release_calendar(  # noqa: PLR0913 - one keyword-only arg per wire param.
+# one keyword-only arg per wire param.
+def release_calendar(  # ruff: ignore[too-many-arguments]
     *,
     realtime_start: DateLike | None = None,
     realtime_end: DateLike | None = None,
@@ -980,7 +992,7 @@ def release_calendar(  # noqa: PLR0913 - one keyword-only arg per wire param.
     return ReleaseDatesResult.model_validate(payload)
 
 
-def sources(  # noqa: PLR0913 - one keyword-only arg per wire param.
+def sources(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire param.
     *,
     realtime_start: DateLike | None = None,
     realtime_end: DateLike | None = None,
@@ -1009,7 +1021,7 @@ def sources(  # noqa: PLR0913 - one keyword-only arg per wire param.
     return SourcesResult.model_validate(payload)
 
 
-def tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
+def tags(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire param.
     *,
     realtime_start: DateLike | None = None,
     realtime_end: DateLike | None = None,
@@ -1044,7 +1056,8 @@ def tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
     return TagsResult.model_validate(payload)
 
 
-def tag_series(  # noqa: PLR0913 - one keyword-only arg per wire param.
+# one keyword-only arg per wire param.
+def tag_series(  # ruff: ignore[too-many-arguments]
     tag_names: list[str] | str,
     *,
     exclude_tag_names: list[str] | str | None = None,
@@ -1077,7 +1090,8 @@ def tag_series(  # noqa: PLR0913 - one keyword-only arg per wire param.
     return SeriesListResult.model_validate(payload)
 
 
-def related_tags(  # noqa: PLR0913 - one keyword-only arg per wire param.
+# one keyword-only arg per wire param.
+def related_tags(  # ruff: ignore[too-many-arguments]
     tag_names: list[str] | str,
     *,
     realtime_start: DateLike | None = None,
