@@ -6,6 +6,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.2]
+
+Maintenance release — no user-facing changes. Runtime dependency ranges in
+`pyproject.toml` are unchanged.
+
+### Internal
+
+- Bumped development dependencies: ruff 0.16.0, tox 4.58.0, tox-uv 1.36.0,
+  coverage 7.15.2, and the locked httpx2 2.9.1, polars 1.43.0, and
+  regex 2026.7.19.
+- Adopted ruff 0.16's `# ruff: ignore[...]` suppression comments in place of
+  `# noqa:`, and rule names in place of rule codes in the lint configuration.
+- Bumped GitHub Actions: `astral-sh/setup-uv` 8.3.2 to 9.0.0,
+  `actions/setup-node` 6 to 7.
+
 ## [0.4.1]
 
 Maintenance release — no user-facing changes.
@@ -195,7 +210,8 @@ Initial release.
   with the key redacted from all errors and logs.
 - Exit-code contract: `0` success, `1` FRED request failure, `2` usage error.
 
-[Unreleased]: https://github.com/joce/fredq/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/joce/fredq/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/joce/fredq/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/joce/fredq/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/joce/fredq/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/joce/fredq/compare/v0.3.2...v0.3.3
