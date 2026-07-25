@@ -59,8 +59,8 @@ import fredq
 
 # Observations come back as a typed, polars-backed frame.
 obs = fredq.Series("DGS10").observations(observation_start="2024-01-01")
-df = obs.to_polars()          # or .to_pandas() / .to_arrow() (needs [pandas]) / .to_dicts()
-print(obs.meta.units, obs.meta.count)   # the response envelope, corpus-typed
+df = obs.to_polars()  # or .to_pandas() / .to_arrow() (needs [pandas]) / .to_dicts()
+print(obs.meta.units, obs.meta.count)  # the response envelope, corpus-typed
 
 # Metadata calls return validated pydantic models with real fields.
 info = fredq.Series("DGS10").info()

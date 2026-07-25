@@ -227,6 +227,10 @@ ignore = [
     "D203",
     "D213",
     "D413",
+    # ponytail: opinionated preview style rules from ruff 0.16; drop these two
+    # entries to migrate to `# ruff: ignore[...]` and rule names in selectors.
+    "RUF105",
+    "RUF201",
 ]
 preview = true
 
