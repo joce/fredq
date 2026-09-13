@@ -44,11 +44,11 @@ class _SkipCollector:
         """
 
         if (
-            sys.platform == "win32"
-            and report.nodeid in _WINDOWS_PERMISSION_TESTS
+            report.nodeid in _WINDOWS_PERMISSION_TESTS
             and report.when == "setup"
             and isinstance(report.longrepr, tuple)
             and report.longrepr[2] == "Skipped: chmod not meaningful on Windows"
+            and sys.platform == "win32"
         ):
             return
         if report.skipped and not hasattr(report, "wasxfail"):
