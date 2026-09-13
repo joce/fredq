@@ -72,10 +72,10 @@ matches = fredq.tag_series(["usa", "quarterly"])
 `tag_series()` returns a `SeriesListResult`; tag names are ANDed, not
 ORed — this finds series carrying **both** `usa` and `quarterly`.
 
-CLI equivalent (semicolon-joined, matching FRED's wire format):
+CLI equivalent (comma-separated; fredq converts to FRED's semicolon wire format):
 
 ```bash
-fredq tag series "usa;quarterly" --limit 10
+fredq tag series "usa,quarterly" --limit 10
 ```
 
 ## Parameters

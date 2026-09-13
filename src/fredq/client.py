@@ -57,6 +57,8 @@ class _ApiKeyRedactFilter(logging.Filter):
 
         # Also scrub exception text if present — a logger.exception() call
         # could embed a URL (including the api_key param) in the traceback.
+        if record.exc_info and not record.exc_text:
+            record.exc_text = logging.Formatter().formatException(record.exc_info)
         if record.exc_text and _API_KEY_PATTERN in record.exc_text:
             record.exc_text = _API_KEY_RE.sub(_API_KEY_REDACTED, record.exc_text)
 
@@ -203,23 +205,26 @@ class FredClient:
                     continue
                 url_str = self._redact_url(exc.request.url)
                 body = _API_KEY_RE.sub(_API_KEY_REDACTED, exc.response.text)
-                raise FredRequestError(status_code, url_str, body=body) from exc
-            except httpx.TransportError as exc:
+                body = (
+                    body.replace(self._api_key, "[REDACTED]") if self._api_key else body
+                )
+                raise FredRequestError(status_code, url_str, body=body) from None
+            except httpx.TransportError:
                 if attempt < self._REQUEST_ATTEMPTS:
                     await asyncio.sleep(self._RETRY_DELAY_SECONDS * attempt)
                     attempt += 1
                     continue
-                raise FredUnavailableError(context) from exc
+                raise FredUnavailableError(context) from None
             else:
                 return response
 
-    async def get(
+    async def _get_response(
         self,
         path: str,
         params: dict[str, ParamValue],
         *,
         base_url: str | None = None,
-    ) -> str:
+    ) -> httpx.Response:
         """Call a FRED endpoint.
 
         Args:
@@ -229,7 +234,7 @@ class FredClient:
             base_url: Optional per-call base URL override.
 
         Returns:
-            str: Raw FRED response body.
+            httpx.Response: The successful response.
 
         Raises:
             FredClientUsageError: If ``params`` contains ``api_key`` or
@@ -249,13 +254,34 @@ class FredClient:
         request_params["api_key"] = self._api_key
         request_params["file_type"] = "json"
         host = base_url or self._base_url
-        response = await self._request_or_raise(
+        return await self._request_or_raise(
             "GET",
             host + path,
             context=f"api call: {path}",
             params=request_params,
         )
+
+    async def get(
+        self, path: str, params: dict[str, ParamValue], *, base_url: str | None = None
+    ) -> str:
+        """Return the decoded response body for library callers.
+
+        Returns:
+            str: The HTTP response text.
+        """
+        response = await self._get_response(path, params, base_url=base_url)
         return response.text
+
+    async def get_bytes(
+        self, path: str, params: dict[str, ParamValue], *, base_url: str | None = None
+    ) -> bytes:
+        """Return the response body bytes for exact CLI output.
+
+        Returns:
+            bytes: The HTTP response body, without text decoding.
+        """
+        response = await self._get_response(path, params, base_url=base_url)
+        return response.content
 
     async def aclose(self) -> None:
         """Close the underlying HTTP client."""

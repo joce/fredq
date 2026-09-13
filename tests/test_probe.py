@@ -145,16 +145,16 @@ class _StubClient:
         self.error = error
         self.closed = False
 
-    async def get(
+    async def get_bytes(
         self,
         path: str,  # ruff: ignore[unused-method-argument]
         params: dict[str, ParamValue],  # ruff: ignore[unused-method-argument]
         *,
         base_url: str | None = None,  # ruff: ignore[unused-method-argument]
-    ) -> str:
+    ) -> bytes:
         if self.error is not None:
             raise self.error
-        return self.body
+        return self.body.encode("utf-8")
 
     async def aclose(self) -> None:
         self.closed = True

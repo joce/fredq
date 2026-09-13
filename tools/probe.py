@@ -541,6 +541,30 @@ def _release_cases() -> list[ProbeCase]:
             "53_usa",
             ("release", "related-tags", "53", "--tag-names", "usa", "--limit", "10"),
         ),
+        ProbeCase(
+            "release-tables",
+            "53_element-values_2026-09-13",
+            (
+                "release",
+                "tables",
+                "53",
+                "--element-id",
+                "12886",
+                "--include-observation-values",
+            ),
+        ),
+        ProbeCase(
+            "release-tables",
+            "10_element-values_2026-09-13",
+            (
+                "release",
+                "tables",
+                "10",
+                "--element-id",
+                "34483",
+                "--include-observation-values",
+            ),
+        ),
         ProbeCase("release-tables", "53", ("release", "tables", "53")),
         ProbeCase(
             "release-tables",
@@ -731,7 +755,9 @@ async def _execute_case(
     if rule_error is not None:
         _raise_rule_error(rule_error)
     case_key = namespace.api_key or api_key
-    return await _run_command(client_factory(case_key), command, params)
+    return (await _run_command(client_factory(case_key), command, params)).decode(
+        "utf-8"
+    )
 
 
 async def _run_case(

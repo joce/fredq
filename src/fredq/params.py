@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from typing import TYPE_CHECKING, Final
 
@@ -146,7 +146,7 @@ def parse_boolean(value: str) -> bool:
     raise ValueError(message)
 
 
-def parse_date(value: str) -> str:
+def _parse_date(value: str) -> str:
     """Parse a calendar date and return FRED's required ``YYYY-MM-DD`` form.
 
     Accepts:
@@ -202,12 +202,32 @@ def parse_date(value: str) -> str:
     except ValueError:
         ts = None
     if ts is not None and len(stripped) >= 10:  # ruff: ignore[magic-value-comparison]
-        return datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
+        return (
+            (datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=ts))
+            .date()
+            .isoformat()
+        )
 
     message = (
         f"expected YYYY-MM-DD date, ISO datetime, or Unix timestamp; got {value!r}"
     )
     raise ValueError(message)
+
+
+def parse_date(value: str) -> str:
+    """Parse a date, ISO datetime or Unix seconds, normalizing range errors.
+
+    Returns:
+        str: The UTC calendar date in YYYY-MM-DD form.
+
+    Raises:
+        ValueError: For invalid input or a value outside the UTC date range.
+    """
+    try:
+        return _parse_date(value)
+    except (OSError, OverflowError) as exc:
+        message = "date or timestamp is outside the supported UTC range"
+        raise ValueError(message) from exc
 
 
 def coerce_param(spec: ParamSpec, value: str) -> ParamValue:

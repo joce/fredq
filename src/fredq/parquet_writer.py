@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, Final
 import polars as pl
 
 from fredq import __version__
+from fredq._atomic import atomic_output
 from fredq.exceptions import FredqError
 
 if TYPE_CHECKING:
@@ -51,7 +52,7 @@ class ObservationsContext:
 
 
 def write_observations_parquet(
-    observations_json_text: str,
+    observations_json_text: str | bytes,
     out_path: Path,
     context: ObservationsContext,
 ) -> dict[str, Any]:
@@ -110,11 +111,11 @@ def _check_output_type(envelope: dict[str, Any]) -> None:
     raise ParquetWriterError(message)
 
 
-def _parse_envelope(text: str) -> dict[str, Any]:
+def _parse_envelope(text: str | bytes) -> dict[str, Any]:
     try:
         envelope = json.loads(text)
-    except json.JSONDecodeError as exc:
-        message = f"FRED response was not valid JSON: {exc.msg}"
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        message = f"FRED response was not valid JSON: {exc}"
         raise ParquetWriterError(message) from exc
     if not isinstance(envelope, dict):
         message = "FRED response envelope was not a JSON object"
@@ -127,36 +128,34 @@ def _extract_observations(envelope: dict[str, Any]) -> list[dict[str, Any]]:
     if not isinstance(observations, list):
         message = "FRED response did not contain an 'observations' array"
         raise ParquetWriterError(message)
-    return [obs for obs in observations if isinstance(obs, dict)]
+    if any(not isinstance(obs, dict) for obs in observations):
+        message = "observation row is not an object"
+        raise ParquetWriterError(message)
+    return observations
 
 
-def _parse_date(raw: object) -> date | None:
-    """Parse a date string from an observation dict, returning None on failure.
-
-    The parameter is typed as ``object`` because ``obs.get("date")`` returns
-    ``Any`` and narrowing at the call site would add noise.  We isinstance-
-    check before calling ``date.fromisoformat`` so the type-checker is happy.
-
-    Returns:
-        date | None: Parsed date, or ``None`` if ``raw`` is not a valid date
-        string.
-    """
-
-    if not isinstance(raw, str):
-        return None
-    try:
-        return date.fromisoformat(raw)
-    except ValueError:
-        return None
+def _parse_date(raw: object) -> date:
+    if isinstance(raw, str):
+        try:
+            return date.fromisoformat(raw)
+        except ValueError:
+            pass
+    message = "observation date is not an ISO date string"
+    raise ParquetWriterError(message)
 
 
 def _parse_value(raw: object) -> float:
-    if raw is None or raw == _MISSING_VALUE_SENTINEL:
+    if raw == _MISSING_VALUE_SENTINEL:
         return math.nan
-    try:
-        return float(raw)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
-        return math.nan
+    if isinstance(raw, str):
+        try:
+            value = float(raw)
+            if math.isfinite(value):
+                return value
+        except ValueError:
+            pass
+    message = "observation value is not a finite float string or '.'"
+    raise ParquetWriterError(message)
 
 
 def _build_frame(observations: list[dict[str, Any]]) -> pl.DataFrame:
@@ -230,7 +229,8 @@ def _build_metadata(
 def _write_frame(frame: pl.DataFrame, out_path: Path, metadata: dict[str, str]) -> None:
     try:
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        frame.write_parquet(out_path, compression="snappy", metadata=metadata)
+        with atomic_output(out_path) as temporary:
+            frame.write_parquet(temporary, compression="snappy", metadata=metadata)
     except OSError as exc:
         message = f"failed to write Parquet file {out_path}: {exc}"
         raise ParquetWriterError(message) from exc
