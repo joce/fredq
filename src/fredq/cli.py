@@ -7,8 +7,9 @@ import asyncio
 import json
 import logging
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, Protocol, TextIO
+from typing import TYPE_CHECKING, Any, Final, Protocol, TextIO, cast
 
 from typing_extensions import override
 
@@ -557,6 +558,7 @@ def _handle_parquet_output(
     body: bytes,
     params: dict[str, ParamValue],
     out: TextIO,
+    fetched_at: datetime,
 ) -> None:
     """Convert ``body`` to Parquet and write to ``args.out_path``.
 
@@ -578,6 +580,11 @@ def _handle_parquet_output(
         observation_end=_optional_str(params.get("observation_end")),
         realtime_start=_optional_str(params.get("realtime_start")),
         realtime_end=_optional_str(params.get("realtime_end")),
+        aggregation_method=_optional_str(params.get("aggregation_method")),
+        limit=cast("int | None", params.get("limit")),
+        offset=cast("int | None", params.get("offset")),
+        sort_order=_optional_str(params.get("sort_order")),
+        fetched_at=fetched_at,
     )
     descriptor = write_observations_parquet(body, args.out_path, context)
     out.write(json.dumps(descriptor, separators=(",", ":")))
@@ -650,13 +657,14 @@ def _dispatch_command(
 
     try:
         body = asyncio.run(_run_command(active_client, command, params))
+        fetched_at = datetime.now(timezone.utc)
     except FredqError as exc:
         err.write(f"{exc}\n")
         return 1
 
     if getattr(args, "output_format", "json") == "parquet":
         try:
-            _handle_parquet_output(args, body, params, out)
+            _handle_parquet_output(args, body, params, out, fetched_at)
         except FredqError as exc:
             err.write(f"{exc}\n")
             return 1

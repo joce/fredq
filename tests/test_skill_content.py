@@ -388,13 +388,26 @@ def test_revisions_readme_vintage_dates(monkeypatch: pytest.MonkeyPatch) -> None
     assert len(dates.vintage_dates) == 188  # ruff: ignore[magic-value-comparison]
 
 
-def test_revisions_readme_point_in_time_observations(
+def test_revisions_readme_point_in_time_snippet() -> None:
+    """The as-of snippet uses equal bounds; its request is covered by workflows."""
+    snippet = (
+        'asof = fredq.Series("UNRATE").observations(\n'
+        '    realtime_start="2001-01-01",\n'
+        '    realtime_end="2001-01-01",\n'
+        '    observation_start="2000-01-01",\n'
+        '    observation_end="2000-12-31",\n'
+        ")"
+    )
+    _assert_in_content("revisions", "README.md", snippet)
+
+
+def test_revisions_readme_revision_window_observations(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """revisions/README.md: the UNRATE 2001-realtime-window example."""
 
     snippet = (
-        'asof = fredq.Series("UNRATE").observations(\n'
+        'revisions = fredq.Series("UNRATE").observations(\n'
         '    realtime_start="2001-01-01",\n'
         '    realtime_end="2001-12-31",\n'
         '    observation_start="2000-01-01",\n'
@@ -406,13 +419,13 @@ def test_revisions_readme_point_in_time_observations(
     _install_fake(
         monkeypatch, _corpus_text("series-observations/UNRATE_vintage-2001.json")
     )
-    asof = fredq.Series("UNRATE").observations(
+    revisions = fredq.Series("UNRATE").observations(
         realtime_start="2001-01-01",
         realtime_end="2001-12-31",
         observation_start="2000-01-01",
         observation_end="2000-12-31",
     )
-    df = asof.to_polars()
+    df = revisions.to_polars()
     # corpus-pinned row count
     assert df.height == 14  # ruff: ignore[magic-value-comparison]
     # two vintages

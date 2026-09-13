@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from typing import cast
+
 
 class FredqError(Exception):
     """Base exception for all fredq errors."""
@@ -87,3 +90,22 @@ class FredApiError(FredqError):
         self.error_code = error_code
         self.error_message = error_message
         self.status_code = status_code
+
+
+def fred_error_shape(body: str) -> tuple[int, str] | None:
+    """Extract FRED's structured error, without relying on its wording.
+
+    Returns:
+        tuple[int, str] | None: Error code and explanation, or no match.
+    """
+    try:
+        payload: object = json.loads(body)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    fields = cast("dict[str, object]", payload)
+    code, message = fields.get("error_code"), fields.get("error_message")
+    if type(code) is int and isinstance(message, str):
+        return code, message
+    return None

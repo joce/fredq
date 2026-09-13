@@ -14,7 +14,12 @@ from fredq._bridge import run
 from fredq.auth import resolve_api_key
 from fredq.client import FredClient
 from fredq.commands import COMMANDS_BY_NAME
-from fredq.exceptions import FredApiError, FredClientUsageError, FredRequestError
+from fredq.exceptions import (
+    FredApiError,
+    FredClientUsageError,
+    FredRequestError,
+    fred_error_shape,
+)
 from fredq.params import ParamKind, coerce_param, enforce_cross_param_rules
 
 if TYPE_CHECKING:
@@ -37,27 +42,6 @@ def _as_object_dict(value: object) -> dict[str, Any] | None:
     return cast("dict[str, Any]", value)
 
 
-def _fred_error_shape(payload: object) -> tuple[int, str] | None:
-    """Extract FRED's error shape from a parsed body, if present.
-
-    The shape is ``{"error_code": <int>, "error_message": <str>}`` — both
-    keys required (corpus evidence: every captured FRED error carries
-    both). Anything else is not a FRED API error.
-
-    Returns:
-        tuple[int, str] | None: (error_code, error_message), or None.
-    """
-
-    payload_dict = _as_object_dict(payload)
-    if payload_dict is None:
-        return None
-    code = payload_dict.get("error_code")
-    message = payload_dict.get("error_message")
-    if isinstance(code, int) and isinstance(message, str):
-        return code, message
-    return None
-
-
 def map_http_error(exc: FredRequestError) -> None:
     """Translate an HTTP-level rejection into the library error contract.
 
@@ -71,15 +55,11 @@ def map_http_error(exc: FredRequestError) -> None:
     """
 
     if exc.body:
-        try:
-            payload: object = json.loads(exc.body)
-        except json.JSONDecodeError:
-            payload = None
-        shape = _fred_error_shape(payload)
+        shape = fred_error_shape(exc.body)
         if shape is not None:
             code, message = shape
             raise FredApiError(
-                error_message=message,
+                error_message=exc.reason if exc.reason is not None else message,
                 error_code=code,
                 status_code=exc.status_code,
             ) from exc
@@ -200,7 +180,7 @@ def _stringify(value: object) -> str:
     """
 
     if isinstance(value, bool):
-        # _build_params only intercepts bools for BOOLEAN-kind params, so a
+        # build_params only intercepts bools for BOOLEAN-kind params, so a
         # bool reaching here is a type-confusion on a non-boolean param
         # (e.g. limit=True). Emit lowercase so coercion then rejects it the
         # same way the CLI rejects `--limit true`. Do NOT delete — bool
@@ -217,7 +197,7 @@ def _stringify(value: object) -> str:
     raise FredClientUsageError(message)
 
 
-def _build_params(
+def build_params(
     command_name: str, values: Mapping[str, object]
 ) -> dict[str, ParamValue]:
     """Validate typed values against the CommandSpec; return wire params.
@@ -297,7 +277,7 @@ async def call_endpoint(
     """
 
     command = COMMANDS_BY_NAME[command_name]
-    params = _build_params(command_name, values)
+    params = build_params(command_name, values)
     client = _get_client()
     try:
         body = await client.get(command.path, params)

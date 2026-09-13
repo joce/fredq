@@ -24,13 +24,25 @@ fredq series vintage-dates GNPCA
 
 ## Point-in-time observations
 
-Pass `realtime_start`/`realtime_end` to `observations()` to see the data
-exactly as FRED would have answered on a past date. When a revision
+For one past date, set both realtime bounds to that date:
+
+```python
+asof = fredq.Series("UNRATE").observations(
+    realtime_start="2001-01-01",
+    realtime_end="2001-01-01",
+    observation_start="2000-01-01",
+    observation_end="2000-12-31",
+)
+```
+
+## Revisions across a realtime window
+
+When a revision
 happened inside the window you asked for, the same observation `date` can
 come back more than once — once per realtime span:
 
 ```python
-asof = fredq.Series("UNRATE").observations(
+revisions = fredq.Series("UNRATE").observations(
     realtime_start="2001-01-01",
     realtime_end="2001-12-31",
     observation_start="2000-01-01",
