@@ -270,8 +270,8 @@ def test_output_type_not_1_raises(tmp_path: Path) -> None:
         )
 
 
-def test_unparseable_dates_become_null(tmp_path: Path) -> None:
-    """Malformed date strings are written as null rather than failing the write."""
+def test_unparseable_dates_are_rejected(tmp_path: Path) -> None:
+    """Malformed dates fail without creating an output file."""
 
     body = _envelope(
         [
@@ -284,8 +284,6 @@ def test_unparseable_dates_become_null(tmp_path: Path) -> None:
         ]
     )
     out_path = tmp_path / "obs.parquet"
-    write_observations_parquet(body, out_path, ObservationsContext("X"))
-
-    rows = pl.read_parquet(out_path).to_dicts()
-    assert rows[0]["date"] == date(2024, 1, 1)
-    assert rows[0]["realtime_start"] is None
+    with pytest.raises(ParquetWriterError, match="date"):
+        write_observations_parquet(body, out_path, ObservationsContext("X"))
+    assert not out_path.exists()

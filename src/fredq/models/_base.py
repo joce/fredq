@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Final
+from typing import Annotated, Final, TypeVar
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict
+from pydantic import BaseModel, BeforeValidator, ConfigDict, ValidationError
+
+from fredq.exceptions import FredApiError
 
 
 class FredModel(BaseModel):
@@ -55,3 +57,29 @@ def _pad_offset(value: object) -> object:
 
 FredDatetime = Annotated[datetime, BeforeValidator(_pad_offset)]
 """Aware datetime accepting FRED's minute-less offset spelling."""
+
+
+_Model = TypeVar("_Model", bound=FredModel)
+
+
+def validate_response(model: type[_Model], payload: object) -> _Model:
+    """Validate a wire response with the public malformed-response contract.
+
+    Returns:
+        _Model: The validated response.
+
+    Raises:
+        FredApiError: For malformed fields, without echoing response values.
+    """
+    try:
+        return model.model_validate(payload)
+    except ValidationError as exc:
+        details = "; ".join(
+            f"{'.'.join(map(str, error['loc']))}: {error['type']}"
+            for error in exc.errors(
+                include_input=False, include_context=False, include_url=False
+            )
+        )
+        raise FredApiError(
+            error_message=f"malformed {model.__name__}: {details}"
+        ) from None

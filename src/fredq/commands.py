@@ -8,24 +8,29 @@ from typing import Final
 from fredq.client import FRED_BASE_URL
 from fredq.params import ParamKind, ParamSpec, bounds_suffix
 
-# Single source of truth for frequency allowed values.
-# Base frequencies accepted by FRED's series/observations endpoint.
-_FREQUENCY_BASE: Final[tuple[str, ...]] = ("d", "w", "bw", "m", "q", "sa", "a")
-# End-of-period variants are the base codes with a "-e" suffix.
-_FREQUENCY_END_OF_PERIOD: Final[tuple[str, ...]] = tuple(
-    f"{b}-e" for b in _FREQUENCY_BASE
-)
-# Smooth-seasonal variants (only monthly and quarterly).
-_FREQUENCY_SMOOTH_SEASONAL: Final[tuple[str, ...]] = ("m-ss", "q-ss")
-
+# FRED series/observations frequency codes; weekday endings are explicit.
+# https://fred.stlouisfed.org/docs/api/fred/series_observations.html#frequency
 _FREQUENCY_VALUES: Final[tuple[str, ...]] = (
-    _FREQUENCY_BASE + _FREQUENCY_END_OF_PERIOD + _FREQUENCY_SMOOTH_SEASONAL
+    "d",
+    "w",
+    "bw",
+    "m",
+    "q",
+    "sa",
+    "a",
+    "wef",
+    "weth",
+    "wew",
+    "wetu",
+    "wem",
+    "wesu",
+    "wesa",
+    "bwew",
+    "bwem",
 )
-
 _FREQUENCY_HELP: Final[str] = (
-    f"Aggregation frequency: {', '.join(_FREQUENCY_BASE)} "
-    f"(plus -e variants for end-of-period, "
-    f"and -ss for m, q smooth-seasonal)."
+    f"Aggregation frequency: {', '.join(_FREQUENCY_VALUES)}. "
+    "Weekly/biweekly ending-day codes use we/bwe plus the weekday."
 )
 
 

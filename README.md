@@ -232,7 +232,7 @@ ALFRED point-in-time: see what GDP looked like on a past date:
 
 ```powershell
 fredq series vintage-dates GNPCA
-fredq series observations GNPCA --realtime-start 2024-09-25
+fredq series observations GNPCA --realtime-start 2024-09-25 --realtime-end 2024-09-25
 ```
 
 ### Parquet output
@@ -378,14 +378,15 @@ Date parameters accept:
   values).
 - Unix timestamps in seconds (≥10 digits).
 
-Boolean parameters accept common true and false forms such as `true`, `false`,
-`1`, `0`, `yes`, and `no`.
+CLI boolean parameters are bare flags (for example,
+`--include-observation-values`); omit a flag to use the endpoint default.
+Library callers pass Python `True` or `False`.
 
-Tag lists (`--tag-names`, `--exclude-tag-names`) use semicolons as
-separators, matching FRED's wire format:
+Tag lists (`--tag-names`, `--exclude-tag-names`) use commas as separators;
+fredq sends FRED's semicolon-separated wire format:
 
 ```powershell
-fredq tag series "usa;annual"
+fredq tag series "usa,annual"
 ```
 
 ### ALFRED point-in-time
@@ -426,10 +427,10 @@ The FRED API requires a free API key. Request one at
 
 Both the library and the CLI read the key from, in order:
 
-1. The `FRED_API_KEY` environment variable.
-2. The first non-empty line of `~/.fredq/api_key`.
-3. CLI only: the `--api-key` flag (visible in process listings; prefer the
-   env var). Library callers pass `api_key=` to `fredq.configure()` instead.
+1. An explicit `--api-key` CLI flag or `api_key=` passed to `fredq.configure()`.
+   The CLI flag is visible in process listings; prefer the environment variable.
+2. The `FRED_API_KEY` environment variable.
+3. The first non-empty line of `~/.fredq/api_key`.
 
 On POSIX systems, restrict the key file so only your user can read it:
 

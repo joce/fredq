@@ -161,12 +161,12 @@ def test_invalid_frequency_rejected(
     assert "unsupported value" in err.getvalue() or "xyz" in err.getvalue()
 
 
-def test_valid_frequency_end_of_period_accepted(
+def test_valid_frequency_weekly_ending_accepted(
     httpx_mock: HTTPXMock,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """End-of-period frequency suffixes like 'q-e' and 'm-ss' are accepted."""
+    """Weekly ending-day frequency codes are accepted."""
 
     monkeypatch.setenv("FRED_API_KEY", "secret")
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -175,7 +175,7 @@ def test_valid_frequency_end_of_period_accepted(
         method="GET",
         url=(
             "https://api.stlouisfed.org/fred/series/observations?"
-            "series_id=GNPCA&frequency=q-e&api_key=secret&file_type=json"
+            "series_id=GNPCA&frequency=wef&api_key=secret&file_type=json"
         ),
         text='{"observations": []}',
     )
@@ -183,7 +183,7 @@ def test_valid_frequency_end_of_period_accepted(
     out = io.StringIO()
     err = io.StringIO()
     rc = main(
-        ["series", "observations", "GNPCA", "--frequency", "q-e"],
+        ["series", "observations", "GNPCA", "--frequency", "wef"],
         stdout=out,
         stderr=err,
     )
@@ -191,12 +191,12 @@ def test_valid_frequency_end_of_period_accepted(
     assert rc == EXIT_OK
 
 
-def test_valid_frequency_smooth_seasonal_accepted(
+def test_valid_frequency_biweekly_ending_accepted(
     httpx_mock: HTTPXMock,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Smooth-seasonal frequency 'm-ss' is accepted."""
+    """Biweekly ending-day frequency codes are accepted."""
 
     monkeypatch.setenv("FRED_API_KEY", "secret")
     monkeypatch.setenv("HOME", str(tmp_path))
@@ -205,7 +205,7 @@ def test_valid_frequency_smooth_seasonal_accepted(
         method="GET",
         url=(
             "https://api.stlouisfed.org/fred/series/observations?"
-            "series_id=GNPCA&frequency=m-ss&api_key=secret&file_type=json"
+            "series_id=GNPCA&frequency=bwew&api_key=secret&file_type=json"
         ),
         text='{"observations": []}',
     )
@@ -213,7 +213,7 @@ def test_valid_frequency_smooth_seasonal_accepted(
     out = io.StringIO()
     err = io.StringIO()
     rc = main(
-        ["series", "observations", "GNPCA", "--frequency", "m-ss"],
+        ["series", "observations", "GNPCA", "--frequency", "bwew"],
         stdout=out,
         stderr=err,
     )
@@ -574,15 +574,15 @@ class _FakeFredClient:
         self.calls: list[tuple[str, dict[str, ParamValue]]] = []
         self.closed = False
 
-    async def get(
+    async def get_bytes(
         self,
         path: str,
         params: dict[str, ParamValue],
         *,
         base_url: str | None = None,  # ruff: ignore[unused-method-argument]
-    ) -> str:
+    ) -> bytes:
         self.calls.append((path, dict(params)))
-        return self.response
+        return self.response.encode("utf-8")
 
     async def aclose(self) -> None:
         self.closed = True

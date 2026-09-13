@@ -7,14 +7,17 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING, Any, Final
 
 import polars as pl
 
-from fredq.exceptions import FredqError
+from fredq._atomic import atomic_output
+from fredq.exceptions import FredApiError
 from fredq.models import ObservationsMeta
+from fredq.models._base import validate_response
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -31,8 +34,12 @@ _OBSERVATION_KEYS: Final[frozenset[str]] = frozenset(
 )
 
 
-class FrameShapeError(FredqError):
+class FrameShapeError(FredApiError):
     """Raised when a tabular FRED payload does not match its pinned shape."""
+
+    def __init__(self, message: str) -> None:
+        """Initialize a malformed-response error."""
+        super().__init__(error_message=message)
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,7 +112,8 @@ class Frame:
     def save_parquet(self, path: Path | str) -> None:
         """Write the table to a Parquet file (snappy compression)."""
 
-        self.df.write_parquet(path, compression="snappy")
+        with atomic_output(path) as temporary:
+            self.df.write_parquet(temporary, compression="snappy")
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,13 +129,13 @@ class Observations(Frame):
 
 def _parse_date(field: str, raw: object) -> date:
     if not isinstance(raw, str):
-        message = f"observation {field} is not a string: {raw!r}"
+        message = f"observation {field} is not a string"
         raise FrameShapeError(message)
     try:
         return date.fromisoformat(raw)
-    except ValueError as exc:
-        message = f"observation {field} is not an ISO date: {raw!r}"
-        raise FrameShapeError(message) from exc
+    except ValueError:
+        message = f"observation {field} is not an ISO date"
+        raise FrameShapeError(message) from None
 
 
 def _parse_value(raw: object) -> float | None:
@@ -145,10 +153,12 @@ def _parse_value(raw: object) -> float | None:
         return None
     if isinstance(raw, str):
         try:
-            return float(raw)
+            value = float(raw)
+            if math.isfinite(value):
+                return value
         except ValueError:
             pass
-    message = f"observation value is not a float string or '.': {raw!r}"
+    message = "observation value is not a finite float string or '.'"
     raise FrameShapeError(message)
 
 
@@ -177,7 +187,7 @@ def build_observations(
     ends: list[date] = []
     for raw_row in rows:
         if not isinstance(raw_row, dict):
-            message = f"observation row is not an object: {raw_row!r}"
+            message = "observation row is not an object"
             raise FrameShapeError(message)
         row: dict[str, object] = raw_row
         keys = frozenset(row.keys())
@@ -210,7 +220,8 @@ def build_observations(
             "realtime_end": pl.Date,
         },
     )
-    meta = ObservationsMeta.model_validate(
-        {key: value for key, value in payload.items() if key != "observations"}
+    meta = validate_response(
+        ObservationsMeta,
+        {key: value for key, value in payload.items() if key != "observations"},
     )
     return Observations(df=df, fetched_at=fetched_at, meta=meta)

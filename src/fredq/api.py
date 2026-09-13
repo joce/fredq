@@ -34,6 +34,7 @@ from fredq.models import (
     TagsResult,
     VintageDatesResult,
 )
+from fredq.models._base import validate_response
 
 if TYPE_CHECKING:
     from datetime import date
@@ -152,7 +153,7 @@ class Series:
                 realtime_end=realtime_end,
             ),
         )
-        return SeriesInfo.model_validate(_unwrap_single(payload, "seriess"))
+        return validate_response(SeriesInfo, _unwrap_single(payload, "seriess"))
 
     # one keyword-only arg per wire param.
     def observations(  # ruff: ignore[too-many-arguments]
@@ -211,7 +212,7 @@ class Series:
                 sort_order=sort_order,
             ),
         )
-        return VintageDatesResult.model_validate(payload)
+        return validate_response(VintageDatesResult, payload)
 
     def categories(
         self,
@@ -233,7 +234,7 @@ class Series:
                 realtime_end=realtime_end,
             ),
         )
-        return CategoriesResult.model_validate(payload)
+        return validate_response(CategoriesResult, payload)
 
     def tags(
         self,
@@ -259,7 +260,7 @@ class Series:
                 sort_order=sort_order,
             ),
         )
-        return TagsResult.model_validate(payload)
+        return validate_response(TagsResult, payload)
 
     def release(
         self,
@@ -281,7 +282,7 @@ class Series:
                 realtime_end=realtime_end,
             ),
         )
-        return ReleaseInfo.model_validate(_unwrap_single(payload, "releases"))
+        return validate_response(ReleaseInfo, _unwrap_single(payload, "releases"))
 
 
 class Category:
@@ -313,7 +314,7 @@ class Category:
         """
 
         payload = _call("category", _values(category_id=self.category_id))
-        return CategoryInfo.model_validate(_unwrap_single(payload, "categories"))
+        return validate_response(CategoryInfo, _unwrap_single(payload, "categories"))
 
     def children(
         self,
@@ -335,7 +336,7 @@ class Category:
                 realtime_end=realtime_end,
             ),
         )
-        return CategoriesResult.model_validate(payload)
+        return validate_response(CategoriesResult, payload)
 
     def related(
         self,
@@ -357,7 +358,7 @@ class Category:
                 realtime_end=realtime_end,
             ),
         )
-        return CategoriesResult.model_validate(payload)
+        return validate_response(CategoriesResult, payload)
 
     # one keyword-only arg per wire param.
     def series(  # ruff: ignore[too-many-arguments]
@@ -396,7 +397,7 @@ class Category:
                 exclude_tag_names=exclude_tag_names,
             ),
         )
-        return SeriesListResult.model_validate(payload)
+        return validate_response(SeriesListResult, payload)
 
     def tags(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire param.
         self,
@@ -432,7 +433,7 @@ class Category:
                 sort_order=sort_order,
             ),
         )
-        return TagsResult.model_validate(payload)
+        return validate_response(TagsResult, payload)
 
     # one keyword-only arg per wire param.
     def related_tags(  # ruff: ignore[too-many-arguments]
@@ -471,7 +472,7 @@ class Category:
                 sort_order=sort_order,
             ),
         )
-        return TagsResult.model_validate(payload)
+        return validate_response(TagsResult, payload)
 
 
 class Release:
@@ -511,7 +512,7 @@ class Release:
                 realtime_end=realtime_end,
             ),
         )
-        return ReleaseInfo.model_validate(_unwrap_single(payload, "releases"))
+        return validate_response(ReleaseInfo, _unwrap_single(payload, "releases"))
 
     # one keyword-only arg per wire param.
     def dates(  # ruff: ignore[too-many-arguments]
@@ -542,7 +543,7 @@ class Release:
                 include_release_dates_with_no_data=include_release_dates_with_no_data,
             ),
         )
-        return ReleaseDatesResult.model_validate(payload)
+        return validate_response(ReleaseDatesResult, payload)
 
     # one keyword-only arg per wire param.
     def series(  # ruff: ignore[too-many-arguments]
@@ -581,7 +582,7 @@ class Release:
                 exclude_tag_names=exclude_tag_names,
             ),
         )
-        return SeriesListResult.model_validate(payload)
+        return validate_response(SeriesListResult, payload)
 
     def sources(
         self,
@@ -603,7 +604,7 @@ class Release:
                 realtime_end=realtime_end,
             ),
         )
-        return ReleaseSourcesResult.model_validate(payload)
+        return validate_response(ReleaseSourcesResult, payload)
 
     def tags(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire param.
         self,
@@ -639,7 +640,7 @@ class Release:
                 sort_order=sort_order,
             ),
         )
-        return TagsResult.model_validate(payload)
+        return validate_response(TagsResult, payload)
 
     # one keyword-only arg per wire param.
     def related_tags(  # ruff: ignore[too-many-arguments]
@@ -678,7 +679,7 @@ class Release:
                 sort_order=sort_order,
             ),
         )
-        return TagsResult.model_validate(payload)
+        return validate_response(TagsResult, payload)
 
     def tables(
         self,
@@ -702,7 +703,7 @@ class Release:
                 observation_date=observation_date,
             ),
         )
-        return ReleaseTablesResult.model_validate(payload)
+        return validate_response(ReleaseTablesResult, payload)
 
 
 class Source:
@@ -742,7 +743,7 @@ class Source:
                 realtime_end=realtime_end,
             ),
         )
-        return SourceInfo.model_validate(_unwrap_single(payload, "sources"))
+        return validate_response(SourceInfo, _unwrap_single(payload, "sources"))
 
     # one keyword-only arg per wire param.
     def releases(  # ruff: ignore[too-many-arguments]
@@ -773,7 +774,7 @@ class Source:
                 sort_order=sort_order,
             ),
         )
-        return ReleasesResult.model_validate(payload)
+        return validate_response(ReleasesResult, payload)
 
 
 # one keyword-only arg per wire param.
@@ -815,7 +816,7 @@ def search_series(  # ruff: ignore[too-many-arguments]
             exclude_tag_names=exclude_tag_names,
         ),
     )
-    return SeriesListResult.model_validate(payload)
+    return validate_response(SeriesListResult, payload)
 
 
 # one keyword-only arg per wire param.
@@ -853,7 +854,7 @@ def search_series_tags(  # ruff: ignore[too-many-arguments]
             sort_order=sort_order,
         ),
     )
-    return TagsResult.model_validate(payload)
+    return validate_response(TagsResult, payload)
 
 
 # one keyword-only arg per wire param.
@@ -893,7 +894,7 @@ def search_series_related_tags(  # ruff: ignore[too-many-arguments]
             sort_order=sort_order,
         ),
     )
-    return TagsResult.model_validate(payload)
+    return validate_response(TagsResult, payload)
 
 
 # one keyword-only arg per wire param.
@@ -928,7 +929,7 @@ def series_updates(  # ruff: ignore[too-many-arguments]
             end_time=end_time,
         ),
     )
-    return SeriesListResult.model_validate(payload)
+    return validate_response(SeriesListResult, payload)
 
 
 def releases(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire param.
@@ -957,7 +958,7 @@ def releases(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wir
             sort_order=sort_order,
         ),
     )
-    return ReleasesResult.model_validate(payload)
+    return validate_response(ReleasesResult, payload)
 
 
 # one keyword-only arg per wire param.
@@ -989,7 +990,7 @@ def release_calendar(  # ruff: ignore[too-many-arguments]
             include_release_dates_with_no_data=include_release_dates_with_no_data,
         ),
     )
-    return ReleaseDatesResult.model_validate(payload)
+    return validate_response(ReleaseDatesResult, payload)
 
 
 def sources(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire param.
@@ -1018,7 +1019,7 @@ def sources(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire
             sort_order=sort_order,
         ),
     )
-    return SourcesResult.model_validate(payload)
+    return validate_response(SourcesResult, payload)
 
 
 def tags(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire param.
@@ -1053,7 +1054,7 @@ def tags(  # ruff: ignore[too-many-arguments] - one keyword-only arg per wire pa
             sort_order=sort_order,
         ),
     )
-    return TagsResult.model_validate(payload)
+    return validate_response(TagsResult, payload)
 
 
 # one keyword-only arg per wire param.
@@ -1087,7 +1088,7 @@ def tag_series(  # ruff: ignore[too-many-arguments]
             sort_order=sort_order,
         ),
     )
-    return SeriesListResult.model_validate(payload)
+    return validate_response(SeriesListResult, payload)
 
 
 # one keyword-only arg per wire param.
@@ -1125,7 +1126,7 @@ def related_tags(  # ruff: ignore[too-many-arguments]
             sort_order=sort_order,
         ),
     )
-    return TagsResult.model_validate(payload)
+    return validate_response(TagsResult, payload)
 
 
 def raw(command: str, **params: object) -> dict[str, Any]:

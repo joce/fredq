@@ -146,3 +146,26 @@ def test_main_pytest_failure_without_skips_propagates_exit_code(
 
     monkeypatch.setattr("tools.check_no_skips.pytest.main", fake_pytest_main)
     assert main() == 1
+
+
+@pytest.mark.parametrize("platform", ["win32", "linux"])
+@pytest.mark.parametrize(
+    "reason", ["Skipped: chmod not meaningful on Windows", "Skipped: unexpected"]
+)
+def test_only_known_platform_skip_is_allowed(
+    monkeypatch: pytest.MonkeyPatch, platform: str, reason: str
+) -> None:
+    """Only the exact deliberate Windows permission skip is exempt."""
+    monkeypatch.setattr("tools.check_no_skips.sys.platform", platform)
+    node = "tests/test_auth.py::test_wide_mode_key_file_emits_warning"
+    report = _report(node, outcome="skipped")
+    report.when = "setup"
+    report.longrepr = ("tests/test_auth.py", 1, reason)
+    collector = _SkipCollector()
+    collector.pytest_runtest_logreport(report)
+    expected = (
+        []
+        if platform == "win32" and reason == "Skipped: chmod not meaningful on Windows"
+        else [node]
+    )
+    assert collector.skipped == expected

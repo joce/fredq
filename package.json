@@ -4,7 +4,7 @@
   "private": true,
   "description": "LLM-friendly CLI for raw FRED (Federal Reserve Economic Data) API JSON.",
   "scripts": {
-    "spell": "cspell .",
+    "spell": "cspell . --gitignore-root .",
     "spell:changed": "node tools/spell-changed.mjs"
   },
   "devDependencies": {

@@ -6,7 +6,6 @@ import argparse
 import asyncio
 import json
 import logging
-import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Protocol, TextIO
@@ -23,7 +22,6 @@ from fredq.params import (
     ParamSpec,
     coerce_param,
     enforce_cross_param_rules,
-    parse_boolean,
 )
 from fredq.skills import AGENT_TARGETS, TargetReport
 from fredq.skills import install as skills_install
@@ -65,13 +63,13 @@ _PARQUET_COMMANDS_HELP: Final[str] = ", ".join(
 
 
 class _FredClientProtocol(Protocol):
-    async def get(
+    async def get_bytes(
         self,
         path: str,
         params: dict[str, ParamValue],
         *,
         base_url: str | None = None,
-    ) -> str: ...
+    ) -> bytes: ...
 
     async def aclose(self) -> None: ...
 
@@ -530,6 +528,8 @@ def _enforce_parquet_arg_pairing(args: argparse.Namespace) -> str | None:
     out_path = getattr(args, "out_path", None)
     unsupported = getattr(args, "_parquet_unsupported", False)
 
+    if fmt not in {"json", "parquet"}:
+        return f"unsupported output format: {fmt}; expected json or parquet."
     if unsupported and (fmt == "parquet" or out_path is not None):
         return (
             f"--format parquet / --out is only supported on: {_PARQUET_COMMANDS_HELP}."
@@ -545,16 +545,16 @@ async def _run_command(
     client: _FredClientProtocol,
     command: CommandSpec,
     params: dict[str, ParamValue],
-) -> str:
+) -> bytes:
     try:
-        return await client.get(command.path, params)
+        return await client.get_bytes(command.path, params)
     finally:
         await client.aclose()
 
 
 def _handle_parquet_output(
     args: argparse.Namespace,
-    body: str,
+    body: bytes,
     params: dict[str, ParamValue],
     out: TextIO,
 ) -> None:
@@ -604,12 +604,14 @@ def _reconfigure_stream(stream: TextIO, encoding: str = "utf-8") -> None:
         reconfigure(encoding=encoding)
 
 
-def _write_json_body(body: str, out: TextIO) -> None:
-    """Write a raw JSON body to ``out``, appending a newline if absent."""
-
-    out.write(body)
-    if not body.endswith("\n"):
-        out.write("\n")
+def _write_json_body(body: bytes, out: TextIO) -> None:
+    """Write exact bytes; text-only injected streams receive UTF-8 text."""
+    buffer = getattr(out, "buffer", None)
+    if buffer is not None:
+        out.flush()
+        buffer.write(body)
+    else:
+        out.write(body.decode("utf-8"))
 
 
 def _dispatch_command(
@@ -807,23 +809,7 @@ def _resolve_client(
     if client is not None:
         return client, False
 
-    disable_key_file_env = os.environ.get("FREDQ_DISABLE_KEY_FILE", "").strip()
-    if disable_key_file_env:
-        try:
-            env_disable_key_file = parse_boolean(disable_key_file_env)
-        except ValueError:
-            err.write(
-                f"FREDQ_DISABLE_KEY_FILE: invalid boolean value "
-                f"{disable_key_file_env!r}; "
-                "expected 1/0, true/false, yes/no, etc.\n"
-            )
-            # Return a dummy client; caller checks the error flag before using it.
-            return FredClient(""), True
-    else:
-        env_disable_key_file = False
-
-    no_key_file = getattr(args, "no_key_file", False)
-    use_key_file = not no_key_file and not env_disable_key_file
+    use_key_file = not getattr(args, "no_key_file", False)
     try:
         api_key = resolve_api_key(
             explicit=args.api_key, use_key_file=use_key_file, stderr=err

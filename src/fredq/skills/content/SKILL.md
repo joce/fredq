@@ -47,8 +47,10 @@ mechanically: `--observation-start` ↔ `observation_start=`, `--units pch`
 library returns typed models (or a typed frame for observations) and
 raises typed errors for the same call.
 
-Tag-name lists use FRED's own `;`-separated wire format and need shell
-quoting: `"usa;quarterly"`.
+CLI tag-name lists use commas: `"usa,quarterly"`. Library callers pass
+`["usa", "quarterly"]`; fredq converts both to FRED's semicolon wire format.
+CLI booleans are bare flags, such as `--include-observation-values`;
+library callers use `include_observation_values=True`.
 
 ```bash
 fredq series observations CPIAUCSL --units pch

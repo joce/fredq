@@ -10,11 +10,8 @@ A green run with those tests skipped would be worse than no env at all, so
 the check is mechanical rather than eyeballed.
 
 Also wired into the main test job so any unexpected skip anywhere in the
-suite fails CI. All CI jobs run on ubuntu-latest, where the three POSIX-only
-chmod tests in tests/test_auth.py (``@pytest.mark.skipif(os.name == "nt", ...)``)
-never skip, so no allowlist is needed there. Those tests DO skip when run
-locally on Windows; this checker is intended for CI (Linux) use, matching
-the reference implementation, which also carries no allowlist mechanism.
+suite fails CI. On Windows only the three explicitly named POSIX permission
+checks may skip, and only for their exact platform reason during setup.
 """
 
 from __future__ import annotations
@@ -22,6 +19,14 @@ from __future__ import annotations
 import sys
 
 import pytest
+
+_WINDOWS_PERMISSION_TESTS = frozenset(
+    {
+        "tests/test_auth.py::test_wide_mode_key_file_emits_warning",
+        "tests/test_auth.py::test_tight_mode_key_file_no_warning",
+        "tests/test_auth.py::test_warning_captured_by_injected_stderr",
+    }
+)
 
 
 class _SkipCollector:
@@ -38,6 +43,14 @@ class _SkipCollector:
         silently-missing coverage, so they don't count.
         """
 
+        if (
+            report.nodeid in _WINDOWS_PERMISSION_TESTS
+            and report.when == "setup"
+            and isinstance(report.longrepr, tuple)
+            and report.longrepr[2] == "Skipped: chmod not meaningful on Windows"
+            and sys.platform == "win32"
+        ):
+            return
         if report.skipped and not hasattr(report, "wasxfail"):
             self.skipped.append(report.nodeid)
 

@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "case_count": 94,
+    "case_count": 96,
     "fetched_at": "2026-07-05T21:29:33.344150+00:00"
   },
   "category-children/125_maybe-leaf": {
@@ -290,6 +290,20 @@
     "http_status": 200,
     "status": "ok"
   },
+  "release-tables/10_element-values": {
+    "argv": [
+      "release",
+      "tables",
+      "10",
+      "--element-id",
+      "34483",
+      "--include-observation-values"
+    ],
+    "fetched_at": "2026-09-13",
+    "file": "release-tables/10_element-values.json",
+    "http_status": 200,
+    "status": "ok"
+  },
   "release-tables/175_maybe-no-tables": {
     "argv": [
       "release",
@@ -307,6 +321,20 @@
       "53"
     ],
     "file": "release-tables/53.json",
+    "http_status": 200,
+    "status": "ok"
+  },
+  "release-tables/53_element-values": {
+    "argv": [
+      "release",
+      "tables",
+      "53",
+      "--element-id",
+      "12886",
+      "--include-observation-values"
+    ],
+    "fetched_at": "2026-09-13",
+    "file": "release-tables/53_element-values.json",
     "http_status": 200,
     "status": "ok"
   },

@@ -437,3 +437,18 @@ def test_unwrap_violations_raise_malformed_contract(
         api.Series("DGS10").info()
     assert exc_info.value.error_code is None
     assert exc_info.value.status_code is None
+
+
+@pytest.mark.parametrize("command_name", list(_CALLS))
+def test_every_wrapper_uses_malformed_response_contract(
+    command_name: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Invalid typed responses consistently raise FredApiError across wrappers."""
+
+    def malformed(*_args: object) -> dict[str, Any]:
+        return {"seriess": [{}], "releases": [{}], "categories": [{}], "sources": [{}]}
+
+    monkeypatch.setattr(api, "_call", malformed)
+    with pytest.raises(FredApiError) as caught:
+        _CALLS[command_name]()
+    assert caught.value.error_code is None

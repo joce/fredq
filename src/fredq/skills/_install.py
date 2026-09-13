@@ -12,6 +12,7 @@ from fredq import __version__
 
 SKILL_DIR_NAME = "fredq"
 CONTENT_DIR = Path(__file__).parent / "content"
+_MAX_HEADER_CHARS = 16 * 1024
 
 AGENT_TARGETS: dict[str, tuple[str, str]] = {
     # name -> (user-level root relative to home, project-level root relative
@@ -65,28 +66,49 @@ def resolve_roots(agents: list[str], *, project: bool, to: Path | None) -> list[
     return roots
 
 
-def _installed_name(skill_dir: Path) -> str | None:
+def _installed_header(skill_dir: Path) -> regex.Match[str] | None:
+    """Recognize only the plain front matter emitted by this installer.
+
+    Fail closed on unsupported YAML, duplicate keys, and unreadable files.
+    This deliberately accepts a narrow ownership format, not arbitrary YAML.
+
+    Returns:
+        regex.Match[str] | None: The validated owned header, if present.
+    """
     skill_md = skill_dir / "SKILL.md"
-    if not skill_md.is_file():
+    if skill_dir.is_symlink() or skill_md.is_symlink():
         return None
-    match = regex.search(
-        r"^name:\s*(\S+)",
-        skill_md.read_text(encoding="utf-8"),
-        flags=regex.MULTILINE,
+    try:
+        with skill_md.open(encoding="utf-8") as stream:
+            # Read one extra character so a cut-off fence cannot look like EOF.
+            text = stream.read(_MAX_HEADER_CHARS + 1)
+    except (OSError, UnicodeError):
+        return None
+    match = regex.match(
+        r"\A---\nname: (?P<name>[a-z0-9-]+)\n"
+        r"description: (?P<description>[A-Za-z][^\n]*)\n"
+        r"(?:metadata:\n  version: (?P<version>[a-zA-Z0-9.+-]+)\n)?"
+        r"---(?:\n|\Z)",
+        text,
     )
-    return match.group(1) if match else None
+    if (
+        match
+        and match.end() <= _MAX_HEADER_CHARS
+        and match.group("description").isprintable()
+        and not regex.search(r":(?:\s|$)", match.group("description"))
+    ):
+        return match
+    return None
+
+
+def _installed_name(skill_dir: Path) -> str | None:
+    match = _installed_header(skill_dir)
+    return match.group("name") if match else None
 
 
 def _installed_version(skill_dir: Path) -> str | None:
-    skill_md = skill_dir / "SKILL.md"
-    if not skill_md.is_file():
-        return None
-    match = regex.search(
-        r"^\s+version:\s*(\S+)",
-        skill_md.read_text(encoding="utf-8"),
-        flags=regex.MULTILINE,
-    )
-    return match.group(1) if match else None
+    match = _installed_header(skill_dir)
+    return match.group("version") if match else None
 
 
 def _stamp_version(skill_md: Path) -> None:

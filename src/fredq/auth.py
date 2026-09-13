@@ -7,7 +7,8 @@ import sys
 from pathlib import Path
 from typing import Final, TextIO
 
-from fredq.exceptions import FredApiKeyMissingError
+from fredq.exceptions import FredApiKeyMissingError, FredClientUsageError
+from fredq.params import parse_boolean
 
 _ENV_VAR: Final[str] = "FRED_API_KEY"
 # On POSIX, warn when the key file is readable by group or world.
@@ -91,10 +92,21 @@ def resolve_api_key(
         str: A non-empty FRED API key.
 
     Raises:
+        FredClientUsageError: If the disable-file environment value is invalid.
         FredApiKeyMissingError: If no key can be located by any mechanism.
     """
 
     err = stderr if stderr is not None else sys.stderr
+    disabled = os.environ.get("FREDQ_DISABLE_KEY_FILE", "").strip()
+    if disabled:
+        try:
+            use_key_file = not parse_boolean(disabled) and use_key_file
+        except ValueError:
+            message = (
+                f"FREDQ_DISABLE_KEY_FILE: invalid boolean value {disabled!r}; "
+                "expected 1/0, true/false, yes/no, etc."
+            )
+            raise FredClientUsageError(message) from None
 
     if explicit:
         stripped = explicit.strip()
