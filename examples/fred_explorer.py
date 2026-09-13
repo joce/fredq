@@ -188,7 +188,7 @@ def _(mo):
 @app.cell
 def _(mo):
     compare_select = mo.ui.multiselect(
-        options=["DGS10", "UNRATE", "CPIAUCSL", "FEDFUNDS", "MORTGAGE30US", "GDP"],
+        options=["DGS10", "UNRATE", "CPIAUCSL", "FEDFUNDS", "MORTGAGE30US"],
         value=["DGS10", "UNRATE"],
         label="Series to compare (monthly, since 2000)",
     )
