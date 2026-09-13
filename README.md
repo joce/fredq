@@ -225,7 +225,7 @@ fredq release show 53
 Find all series tagged with a set of FRED tags:
 
 ```powershell
-fredq tag series "usa;monthly;cpi" --limit 25
+fredq tag series "usa,monthly,cpi" --limit 25
 ```
 
 ALFRED point-in-time: see what GDP looked like on a past date:
@@ -242,22 +242,64 @@ Parquet output is included in a plain install — no extra required. Pass
 `--format parquet --out PATH`:
 
 ```powershell
-fredq series observations CPIAUCSL --units pch --frequency m \
-  --format parquet --out cpi_yoy.parquet
+fredq series observations CPIAUCSL --units pc1 --frequency m --format parquet --out cpi_yoy.parquet
 ```
 
 On success a single JSON descriptor line goes to stdout (the file format, out
 path, row count, byte size). The Parquet schema is `date` (date32), `value`
 (float64), `realtime_start` (date32), `realtime_end` (date32). FRED's
-missing-value sentinel `.` is written as `NaN`. The full response envelope
-(count, offset, limit, observation range, units, sort order) and the request
-context (units, frequency, realtime range) are stored as schema key-value
-metadata so the table is self-describing.
+missing-value sentinel `.` is written as `NaN` by the CLI; library
+`Observations.save_parquet()` retains nulls, matching its in-memory table.
+Both exports store the same provenance schema:
+
+- `fredq_series_id`, `fredq_command`, `fredq_version`: source identity.
+- `fredq_request`: JSON of the validated, explicitly sent parameters, excluding
+  credentials and the automatically injected `file_type=json`. Omitted FRED
+  defaults are not invented here.
+- `fredq_envelope`: JSON of every response field except the observation rows,
+  including unknown fields. The envelope records defaults reported by FRED.
+- `fredq_fetched_at`: timezone-aware UTC response time, retained when saved later.
+- `fredq_missing_value`: `NaN` (CLI) or `null` (library).
+
+The original `request.*` and `envelope.*` scalar keys remain available.
+Read rows with `polars.read_parquet(path)` and metadata with
+`polars.read_parquet_metadata(path)`; reading rows alone does not attach the
+metadata to a DataFrame. Manually constructed observations without request
+context omit series identity and have an empty request object.
 
 Parquet writes are scoped to `series observations` only; every other command
 stays JSON-only, and rejects `--format parquet` with a usage error. Parquet
 output assumes FRED's default observation layout (one row per observation);
 fredq does not expose FRED's alternative `output_type` modes.
+
+### Observation controls and runnable recipes
+
+`--aggregation-method avg|sum|eop` selects the average, sum, or end-of-period
+value for `--frequency` aggregation. FRED defaults to `avg` and ignores this
+option when frequency is omitted. `--limit` accepts 1–100000 (default 100000),
+`--offset` starts at 0, and `--sort-order` is `asc` (default) or `desc`.
+The library exposes matching `aggregation_method`, `limit`, `offset`, and
+`sort_order` keyword arguments. Each call fetches one page; use the response
+count/offset/limit to request subsequent pages explicitly.
+
+[Runnable recipes](examples/workflows.py) cover a single-date ALFRED snapshot,
+explicit catalog pagination, monthly yield/CPI comparison, and Parquet
+export/reload. From a checkout with a configured API key:
+
+```text
+uv run python examples/workflows.py asof
+uv run python examples/workflows.py catalog
+uv run python examples/workflows.py compare
+uv run python examples/workflows.py export --out observations.parquet
+```
+
+A point-in-time snapshot sets both realtime bounds to the same date. A wider
+realtime range can return several revisions for one observation date. The
+comparison aligns dates without dropping unmatched months; it retains each
+series' units (yield percent versus CPI year-over-year percent change).
+
+HTTP errors print FRED's structured explanation, when available, to stderr
+with credentials redacted; successful JSON remains byte-for-byte unchanged.
 
 ### Discovering IDs
 

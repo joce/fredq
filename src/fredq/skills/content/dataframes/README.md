@@ -27,6 +27,14 @@ CLI equivalent (writes a typed Parquet file instead of stdout JSON,
 fredq series observations TWEXB --format parquet --out twexb.parquet
 ```
 
+Both exports include `fredq_series_id`, JSON `fredq_request` (normalized
+explicit parameters, no API key), JSON `fredq_envelope` (all response fields
+except rows), and UTC `fredq_fetched_at`. Fetched frames retain the original
+response time when saved later. Use `polars.read_parquet_metadata(path)` to
+recover provenance alongside `polars.read_parquet(path)` for the rows.
+`fredq_missing_value` documents the existing representations: CLI `NaN`,
+library `null`. Manually constructed frames without context have no series ID.
+
 ## The response envelope
 
 Every field FRED sent alongside the observation rows survives as `.meta`,

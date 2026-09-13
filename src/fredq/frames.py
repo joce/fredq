@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Final
 import polars as pl
 
 from fredq._atomic import atomic_output
+from fredq._provenance import ObservationsContext, observations_metadata
 from fredq.exceptions import FredApiError
 from fredq.models import ObservationsMeta
 from fredq.models._base import validate_response
@@ -125,6 +126,18 @@ class Observations(Frame):
     """
 
     meta: ObservationsMeta
+    context: ObservationsContext | None = None
+
+    def save_parquet(self, path: Path | str) -> None:
+        """Write observations with request, envelope, and fetch provenance."""
+        metadata = observations_metadata(
+            self.meta.model_dump(mode="json"),
+            self.context,
+            missing_value="null",
+            fetched_at=self.fetched_at,
+        )
+        with atomic_output(path) as temporary:
+            self.df.write_parquet(temporary, compression="snappy", metadata=metadata)
 
 
 def _parse_date(field: str, raw: object) -> date:
@@ -163,7 +176,10 @@ def _parse_value(raw: object) -> float | None:
 
 
 def build_observations(
-    payload: dict[str, Any], *, fetched_at: datetime
+    payload: dict[str, Any],
+    *,
+    fetched_at: datetime,
+    context: ObservationsContext | None = None,
 ) -> Observations:
     """Build an Observations frame from a parsed series/observations payload.
 
@@ -224,4 +240,4 @@ def build_observations(
         ObservationsMeta,
         {key: value for key, value in payload.items() if key != "observations"},
     )
-    return Observations(df=df, fetched_at=fetched_at, meta=meta)
+    return Observations(df=df, fetched_at=fetched_at, meta=meta, context=context)

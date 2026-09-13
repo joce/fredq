@@ -11,7 +11,8 @@ obs = fredq.Series("GNPCA").observations()
 
 `observations()` returns an `Observations` frame (a polars-backed `Frame`
 subclass): rows via `.to_polars()`/`.to_pandas()`/`.to_arrow()`/`.to_dicts()`,
-plus the full response envelope as typed `.meta`. Omitted
+plus the full response envelope as typed `.meta` and normalized request
+provenance as `.context`. Each call returns one page. Omitted
 `observation_start`/`observation_end` default to a series' entire history.
 
 CLI equivalent (raw JSON to stdout):
@@ -56,6 +57,12 @@ CLI equivalent:
 ```bash
 fredq series observations DGS10 --frequency m --observation-start 2023-01-01 --observation-end 2024-12-31
 ```
+
+`aggregation_method="avg"` (default), `"sum"`, or `"eop"` selects averaging,
+summing, or the end-of-period value. FRED ignores it without `frequency`.
+Use `limit` (1–100000), `offset` (default 0), and `sort_order` (`"asc"` or
+`"desc"`) for explicit observation pages; inspect `.meta.count` to determine
+whether more rows remain. The corresponding CLI flags use hyphens.
 
 ## Missing values
 

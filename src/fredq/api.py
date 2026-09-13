@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias, cast
 from fredq import _core
 from fredq._bridge import run
 from fredq._core import configure  # re-exported via fredq.__init__
+from fredq._provenance import ObservationsContext
 from fredq.commands import COMMANDS_BY_NAME
 from fredq.exceptions import FredApiError, FredClientUsageError
 from fredq.frames import Observations, build_observations
@@ -165,6 +166,10 @@ class Series:
         realtime_end: DateLike | None = None,
         units: str | None = None,
         frequency: str | None = None,
+        aggregation_method: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        sort_order: str | None = None,
     ) -> Observations:
         """Fetch observations (values) for this series.
 
@@ -172,7 +177,7 @@ class Series:
             Observations: Rows as polars columns, envelope as ``meta``.
         """
 
-        payload = _call(
+        params = _core.build_params(
             "series-observations",
             _values(
                 series_id=self.series_id,
@@ -182,9 +187,18 @@ class Series:
                 realtime_end=realtime_end,
                 units=units,
                 frequency=frequency,
+                aggregation_method=aggregation_method,
+                limit=limit,
+                offset=offset,
+                sort_order=sort_order,
             ),
         )
-        return build_observations(payload, fetched_at=_now_utc())
+        payload = _call("series-observations", dict(params))
+        fetched_at = _now_utc()
+        context = ObservationsContext(
+            **cast("dict[str, Any]", params), fetched_at=fetched_at
+        )
+        return build_observations(payload, fetched_at=fetched_at, context=context)
 
     def vintage_dates(
         self,

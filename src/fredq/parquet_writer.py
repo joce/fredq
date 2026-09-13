@@ -13,14 +13,13 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING, Any, Final
 
 import polars as pl
 
-from fredq import __version__
 from fredq._atomic import atomic_output
+from fredq._provenance import ObservationsContext, observations_metadata
 from fredq.exceptions import FredqError
 
 if TYPE_CHECKING:
@@ -32,23 +31,6 @@ _MISSING_VALUE_SENTINEL: Final[str] = "."
 
 class ParquetWriterError(FredqError):
     """Raised when Parquet writing fails for a user-visible reason."""
-
-
-@dataclass(frozen=True, slots=True)
-class ObservationsContext:
-    """Per-call context recorded as Parquet key-value metadata.
-
-    Stored alongside the table so a future reader can recover what the
-    request asked for without re-fetching from FRED.
-    """
-
-    series_id: str
-    units: str | None = None
-    frequency: str | None = None
-    observation_start: str | None = None
-    observation_end: str | None = None
-    realtime_start: str | None = None
-    realtime_end: str | None = None
 
 
 def write_observations_parquet(
@@ -77,7 +59,7 @@ def write_observations_parquet(
     _check_output_type(envelope)
     observations = _extract_observations(envelope)
     frame = _build_frame(observations)
-    metadata = _build_metadata(envelope, context)
+    metadata = observations_metadata(envelope, context, missing_value="NaN")
     _write_frame(frame, out_path, metadata)
     return {
         "format": "parquet",
@@ -182,48 +164,6 @@ def _build_frame(observations: list[dict[str, Any]]) -> pl.DataFrame:
             "realtime_end": pl.Date,
         },
     )
-
-
-_ENVELOPE_METADATA_KEYS: Final[tuple[str, ...]] = (
-    "realtime_start",
-    "realtime_end",
-    "observation_start",
-    "observation_end",
-    "units",
-    "order_by",
-    "sort_order",
-    "count",
-    "offset",
-    "limit",
-)
-
-
-def _build_metadata(
-    envelope: dict[str, Any], context: ObservationsContext
-) -> dict[str, str]:
-    # Key naming: use "fredq_" prefix for tool-owned fields to match sister
-    # tools (yoghurt uses "yoghurt_command", "yoghurt_version" etc.).
-    payload: dict[str, str] = {
-        "fredq_version": __version__,
-        "fredq_command": "series-observations",
-        "fredq_series_id": context.series_id,
-    }
-    for key in _ENVELOPE_METADATA_KEYS:
-        val = envelope.get(key)
-        # Guard: only scalar values can be safely encoded as metadata strings.
-        # Non-scalar values (dicts, lists) are silently skipped (D4).
-        if val is not None and isinstance(val, str | int | float | bool):
-            payload[f"envelope.{key}"] = str(val)
-    request_fields: dict[str, str | None] = {
-        "request.units": context.units,
-        "request.frequency": context.frequency,
-        "request.observation_start": context.observation_start,
-        "request.observation_end": context.observation_end,
-        "request.realtime_start": context.realtime_start,
-        "request.realtime_end": context.realtime_end,
-    }
-    payload.update({k: v for k, v in request_fields.items() if v is not None})
-    return payload
 
 
 def _write_frame(frame: pl.DataFrame, out_path: Path, metadata: dict[str, str]) -> None:

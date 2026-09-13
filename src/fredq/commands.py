@@ -125,8 +125,8 @@ _TAG_NAMES_PARAM: Final[ParamSpec] = ParamSpec(
     cli_name="tag-names",
     kind=ParamKind.CSV,
     help=(
-        "Semicolon-separated list of tag names to filter by "
-        "(e.g. 'usa;annual'). Order does not matter."
+        "Comma-separated list of tag names to filter by "
+        "(e.g. 'usa,annual'). Order does not matter."
     ),
     csv_separator=";",
     metavar="TAGS",
@@ -136,7 +136,7 @@ _EXCLUDE_TAG_NAMES_PARAM: Final[ParamSpec] = ParamSpec(
     name="exclude_tag_names",
     cli_name="exclude-tag-names",
     kind=ParamKind.CSV,
-    help="Semicolon-separated list of tag names to exclude.",
+    help="Comma-separated list of tag names to exclude.",
     csv_separator=";",
     metavar="TAGS",
 )
@@ -338,7 +338,7 @@ _TAG_NAMES_REQUIRED_PARAM: Final[ParamSpec] = ParamSpec(
     cli_name="tag-names",
     kind=ParamKind.CSV,
     help=(
-        "Semicolon-separated list of tags already applied "
+        "Comma-separated list of tags already applied "
         "(required). Order does not matter."
     ),
     required=True,
@@ -350,7 +350,7 @@ _TAG_NAMES_POSITIONAL_PARAM: Final[ParamSpec] = ParamSpec(
     name="tag_names",
     cli_name="tag-names",
     kind=ParamKind.CSV,
-    help="Semicolon-separated list of tag names (e.g. 'usa;monthly').",
+    help="Comma-separated list of tag names (e.g. 'usa,monthly').",
     positional=True,
     required=True,
     csv_separator=";",
@@ -441,16 +441,42 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
                 allowed_values=_FREQUENCY_VALUES,
                 metavar="FREQ",
             ),
+            ParamSpec(
+                name="aggregation_method",
+                cli_name="aggregation-method",
+                kind=ParamKind.STRING,
+                help=(
+                    "Frequency aggregation: avg (default), sum, or eop "
+                    "(end of period). "
+                    "Ignored without frequency."
+                ),
+                allowed_values=("avg", "sum", "eop"),
+                metavar="METHOD",
+            ),
+            ParamSpec(
+                name="limit",
+                cli_name="limit",
+                kind=ParamKind.INTEGER,
+                help="Maximum observations per page (1-100000; default 100000).",
+                min_value=1,
+                max_value=100000,
+                metavar="N",
+            ),
+            _OFFSET_PARAM,
+            _SORT_ORDER_PARAM,
         ),
         examples=(
             "fredq series observations GNPCA",
             "fredq series observations CPIAUCSL --units pch --frequency m",
+            "fredq series observations DGS10 --frequency m --aggregation-method eop",
+            "fredq series observations DGS10 --limit 100 --offset 100 --sort-order asc",
         ),
         notes=(
             (
                 "Returns the full FRED envelope including count/offset/limit; "
                 "the observations array lives under the 'observations' key."
             ),
+            "One page per call. Offset defaults to 0; sort order defaults to asc.",
         ),
     ),
     CommandSpec(
@@ -501,7 +527,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             'fredq series search "consumer price index" --limit 5',
             "fredq series search UNRATE --search-type series_id",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
         requires_partner=(("exclude_tag_names", "tag_names"),),
     ),
@@ -540,7 +566,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "fredq series search-tags monetary --limit 5",
             "fredq series search-tags inflation --tag-group-id geo",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
     ),
     CommandSpec(
         name="series-search-related-tags",
@@ -578,10 +604,10 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "fredq series search-related-tags monetary --tag-names usa",
             (
                 "fredq series search-related-tags inflation "
-                "--tag-names 'usa;annual' --limit 5"
+                "--tag-names 'usa,annual' --limit 5"
             ),
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
     ),
     CommandSpec(
         name="series-vintagedates",
@@ -592,7 +618,8 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         description=(
             "Return the dates in history when a series was revised or new data "
             "values were released. Pair with "
-            "`series-observations --realtime-start <vintage>` for ALFRED "
+            "`series observations ID --realtime-start DATE --realtime-end DATE` "
+            "for ALFRED "
             "point-in-time analysis."
         ),
         params=(
@@ -810,9 +837,9 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         examples=(
             "fredq category series 32991 --limit 5",
-            "fredq category series 106 --tag-names 'usa;annual' --limit 10",
+            "fredq category series 106 --tag-names 'usa,annual' --limit 10",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
         requires_partner=(("exclude_tag_names", "tag_names"),),
         group="category",
@@ -842,7 +869,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "fredq category tags 32991 --limit 10",
             "fredq category tags 106 --tag-group-id geo",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
         group="category",
         leaf="tags",
     ),
@@ -870,9 +897,9 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         examples=(
             "fredq category related-tags 32991 --tag-names usa",
-            "fredq category related-tags 32991 --tag-names 'usa;annual' --limit 5",
+            "fredq category related-tags 32991 --tag-names 'usa,annual' --limit 5",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
         group="category",
         leaf="related-tags",
     ),
@@ -1002,9 +1029,9 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         examples=(
             "fredq release series 53 --limit 5",
-            "fredq release series 175 --tag-names 'usa;annual' --limit 10",
+            "fredq release series 175 --tag-names 'usa,annual' --limit 10",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
         mutually_dependent_params=(frozenset({"filter_variable", "filter_value"}),),
         requires_partner=(("exclude_tag_names", "tag_names"),),
     ),
@@ -1054,7 +1081,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "fredq release tags 53 --limit 10",
             "fredq release tags 175 --tag-group-id geo",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
     ),
     CommandSpec(
         name="release-related-tags",
@@ -1082,9 +1109,9 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         examples=(
             "fredq release related-tags 53 --tag-names usa",
-            "fredq release related-tags 175 --tag-names 'usa;annual' --limit 5",
+            "fredq release related-tags 175 --tag-names 'usa,annual' --limit 5",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
     ),
     CommandSpec(
         name="release-tables",
@@ -1164,7 +1191,7 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
             "fredq tag list --limit 10",
             "fredq tag list --tag-group-id geo --order-by name --sort-order asc",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
     ),
     CommandSpec(
         name="tags-series",
@@ -1188,10 +1215,10 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         examples=(
             "fredq tag series usa --limit 5",
-            "fredq tag series 'usa;annual' --limit 3",
+            "fredq tag series 'usa,annual' --limit 3",
         ),
         notes=(
-            "Tag lists use semicolons as separators (e.g. 'usa;annual').",
+            "Tag lists use commas as separators (e.g. 'usa,annual').",
             "--exclude-tag-names may optionally accompany the required TAGS argument.",
         ),
     ),
@@ -1220,9 +1247,9 @@ _CORE_COMMANDS: Final[tuple[CommandSpec, ...]] = (
         ),
         examples=(
             "fredq tag related usa --limit 10",
-            "fredq tag related 'usa;annual' --limit 5",
+            "fredq tag related 'usa,annual' --limit 5",
         ),
-        notes=("Tag lists use semicolons as separators (e.g. 'usa;annual').",),
+        notes=("Tag lists use commas as separators (e.g. 'usa,annual').",),
     ),
     # ------------------------------------------------------------------
     # Group 5 — Sources (3 endpoints)

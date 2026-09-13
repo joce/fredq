@@ -15,6 +15,7 @@ from fredq.exceptions import (
     FredClientUsageError,
     FredRequestError,
     FredUnavailableError,
+    fred_error_shape,
 )
 
 if TYPE_CHECKING:
@@ -208,7 +209,15 @@ class FredClient:
                 body = (
                     body.replace(self._api_key, "[REDACTED]") if self._api_key else body
                 )
-                raise FredRequestError(status_code, url_str, body=body) from None
+                shape = fred_error_shape(exc.response.text)
+                reason = None
+                if shape is not None:
+                    reason = _API_KEY_RE.sub(_API_KEY_REDACTED, shape[1])
+                    if self._api_key:
+                        reason = reason.replace(self._api_key, "[REDACTED]")
+                raise FredRequestError(
+                    status_code, url_str, body=body, reason=reason
+                ) from None
             except httpx.TransportError:
                 if attempt < self._REQUEST_ATTEMPTS:
                     await asyncio.sleep(self._RETRY_DELAY_SECONDS * attempt)
