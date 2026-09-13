@@ -290,7 +290,7 @@
     "http_status": 200,
     "status": "ok"
   },
-  "release-tables/10_element-values_2026-09-13": {
+  "release-tables/10_element-values": {
     "argv": [
       "release",
       "tables",
@@ -300,7 +300,7 @@
       "--include-observation-values"
     ],
     "fetched_at": "2026-09-13",
-    "file": "release-tables/10_element-values_2026-09-13.json",
+    "file": "release-tables/10_element-values.json",
     "http_status": 200,
     "status": "ok"
   },
@@ -324,7 +324,7 @@
     "http_status": 200,
     "status": "ok"
   },
-  "release-tables/53_element-values_2026-09-13": {
+  "release-tables/53_element-values": {
     "argv": [
       "release",
       "tables",
@@ -334,7 +334,7 @@
       "--include-observation-values"
     ],
     "fetched_at": "2026-09-13",
-    "file": "release-tables/53_element-values_2026-09-13.json",
+    "file": "release-tables/53_element-values.json",
     "http_status": 200,
     "status": "ok"
   },

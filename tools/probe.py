@@ -543,7 +543,7 @@ def _release_cases() -> list[ProbeCase]:
         ),
         ProbeCase(
             "release-tables",
-            "53_element-values_2026-09-13",
+            "53_element-values",
             (
                 "release",
                 "tables",
@@ -555,7 +555,7 @@ def _release_cases() -> list[ProbeCase]:
         ),
         ProbeCase(
             "release-tables",
-            "10_element-values_2026-09-13",
+            "10_element-values",
             (
                 "release",
                 "tables",

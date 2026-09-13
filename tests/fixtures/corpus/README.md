@@ -59,4 +59,6 @@ Two live captures select GDP element 12886 and CPI element 34483 with
 observation values. They preserve the original 2026-07-05 captures and add
 optional subtree envelope fields and observation fields. Observation dates
 are display period labels ("2025", "Aug 2026"), not full ISO calendar dates.
-The supplemental manifest entries carry their own capture date.
+The supplemental manifest entries record the initial capture date. Their case
+names are stable: future full probe runs refresh the same files and record the
+new corpus date in `manifest.json` under `_meta.fetched_at`.

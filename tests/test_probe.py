@@ -231,3 +231,30 @@ async def test_run_probe_manifest_meta_counts_entries(tmp_path: Path) -> None:
 
     manifest = json.loads((tmp_path / "manifest.json").read_text("utf-8"))
     assert manifest["_meta"]["case_count"] == 1
+
+
+async def test_populated_table_probe_reruns_use_stable_names(tmp_path: Path) -> None:
+    """Refreshing table evidence updates stable paths, with run-level dating."""
+    cases = [case for case in build_cases() if "element-values" in case.case]
+    expected = {
+        "release-tables/10_element-values",
+        "release-tables/53_element-values",
+    }
+    for body in ('{"elements": {}}', '{"elements": {}, "refreshed": true}'):
+        stub = _StubClient(body=body)
+        await run_probe(
+            cases,
+            tmp_path,
+            api_key="k",
+            client_factory=lambda _key, current=stub: current,
+        )
+        manifest = json.loads((tmp_path / "manifest.json").read_text("utf-8"))
+        assert set(manifest) - {"_meta"} == expected
+        assert manifest["_meta"]["fetched_at"]
+        assert {
+            path.relative_to(tmp_path).as_posix()
+            for path in (tmp_path / "release-tables").glob("*.json")
+        } == {f"{key}.json" for key in expected}
+        for key in expected:
+            assert manifest[key]["file"] == f"{key}.json"
+            assert (tmp_path / manifest[key]["file"]).read_text("utf-8") == body
