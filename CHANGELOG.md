@@ -6,6 +6,52 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0]
+
+Observation workflows now offer more control and retain provenance in saved
+files. This release also hardens credentials, response handling, and file writes.
+
+### Added
+
+- Observation aggregation method, page limit, offset, and sort order controls
+  in both the CLI and typed library.
+- Shared Parquet provenance: series identity, normalized explicit request
+  parameters, full response envelope, UTC fetch time, and missing-value convention.
+- Runnable recipes for single-date ALFRED snapshots, catalog pagination,
+  monthly comparisons, and Parquet export/reload.
+
+### Fixed
+
+- Prevented API-key leakage through HTTP exception chains and logging; CLI
+  errors now include sanitized structured FRED explanations.
+- Made skill ownership checks conservative so unrelated files are not replaced
+  or removed, and rejected unsafe skill names and symbolic links.
+- Made Parquet writes atomic and rejected malformed observations without
+  damaging an existing output file.
+- Preserved successful CLI response bytes exactly and normalized malformed
+  typed responses into the documented library error contract.
+- Corrected weekly frequency codes, UTC date-range handling, and shared
+  `FREDQ_DISABLE_KEY_FILE` behavior across the CLI and library.
+- Accepted populated release-table responses while preserving period labels.
+- Corrected help and snapshot examples, and removed quarterly GDP from the
+  optional explorer's monthly comparison selector.
+
+### Compatibility
+
+- Existing Parquet scalar metadata keys remain available. CLI missing values
+  remain NaN; library missing values remain null, now explicitly labeled.
+- Each observation call still fetches one page; pagination is explicit.
+
+## [0.4.3]
+
+Maintenance release — no user-facing changes. Runtime dependency ranges in
+`pyproject.toml` are unchanged.
+
+### Internal
+
+- Updated locked runtime, optional, and development dependencies and
+  `astral-sh/setup-uv`; see the GitHub release for exact versions.
+
 ## [0.4.2]
 
 Maintenance release — no user-facing changes. Runtime dependency ranges in
@@ -210,7 +256,9 @@ Initial release.
   with the key redacted from all errors and logs.
 - Exit-code contract: `0` success, `1` FRED request failure, `2` usage error.
 
-[Unreleased]: https://github.com/joce/fredq/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/joce/fredq/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/joce/fredq/compare/v0.4.3...v0.5.0
+[0.4.3]: https://github.com/joce/fredq/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/joce/fredq/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/joce/fredq/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/joce/fredq/compare/v0.3.3...v0.4.0
