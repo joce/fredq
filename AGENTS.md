@@ -8,7 +8,7 @@ typed results. The two share client/commands/params foundations but the CLI
 never routes through the library's typed surface.
 
 ## Stack
-Python 3.10+, uv, httpx2, argparse, pytest, ruff, pyright, tox, hatchling.
+Python 3.11+, uv, httpx2, argparse, pytest, ruff, pyright, tox, hatchling.
 
 ## Commands
 - Install/sync: `uv sync --all-groups`

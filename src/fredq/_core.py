@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import atexit
-import concurrent.futures
 import contextlib
 import json
 import threading
@@ -157,7 +156,7 @@ def _close_default_client() -> None:
     """
 
     if _client is not None:
-        with contextlib.suppress(Exception, concurrent.futures.TimeoutError):
+        with contextlib.suppress(Exception):
             run(_client.aclose(), timeout=_CLOSE_TIMEOUT_SECONDS)
 
 

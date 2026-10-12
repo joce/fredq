@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+# PEP 810: Python 3.15+ defers these imports until first use, so --help never
+# pays for the HTTP stack. Older versions ignore the list and import eagerly.
+__lazy_modules__ = ["asyncio", "httpx2"]
+
 import asyncio
 import logging
 from typing import TYPE_CHECKING, Any, Final, Literal
@@ -195,7 +199,7 @@ class FredClient:
                 response = await self._client.request(method, url, **kwargs)
                 if response.is_error:
                     response.raise_for_status()
-            except httpx.HTTPStatusError as exc:  # ruff: ignore[try-except-in-loop]
+            except httpx.HTTPStatusError as exc:
                 status_code = exc.response.status_code if exc.response else -1
                 if (
                     status_code in self._RETRYABLE_STATUS_CODES

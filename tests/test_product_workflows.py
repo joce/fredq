@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import io
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -117,7 +117,7 @@ def test_library_export_keeps_normalized_request_and_envelope(
             datetime.fromisoformat(metadata["fredq_fetched_at"])
             == observations.fetched_at
         )
-        assert observations.fetched_at.utcoffset() == timezone.utc.utcoffset(None)
+        assert observations.fetched_at.utcoffset() == UTC.utcoffset(None)
         assert metadata["fredq_missing_value"] == "null"
         assert "secret" not in str(metadata)
         second = tmp_path / "saved-later.parquet"
@@ -134,7 +134,7 @@ def test_manual_observations_do_not_invent_request_context(tmp_path: Path) -> No
             Path(__file__).parent / "fixtures/corpus/series-observations/GNPCA.json"
         ).read_text(encoding="utf-8")
     )
-    fetched_at = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    fetched_at = datetime(2024, 1, 1, tzinfo=UTC)
     observations = build_observations(payload, fetched_at=fetched_at)
     path = tmp_path / "manual.parquet"
     observations.save_parquet(path)
@@ -214,7 +214,7 @@ def test_omitted_controls_and_export_provenance(
         text=json.dumps(payload),
     )
     path = tmp_path / "page.parquet"
-    before = datetime.now(timezone.utc)
+    before = datetime.now(UTC)
     try:
         if surface == "cli":
             assert (
@@ -242,7 +242,7 @@ def test_omitted_controls_and_export_provenance(
         assert (
             before
             <= datetime.fromisoformat(metadata["fredq_fetched_at"])
-            <= datetime.now(timezone.utc)
+            <= datetime.now(UTC)
         )
         assert metadata["fredq_missing_value"] == (
             "NaN" if surface == "cli" else "null"

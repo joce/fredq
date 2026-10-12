@@ -6,6 +6,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Official Python 3.15 support.
+
+### Changed
+
+- The `polars` range now allows 2.x (`>=1.41,<3.0`), and Python 3.15 requires
+  `polars>=2.0`: polars 1.x returns `None` from most `Series` methods on 3.15.
+- On Python 3.15 the `fredq[pandas]` extra resolves to `pandas>=3.0.6,<4.0`
+  and `pyarrow>=26,<27`; pandas 2.x and pyarrow 25 ship no 3.15 wheels.
+  Older Python versions keep the existing ranges.
+- On Python 3.15, `fredq --help` starts about 45% faster: the HTTP stack is
+  now imported lazily (PEP 810) and loads only when a request is made.
+
+### Removed
+
+- Python 3.10 support. fredq now requires Python 3.11 or newer.
+
 ## [0.5.1]
 
 Maintenance release — no user-facing changes. Runtime dependency ranges in

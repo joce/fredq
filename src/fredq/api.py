@@ -10,7 +10,7 @@ them.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from fredq import _core
@@ -84,7 +84,7 @@ def _call(command_name: str, values: dict[str, object]) -> dict[str, Any]:
 
 
 def _now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _unwrap_single(payload: dict[str, Any], key: str) -> dict[str, Any]:

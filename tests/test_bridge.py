@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import concurrent.futures
 
 import pytest
 
@@ -41,7 +40,7 @@ def test_run_propagates_exceptions() -> None:
 def test_run_times_out_and_cancels() -> None:
     """A bounded timeout raises instead of hanging forever."""
 
-    with pytest.raises(concurrent.futures.TimeoutError):
+    with pytest.raises(TimeoutError):
         run(_hang(), timeout=0.05)
 
 
