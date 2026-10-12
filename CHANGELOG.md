@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0]
+
+fredq now supports Python 3.15 and requires Python 3.11 or newer. On 3.15 the
+CLI starts noticeably faster, and dependency ranges are adjusted so polars and
+the pandas extra work there.
+
 ### Added
 
 - Official Python 3.15 support.
@@ -285,7 +291,8 @@ Initial release.
   with the key redacted from all errors and logs.
 - Exit-code contract: `0` success, `1` FRED request failure, `2` usage error.
 
-[Unreleased]: https://github.com/joce/fredq/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/joce/fredq/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/joce/fredq/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/joce/fredq/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/joce/fredq/compare/v0.4.3...v0.5.0
 [0.4.3]: https://github.com/joce/fredq/compare/v0.4.2...v0.4.3
