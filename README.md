@@ -15,7 +15,7 @@ byte-for-byte, for scripts, agents, and quick terminal work.
 
 ## Install
 
-fredq is a Python 3.10+ package:
+fredq is a Python 3.11+ package:
 
 ```powershell
 pip install fredq

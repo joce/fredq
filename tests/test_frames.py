@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Final
 
@@ -13,7 +13,7 @@ import pytest
 from fredq.frames import Frame, FrameShapeError, Observations, build_observations
 
 CORPUS: Final[Path] = Path(__file__).parent / "fixtures" / "corpus"
-NOW: Final[datetime] = datetime(2026, 7, 5, tzinfo=timezone.utc)
+NOW: Final[datetime] = datetime(2026, 7, 5, tzinfo=UTC)
 
 
 def _capture(rel: str) -> dict[str, Any]:

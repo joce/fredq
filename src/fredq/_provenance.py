@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fredq import __version__
@@ -65,7 +65,7 @@ def observations_metadata(
         if timestamp.tzinfo is None or timestamp.utcoffset() is None:
             message = "fetched_at must be timezone-aware"
             raise ValueError(message)
-        result["fredq_fetched_at"] = timestamp.astimezone(timezone.utc).isoformat()
+        result["fredq_fetched_at"] = timestamp.astimezone(UTC).isoformat()
     for prefix, values in (("request", request), ("envelope", envelope)):
         result.update(
             {

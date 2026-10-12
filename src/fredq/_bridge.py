@@ -9,7 +9,6 @@ surface usable inside environments that already run an event loop
 from __future__ import annotations
 
 import asyncio
-import concurrent.futures
 import threading
 from typing import TYPE_CHECKING, TypeVar
 
@@ -49,15 +48,13 @@ def run(coro: Coroutine[Any, Any, _T], *, timeout: float | None = None) -> _T:
         _T: Whatever the coroutine returns.
 
     Raises:
-        concurrent.futures.TimeoutError: If the result is not available
-            within ``timeout`` seconds. (An alias of the builtin
-            ``TimeoutError`` on Python 3.11+; a distinct ``Exception``
-            subclass on 3.10.)
+        TimeoutError: If the result is not available within ``timeout``
+            seconds.
     """
 
     future = asyncio.run_coroutine_threadsafe(coro, _ensure_loop())
     try:
         return future.result(timeout)
-    except concurrent.futures.TimeoutError:
+    except TimeoutError:
         future.cancel()
         raise

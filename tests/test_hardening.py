@@ -8,7 +8,7 @@ import logging
 import os
 import stat
 import traceback
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
@@ -152,7 +152,7 @@ def test_failed_export_preserves_file(
                 '{"observations": []}', destination, ObservationsContext("X")
             )
         else:
-            Frame(pl.DataFrame(), datetime.now(timezone.utc)).save_parquet(destination)
+            Frame(pl.DataFrame(), datetime.now(UTC)).save_parquet(destination)
     assert destination.read_bytes() == b"original"
     assert list(tmp_path.iterdir()) == [destination]
 
@@ -260,7 +260,7 @@ def test_export_preserves_existing_permissions(tmp_path: Path, surface: str) -> 
             '{"observations": []}', destination, ObservationsContext("X")
         )
     else:
-        Frame(pl.DataFrame(), datetime.now(timezone.utc)).save_parquet(destination)
+        Frame(pl.DataFrame(), datetime.now(UTC)).save_parquet(destination)
     assert stat.S_IMODE(destination.stat().st_mode) == mode
     assert pl.read_parquet(destination).height == 0
 
@@ -276,7 +276,7 @@ def test_export_new_file_respects_umask(tmp_path: Path, surface: str) -> None:
                 '{"observations": []}', destination, ObservationsContext("X")
             )
         else:
-            Frame(pl.DataFrame(), datetime.now(timezone.utc)).save_parquet(destination)
+            Frame(pl.DataFrame(), datetime.now(UTC)).save_parquet(destination)
     finally:
         os.umask(previous)
     if os.name != "nt":
@@ -321,9 +321,7 @@ def test_failed_export_cleans_read_only_temporary(
                     '{"observations": []}', destination, ObservationsContext("X")
                 )
             else:
-                Frame(pl.DataFrame(), datetime.now(timezone.utc)).save_parquet(
-                    destination
-                )
+                Frame(pl.DataFrame(), datetime.now(UTC)).save_parquet(destination)
         assert destination.read_bytes() == b"original"
         assert list(tmp_path.iterdir()) == [destination]
     finally:

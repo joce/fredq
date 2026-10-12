@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+# PEP 810: Python 3.15+ defers these imports until first use, so --help never
+# pays for the HTTP stack. Older versions ignore the list and import eagerly.
+__lazy_modules__ = ["asyncio", "fredq.client", "json", "logging"]
+
 import argparse
 import asyncio
 import json
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Final, Protocol, TextIO, cast
 
@@ -657,7 +661,7 @@ def _dispatch_command(
 
     try:
         body = asyncio.run(_run_command(active_client, command, params))
-        fetched_at = datetime.now(timezone.utc)
+        fetched_at = datetime.now(UTC)
     except FredqError as exc:
         err.write(f"{exc}\n")
         return 1

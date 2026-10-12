@@ -24,7 +24,7 @@ import json
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
@@ -113,7 +113,7 @@ def _days_ago_compact(days: int) -> str:
         str: The timestamp as ``YYYYMMDD0000``.
     """
 
-    when = datetime.now(timezone.utc) - timedelta(days=days)
+    when = datetime.now(UTC) - timedelta(days=days)
     return when.strftime("%Y%m%d0000")
 
 
@@ -821,7 +821,7 @@ def _write_manifest(
     """Attach run metadata and write manifest.json to the corpus dir."""
 
     manifest["_meta"] = {
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fetched_at": datetime.now(UTC).isoformat(),
         "case_count": case_count,
     }
     corpus_dir.mkdir(parents=True, exist_ok=True)

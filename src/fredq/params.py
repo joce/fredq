@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
-from enum import Enum
+from datetime import UTC, date, datetime, timedelta
+from enum import StrEnum
 from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from fredq.types import ParamValue
 
 
-class ParamKind(str, Enum):
+class ParamKind(StrEnum):
     """Supported CLI parameter kinds."""
 
     STRING = "string"
@@ -179,14 +179,14 @@ def _parse_date(value: str) -> str:
     # is only 8 digits, below the 10-digit threshold).
     if "-" in stripped:
         try:
-            parsed_dt = datetime.fromisoformat(stripped.replace("Z", "+00:00"))
+            parsed_dt = datetime.fromisoformat(stripped)
         except ValueError:
             parsed_dt = None
 
         if parsed_dt is not None:
             if parsed_dt.tzinfo is None:
-                parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
-            return parsed_dt.astimezone(timezone.utc).date().isoformat()
+                parsed_dt = parsed_dt.replace(tzinfo=UTC)
+            return parsed_dt.astimezone(UTC).date().isoformat()
 
         try:
             parsed_date = date.fromisoformat(stripped)
@@ -203,7 +203,7 @@ def _parse_date(value: str) -> str:
         ts = None
     if ts is not None and len(stripped) >= 10:  # ruff: ignore[magic-value-comparison]
         return (
-            (datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(seconds=ts))
+            (datetime(1970, 1, 1, tzinfo=UTC) + timedelta(seconds=ts))
             .date()
             .isoformat()
         )

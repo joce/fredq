@@ -56,6 +56,22 @@ def test_cli_module_stays_light() -> None:
     assert out.stdout.strip() == "False"
 
 
+def test_cli_help_defers_http_stack_on_lazy_import_pythons() -> None:
+    """Building the parser skips httpx2/asyncio where PEP 810 applies (3.15+)."""
+
+    code = (
+        "import sys; import fredq.cli; fredq.cli.build_parser(); "
+        "print(sorted({'asyncio', 'httpx2'} & set(sys.modules)))"
+    )
+    out = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    )
+    # __lazy_modules__ is ignored before 3.15, where these load eagerly.
+    lazy_imports_supported = sys.version_info >= (3, 15)
+    expected = "[]" if lazy_imports_supported else "['asyncio', 'httpx2']"
+    assert out.stdout.strip() == expected
+
+
 def test_lazy_names_resolve_to_api_objects() -> None:
     """Spot-check the lazy routing targets."""
 
