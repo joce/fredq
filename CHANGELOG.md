@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.1]
+
+Maintenance release — no user-facing changes. Runtime dependency ranges in
+`pyproject.toml` are unchanged.
+
+### Internal
+
+- Updated locked runtime and development dependencies and
+  `astral-sh/setup-uv`; see the GitHub release for exact versions.
+- Widened the development-only `isort` range to allow 9.x.
+
 ## [0.5.0]
 
 Observation workflows now offer more control and retain provenance in saved
@@ -256,7 +267,8 @@ Initial release.
   with the key redacted from all errors and logs.
 - Exit-code contract: `0` success, `1` FRED request failure, `2` usage error.
 
-[Unreleased]: https://github.com/joce/fredq/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/joce/fredq/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/joce/fredq/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/joce/fredq/compare/v0.4.3...v0.5.0
 [0.4.3]: https://github.com/joce/fredq/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/joce/fredq/compare/v0.4.1...v0.4.2
