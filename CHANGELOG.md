@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- fredq now requires `polars>=2.0`; the 1.x line is no longer supported.
+  Python 3.15 already required 2.0.
+
 ## [0.6.0]
 
 fredq now supports Python 3.15 and requires Python 3.11 or newer. On 3.15 the
