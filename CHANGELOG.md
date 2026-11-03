@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0]
+
+fredq now requires polars 2.0 or newer on every supported Python version.
+0.6.0 allowed the 1.x line outside Python 3.15; this release drops it.
+
 ### Changed
 
 - fredq now requires `polars>=2.0`; the 1.x line is no longer supported.
@@ -296,7 +301,8 @@ Initial release.
   with the key redacted from all errors and logs.
 - Exit-code contract: `0` success, `1` FRED request failure, `2` usage error.
 
-[Unreleased]: https://github.com/joce/fredq/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/joce/fredq/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/joce/fredq/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/joce/fredq/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/joce/fredq/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/joce/fredq/compare/v0.4.3...v0.5.0
