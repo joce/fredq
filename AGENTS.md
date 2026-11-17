@@ -20,7 +20,8 @@ Python 3.11+, uv, httpx2, argparse, pytest, ruff, pyright, tox, hatchling.
 - Type check: `uv run pyright`
 - Spell check: `npm run spell` or `make spell`
 - Spell changed files: `npm run spell:changed` or `make spell-changed`
-- Full check: `uv run tox`
+- Full check: `uv run tox` (every Python version, spelling, the built wheel)
+- Before a push: `make pre-push` (black, ruff and pyright once, the tests once under coverage on every core, the spelling of changed files)
 
 ## Command grouping (noun-verb)
 Commands are organized into five noun groups, each with verb leaves:
