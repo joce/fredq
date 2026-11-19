@@ -2,8 +2,8 @@
 
 fredq publishes to [PyPI](https://pypi.org/project/fredq/) from GitHub Actions
 (`.github/workflows/publish.yml`) using **Trusted Publishing** (OIDC) — no API
-tokens. The workflow runs when a **GitHub Release is published**; a bare
-`git push` of a tag does *not* trigger it.
+tokens. **Pushing a `vX.Y.Z` tag starts the whole release**; the only manual
+step is approving the PyPI deployment.
 
 > Trusted publisher and the `pypi` environment (with required-reviewer approval)
 > are already configured. No per-release infrastructure setup is needed.
@@ -16,20 +16,44 @@ at build time. Tagging `vX.Y.Z` makes the build `X.Y.Z`; commits after a tag get
 a `X.Y.(Z+1).devN` version automatically.
 
 1. Move the `## [Unreleased]` notes in `CHANGELOG.md` under a new `## [X.Y.Z]`
-   heading and update the compare links at the bottom. Commit and push to `main`.
-   Wait for CI to go green.
-2. Create the release — this creates the `vX.Y.Z` tag *and* triggers publishing:
+   heading and update the compare links at the bottom. Draft the release notes
+   (overview + highlights, not a one-liner) in `docs/release_next.md` and move
+   them to `docs/release_vX.Y.Z.md`. Commit and push to `main`; wait for CI to
+   go green.
+2. Tag the commit on `main` and push the tag:
 
    ```bash
-   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file docs/release_vX.Y.Z.md
+   git tag vX.Y.Z
    ```
 
-   Write real notes (overview + highlights), not a one-liner: draft them in
-   `docs/release_next.md` and move them to `docs/release_vX.Y.Z.md` in step 1.
-3. The `publish` job pauses on the `pypi` environment. **Approve the deployment**:
-   the run page shows *"Review pending deployments"* → tick `pypi` → *Approve and
-   deploy*. After approval it uploads to PyPI.
-4. Verify: <https://pypi.org/project/fredq/> shows the new version.
+   ```bash
+   git push origin vX.Y.Z
+   ```
+
+3. The tag push runs `publish.yml`:
+   - **validate** — the tag must be exactly `vX.Y.Z` (no prefixes, suffixes or
+     leading zeros) and point at a commit on `main`;
+   - **checks** — the full CI suite (`ci.yml`) on the tagged commit;
+   - **build** — `uv build`, `twine check`, and a check that the built version
+     equals the tag;
+   - **publish** — pauses on the `pypi` environment;
+   - **github-release** — after PyPI accepts the upload, creates the GitHub
+     Release `vX.Y.Z` with the wheel and sdist attached.
+4. **Approve the deployment** (the one manual step): the run page shows
+   *"Review pending deployments"* → tick `pypi` → *Approve and deploy*.
+5. Verify: <https://pypi.org/project/fredq/> shows the new version and the
+   GitHub Release exists.
+
+Release notes come from `docs/release_vX.Y.Z.md` when it exists, otherwise from
+the `## [X.Y.Z]` section of `CHANGELOG.md`, otherwise from GitHub's generated
+notes (with a warning on the run). If a release for the tag already exists, the
+distribution files are uploaded to it instead.
+
+If a step fails before publishing (a red check, a version mismatch), fix it on
+`main`, delete the tag (`git push origin :refs/tags/vX.Y.Z`, then
+`git tag -d vX.Y.Z`) and tag again. If only a later step failed, use *Re-run
+failed jobs* on the run. A version that reached PyPI can never be uploaded
+again: release the fix as the next patch version.
 
 ## Verify locally before releasing
 
