@@ -40,7 +40,7 @@ jobs:
           fetch-depth: 0 # tags needed for hatch-vcs version
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: "latest"
           python-version: ${{ matrix.python-version }}
@@ -58,13 +58,31 @@ jobs:
           fetch-depth: 0 # tags needed for hatch-vcs version
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: "latest"
           python-version: "3.15"
 
       - name: Run tox
         run: uvx --with tox-uv tox -e pandas
+
+  distribution-and-windows:
+    needs: spell-check
+    runs-on: windows-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          version: "latest"
+          python-version: "3.15"
+
+      - name: Check Windows behavior and installed distribution
+        run: uvx --with tox-uv tox -e windows,wheel
 
   coverage:
     needs: spell-check
@@ -76,7 +94,7 @@ jobs:
           fetch-depth: 0 # tags needed for hatch-vcs version
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.0
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           version: "latest"
           python-version: "3.15"

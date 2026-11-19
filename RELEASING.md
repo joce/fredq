@@ -21,10 +21,11 @@ a `X.Y.(Z+1).devN` version automatically.
 2. Create the release — this creates the `vX.Y.Z` tag *and* triggers publishing:
 
    ```bash
-   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file path/to/notes.md
+   gh release create vX.Y.Z --title "vX.Y.Z" --notes-file docs/release_vX.Y.Z.md
    ```
 
-   Write real notes (overview + highlights), not a one-liner.
+   Write real notes (overview + highlights), not a one-liner: draft them in
+   `docs/release_next.md` and move them to `docs/release_vX.Y.Z.md` in step 1.
 3. The `publish` job pauses on the `pypi` environment. **Approve the deployment**:
    the run page shows *"Review pending deployments"* → tick `pypi` → *Approve and
    deploy*. After approval it uploads to PyPI.
