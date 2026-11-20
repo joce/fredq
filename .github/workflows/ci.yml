@@ -7,6 +7,7 @@ on:
   pull_request:
     branches-ignore:
       - "experimental/*"
+  workflow_call: # the release pipeline (publish.yml) runs these checks on the tag
 
 jobs:
   spell-check:
