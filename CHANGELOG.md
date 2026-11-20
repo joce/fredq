@@ -6,6 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.1]
+
+Maintenance release. fredq's API, CLI and published dependency ranges are
+unchanged from 0.7.0.
+
+### Changed
+
+- Releases are now published by pushing a `vX.Y.Z` tag: the full CI suite runs
+  on the tagged commit and the GitHub Release is created automatically after
+  the PyPI upload.
+- CI also checks Windows behavior and the installed distribution.
+- Development tooling and lockfile updates.
+
 ## [0.7.0]
 
 fredq now requires polars 2.0 or newer on every supported Python version.
@@ -301,7 +314,8 @@ Initial release.
   with the key redacted from all errors and logs.
 - Exit-code contract: `0` success, `1` FRED request failure, `2` usage error.
 
-[Unreleased]: https://github.com/joce/fredq/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/joce/fredq/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/joce/fredq/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/joce/fredq/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/joce/fredq/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/joce/fredq/compare/v0.5.0...v0.5.1
